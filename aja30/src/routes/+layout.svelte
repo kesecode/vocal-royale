@@ -9,13 +9,13 @@
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<div class="min-h-dvh bg-gray-50 text-gray-900">
-    <header class="border-b bg-white/80 backdrop-blur">
+<div class="min-h-dvh bg-brand bg-halftone text-white pt-3">
+    <header class="header-float bg-accent text-white">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-            <a href="/" class="font-semibold tracking-tight">Aja 30!</a>
+            <a href="/" class="font-display text-xl sm:text-2xl tracking-tight drop-shadow">Aja 30!</a>
             <nav class="flex items-center gap-4 text-sm">
-                <a href="/" class="hover:text-gray-700">Home</a>
-                <a href="/profile" class="hover:text-gray-700">Profil</a>
+                <a href="/" class="text-white/90 hover:text-white link-fun">Home</a>
+                <a href="/profile" class="text-white/90 hover:text-white link-fun">Profil</a>
             </nav>
         </div>
     </header>
@@ -24,9 +24,10 @@
         {@render children?.()}
     </main>
 
-    <footer class="mt-auto py-6 text-center text-xs text-gray-500">
+    <footer class="mt-auto py-6 text-center text-xs text-white/80">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             © {new Date().getFullYear()} David Weppler
         </div>
     </footer>
+    
   </div>

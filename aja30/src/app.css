@@ -1,2 +1,84 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
+
+/* Theme tokens (Tailwind v4) */
+@theme {
+  /* Typography */
+  --font-sans: "Fredoka", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --font-display: "Bangers", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand colors */
+  --color-brand: #b82015;         /* primary */
+  --color-brand-500: #b82015;
+  --color-brand-600: #a31c12;
+  --color-brand-700: #93170f;     /* darker */
+  --color-brand-800: #6e100b;     /* much darker */
+  --color-brand-900: #3a0a08;     /* deepest */
+
+  --color-accent: #7a129d;        /* secondary */
+  --color-accent-500: #7a129d;
+  --color-accent-600: #6e108e;
+  --color-accent-700: #5e0e79;    /* darker */
+  --color-accent-800: #440a57;    /* much darker */
+  --color-accent-900: #2a0436;    /* deepest */
+
+  /* Surfaces (no pure white) */
+  --surface-1: var(--color-accent-700);
+  --surface-2: var(--color-brand-700);
+  --surface-border: var(--color-accent-900);
+  --surface-border-strong: var(--color-brand-900);
+  --shadow-1: rgba(42, 4, 54, 0.6); /* accent-900 with alpha */
+  --shadow-2: rgba(58, 10, 8, 0.55); /* brand-900 with alpha */
+
+  /* Ink */
+  --color-ink: #161616;
+  
+  /* Gold (for buttons) */
+  --color-gold-400: #FFD633;   /* lighter */
+  --color-gold-500: #FFCC00;   /* base */
+  --color-gold-600: #E6B800;   /* darker */
+  --color-gold-700: #CC9900;   /* darkest useful */
+  --color-gold: var(--color-gold-500);
+  --shadow-gold: rgba(204, 153, 0, 0.55);
+}
+
+/* Base styling */
+@layer base {
+  html { color-scheme: light; }
+  body { @apply font-sans text-[--color-ink] antialiased; }
+}
+
+/* Comic utilities */
+@layer utilities {
+  .card { @apply relative transition; background-color: var(--surface-1); color: white; box-shadow: 4px 4px 0 var(--shadow-1); border: 2px solid #333; border-radius: 10px 10px 10px 14px/12px 14px 12px 10px; }
+  .card:hover { box-shadow: 6px 6px 0 var(--shadow-1); }
+  .card-brand { @apply relative transition; background-color: var(--surface-2); color: white; box-shadow: 4px 4px 0 var(--shadow-2); border: 2px solid #333; border-radius: 10px 10px 10px 14px/12px 14px 12px 10px; }
+  .card-brand:hover { box-shadow: 6px 6px 0 var(--shadow-2); }
+
+  .input { @apply w-full rounded-lg border px-3 py-2 outline-none text-white placeholder-white/70 focus:ring-2 focus:ring-accent; background: rgb(255 255 255 / 0.08); border-color: rgb(255 255 255 / 0.25); }
+
+  .btn { @apply inline-flex items-center justify-center px-4 py-2 font-semibold transition active:translate-y-0.5; border: 2px solid #333; border-radius: 12px 8px 8px 12px/10px 12px 10px 10px; box-shadow: 3px 3px 0 var(--shadow-gold); color: var(--color-ink); background: var(--color-gold-500); }
+  .btn:hover { box-shadow: 4px 4px 0 var(--shadow-gold); background: var(--color-gold); }
+  .btn-brand { @apply inline-flex items-center justify-center px-4 py-2 font-semibold transition active:translate-y-0.5; color: var(--color-ink); border: 2px solid #333; border-radius: 14px 10px 10px 18px/10px 18px 12px 12px; box-shadow: 4px 4px 0 var(--shadow-gold); background: var(--color-gold-500); }
+  .btn-brand:hover { box-shadow: 5px 5px 0 var(--shadow-gold); background: var(--color-gold); }
+  .btn-accent { @apply inline-flex items-center justify-center px-4 py-2 font-semibold transition active:translate-y-0.5; color: var(--color-ink); border: 2px solid #333; border-radius: 10px 18px 12px 14px/10px 14px 10px 18px; box-shadow: 4px 4px 0 var(--shadow-gold); background: var(--color-gold-500); }
+  .btn-accent:hover { box-shadow: 5px 5px 0 var(--shadow-gold); background: var(--color-gold); }
+  .link-fun { background: linear-gradient(currentColor, currentColor) bottom left / 0 2px no-repeat; transition: background-size .25s ease; }
+  .link-fun:hover { background-size: 100% 2px; }
+
+  /* Halftone overlay for comic background */
+  .bg-halftone {
+    background-image: radial-gradient(rgba(0,0,0,0.18) 1.2px, transparent 1.2px);
+    background-size: 12px 12px;
+  }
+
+  /* Panels: clean borders with elliptical radii (no scribble) */
+  .panel { position: relative; color: white; border: 2px solid #333; border-radius: 455px 15px 225px 15px / 20px 125px 15px 155px; background-clip: padding-box; }
+  .panel-accent { background-color: var(--color-accent); box-shadow: 4px 4px 0 var(--shadow-1); }
+  .panel-brand { background-color: var(--color-brand); box-shadow: 4px 4px 0 var(--shadow-2); }
+
+  /* Floating header with comic border */
+  .header-float { border: 2px solid #333; border-radius: 355px 85px 925px 65px/45px 825px 85px 755px; box-shadow: 5px 5px 0 var(--shadow-1); margin: 0 12px; overflow: clip; }
+}
+
+/* Animations removed per request */
