@@ -1,0 +1,57 @@
+import { fail, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async ({ locals }) => {
+    return { user: locals.user };
+};
+
+export const actions: Actions = {
+    signup: async ({ request, locals }) => {
+        const form = await request.formData();
+        const email = String(form.get('email') || '').trim();
+        const password = String(form.get('password') || '');
+        const passwordConfirm = String(form.get('passwordConfirm') || '');
+
+        if (!email || !password || !passwordConfirm) {
+            return fail(400, { message: 'Bitte alle Felder ausfüllen.' });
+        }
+        if (password !== passwordConfirm) {
+            return fail(400, { message: 'Passwörter stimmen nicht überein.' });
+        }
+
+        try {
+            await locals.pb.collection('users').create({ email, password, passwordConfirm });
+
+            // Auto-Login nach Registrierung
+            await locals.pb.collection('users').authWithPassword(email, password);
+        } catch {
+            return fail(400, { message: 'Registrierung fehlgeschlagen.' });
+        }
+
+        throw redirect(303, '/hello');
+    },
+
+    login: async ({ request, locals }) => {
+        const form = await request.formData();
+        const email = String(form.get('email') || '').trim();
+        const password = String(form.get('password') || '');
+
+        if (!email || !password) {
+            return fail(400, { message: 'Bitte E-Mail und Passwort angeben.' });
+        }
+
+        try {
+            await locals.pb.collection('users').authWithPassword(email, password);
+        } catch {
+            return fail(400, { message: 'Login fehlgeschlagen.' });
+        }
+
+        throw redirect(303, '/');
+    },
+
+    logout: async ({ locals }) => {
+        locals.pb.authStore.clear();
+        throw redirect(303, '/auth');
+    }
+};
+
