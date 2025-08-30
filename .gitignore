@@ -43,8 +43,7 @@ node_modules/
 jspm_packages/
 
 # Secrets
-secrets/
-aja30/secrets/
+*.p8
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
@@ -132,3 +131,4 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+.DS_Store
