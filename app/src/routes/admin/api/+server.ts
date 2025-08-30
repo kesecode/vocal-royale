@@ -120,7 +120,7 @@ export const GET: RequestHandler = async ({ locals }) => {
         }
       : { competitionStarted: false, roundState: 'result_locked', round: 1, activeParticipant: null },
     activeParticipant: active
-      ? { id: active.id, name: toName(active), artistName: active.artistName, sangThisRound: !!(active as any).sangThisRound }
+      ? { id: active.id, name: toName(active), artistName: active.artistName, sangThisRound: !!active.sangThisRound }
       : null
   });
 };
@@ -162,7 +162,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
             locals.pb.collection(USERS_COLLECTION).update(p.id, { sangThisRound: false })
           )
         );
-      } catch (e) {
+      } catch {
         logger.warn('Admin API: reset sangThisRound failed (continuing)', {});
       }
 
@@ -170,7 +170,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       const updated = await upsertState(locals, {
         competitionStarted: true,
         roundState: 'singing_phase',
-        activeParticipant: picked?.id ?? null
+        activeParticipant: picked?.id
       });
       const active = picked ?? (await getActiveParticipant(locals));
       logger.info('Admin API: start_competition', { activeParticipant: updated.activeParticipant });
@@ -183,7 +183,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       if (!state || !active) {
         // clear stale pointer if present
         if (state?.activeParticipant) {
-          await upsertState(locals, { activeParticipant: null });
+          await upsertState(locals, { activeParticipant: undefined });
         }
         return json({ error: 'no_active_participant' }, { status: 400 });
       }
@@ -200,7 +200,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       const round = Number(state?.round ?? 1) || 1;
       if (!state || !active) {
         if (state?.activeParticipant) {
-          await upsertState(locals, { activeParticipant: null });
+          await upsertState(locals, { activeParticipant: undefined });
         }
         return json({ error: 'no_active_participant' }, { status: 400 });
       }
@@ -215,7 +215,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
       // Pick next eligible participant
       const picked = await pickRandomEligibleParticipant(locals);
       if (!picked) {
-        const updated = await upsertState(locals, { roundState: 'break', activeParticipant: null });
+        const updated = await upsertState(locals, { roundState: 'break', activeParticipant: undefined });
         logger.info('Admin API: no more participants, break phase');
         return json({ ok: true, state: updated, activeParticipant: null });
       }
@@ -310,7 +310,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
             locals.pb.collection(USERS_COLLECTION).update(p.id, { sangThisRound: false })
           )
         );
-      } catch (e) {
+      } catch {
         logger.warn('Admin API: reset sangThisRound for next round failed (continuing)');
       }
 
@@ -320,7 +320,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         competitionStarted: true,
         round: nextRound,
         roundState: 'singing_phase',
-        activeParticipant: picked?.id ?? null
+        activeParticipant: picked?.id ?? undefined
       });
       logger.info('Admin API: start_next_round', { nextRound, activeParticipant: picked?.id ?? null });
       return json({ ok: true, state: updated, activeParticipant: picked ? { id: picked.id, name: toName(picked), artistName: picked.artistName } : null });
@@ -329,7 +329,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
     return json({ error: 'unknown_action' }, { status: 400 });
   } catch (e: unknown) {
     const err = e as Error & { status?: number; message?: string; url?: string; data?: unknown };
-    logger.error('Admin API failed', { status: err?.status, message: err?.message, url: (err as any)?.url, data: (err as any)?.data });
+    logger.error('Admin API failed', { status: err?.status, message: err?.message, url: err?.url, data: err?.data });
     return json({ error: 'internal_error' }, { status: 500 });
   }
 };
