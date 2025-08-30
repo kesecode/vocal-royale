@@ -1,10 +1,19 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     let mode: 'login' | 'signup' = 'login';
+    let banner: string | null = null;
+    let next: string = '';
 
     onMount(() => {
         if (typeof window !== 'undefined' && window.location.hash === '#signup') {
             mode = 'signup';
+        }
+        if (typeof window !== 'undefined') {
+            const q = new URLSearchParams(window.location.search);
+            if (q.get('reason') === 'auth_required') {
+                banner = 'Bitte melde dich an, um fortzufahren.';
+            }
+            next = q.get('next') ?? '';
         }
     });
     const toggle = () => (mode = mode === 'login' ? 'signup' : 'login');
@@ -12,11 +21,15 @@
 </script>
 
 <section class="mx-auto max-w-sm space-y-6">
+    {#if banner}
+        <div class="panel panel-accent p-3 text-sm">{banner}</div>
+    {/if}
     
     {#if mode === 'login'}
         <section class="panel panel-accent p-4 sm:p-6">
             <h2 class="font-semibold">Login</h2>
             <form method="post" action="?/login" class="mt-4 space-y-4">
+                <input type="hidden" name="next" value={next} />
                 <label class="block text-sm font-medium">
                     E-Mail
                     <input class="mt-1 input" name="email" type="email" required />
@@ -32,6 +45,7 @@
         <section id="signup" class="panel panel-brand p-4 sm:p-6">
             <h2 class="font-semibold">Sign up</h2>
             <form method="post" action="?/signup" class="mt-4 space-y-4">
+                <input type="hidden" name="next" value={next} />
                 <label class="block text-sm font-medium">
                     E-Mail
                     <input class="mt-1 input" name="email" type="email" required />

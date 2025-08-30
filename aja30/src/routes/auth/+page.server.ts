@@ -11,6 +11,7 @@ export const actions: Actions = {
         const email = String(form.get('email') || '').trim();
         const password = String(form.get('password') || '');
         const passwordConfirm = String(form.get('passwordConfirm') || '');
+        const next = String(form.get('next') || '').trim();
 
         if (!email || !password || !passwordConfirm) {
             return fail(400, { message: 'Bitte alle Felder ausfüllen.' });
@@ -28,13 +29,14 @@ export const actions: Actions = {
             return fail(400, { message: 'Registrierung fehlgeschlagen.' });
         }
 
-        throw redirect(303, '/hello');
+        throw redirect(303, next || '/');
     },
 
     login: async ({ request, locals }) => {
         const form = await request.formData();
         const email = String(form.get('email') || '').trim();
         const password = String(form.get('password') || '');
+        const next = String(form.get('next') || '').trim();
 
         if (!email || !password) {
             return fail(400, { message: 'Bitte E-Mail und Passwort angeben.' });
@@ -46,7 +48,7 @@ export const actions: Actions = {
             return fail(400, { message: 'Login fehlgeschlagen.' });
         }
 
-        throw redirect(303, '/');
+        throw redirect(303, next || '/');
     },
 
     logout: async ({ locals }) => {
@@ -54,4 +56,3 @@ export const actions: Actions = {
         throw redirect(303, '/auth');
     }
 };
-
