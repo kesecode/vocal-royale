@@ -3,6 +3,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { logger } from '$lib/server/logger';
 import path from 'path';
+import keys from '$lib/secrets/keys.json';
 
 let cached: { token: string; exp: number } | null = null;
 
@@ -20,9 +21,9 @@ export function getAppleMusicToken(): string | null {
     return direct;
   }
 
-  const keyId = env.APPLE_MUSIC_KEY_ID || '882KVF255V';
-  const teamId = env.APPLE_TEAM_ID || '42UY53YL49';
-  const configuredPath = env.APPLE_MUSIC_PRIVATE_KEY_PATH || 'secrets/AppleMusicAuthKey.p8';
+  const keyId = env.APPLE_MUSIC_KEY_ID || keys.appleMusicKeyId;
+  const teamId = env.APPLE_TEAM_ID || keys.appleTeamId;
+  const configuredPath = env.APPLE_MUSIC_PRIVATE_KEY_PATH || '$lib/secrets/AppleMusicAuthKey.p8';
   if (!keyId || !teamId) {
     logger.warn('Apple Music token: missing key id or team id', {
       hasKeyId: Boolean(keyId),
@@ -53,14 +54,16 @@ export function getAppleMusicToken(): string | null {
   candidates.push(path.resolve(process.cwd(), 'aja30/secrets/AppleMusicAuthKey.p8'));
   logger.debug('Resolving Apple Music private key', { cwd: process.cwd(), candidates });
 
-  let privateKeyPem: string;
+  let privateKeyPem = '';
   let resolvedPath: string | null = null;
   for (const p of candidates) {
     try {
       privateKeyPem = fs.readFileSync(p, 'utf8');
       resolvedPath = p;
       break;
-    } catch {}
+    } catch {
+      continue;
+    }
   }
   if (!resolvedPath) {
     logger.error('Failed to read Apple Music private key', { tried: candidates });
