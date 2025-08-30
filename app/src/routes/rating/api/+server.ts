@@ -1,7 +1,7 @@
 import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
 import type { ListResult } from 'pocketbase';
-import type { RatingsRecord, RatingsResponse, UsersResponse } from '$lib/pocketbase-types';
+import type { RatingsRecord, RatingsResponse, UsersResponse, CompetitionStateResponse } from '$lib/pocketbase-types';
 import { logger } from '$lib/server/logger';
 
 const COLLECTION = 'ratings' as const;
@@ -11,6 +11,8 @@ type Participant = {
   name: string;
   firstName?: string;
   artistName?: string;
+  eliminated?: boolean;
+  sangThisRound?: boolean;
 };
 
 type RatingDTO = {
@@ -38,9 +40,19 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     const users = (await locals.pb.collection('users').getFullList()) as UsersResponse[];
     const participants: Participant[] = users
       .filter((u) => u.id !== locals.user!.id)
+      .filter((u) => (u as UsersResponse).role === 'participant')
+      .filter((u) => !Boolean((u as any).eliminated ?? false))
       .map((u) => {
         const name = u.name || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || u.username || u.id;
-        return { id: u.id, name, firstName: u.firstName, artistName: (u as UsersResponse).artistName };
+        const uu = u as UsersResponse;
+        return {
+          id: u.id,
+          name,
+          firstName: u.firstName,
+          artistName: uu.artistName,
+          eliminated: Boolean((uu as any).eliminated ?? false),
+          sangThisRound: Boolean((uu as any).sangThisRound ?? false)
+        };
       })
       .sort((a, b) => a.name.localeCompare(b.name, 'de')); // simple stable order
 
@@ -105,6 +117,31 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   }
   if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
     return json({ error: 'invalid_rating' }, { status: 400 });
+  }
+
+  // Guard: block saving outside of rating_phase
+  try {
+    const stateList = (await locals.pb.collection('competition_state').getList(1, 1, {
+      sort: '-updated'
+    })) as ListResult<CompetitionStateResponse>;
+    const stateRec = stateList.items[0];
+    const phase = stateRec?.roundState ?? 'result_locked';
+    if (phase === 'singing_phase' || phase === 'result_locked' || phase === 'result_phase' || phase === 'break') {
+      return json({ error: 'rating_closed' }, { status: 400 });
+    }
+  } catch (e: unknown) {
+    const err = e as Error & { status?: number; url?: string; data?: unknown };
+    if (err?.status === 404) {
+      // No state configured yet => default to closed
+      return json({ error: 'rating_closed' }, { status: 400 });
+    }
+    logger.error('CompetitionState check failed', {
+      status: err?.status,
+      message: err?.message,
+      url: err?.url,
+      data: err?.data
+    });
+    return json({ error: 'save_failed' }, { status: 500 });
   }
 
   try {

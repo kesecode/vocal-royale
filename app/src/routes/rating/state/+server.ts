@@ -19,22 +19,24 @@ export const GET: RequestHandler = async ({ locals }) => {
       logger.warn('CompetitionState not found, returning defaults');
       return json({
         competitionStarted: false,
-        roundState: 'break',
-        round: 1
+        roundState: 'result_locked',
+        round: 1,
+        activeParticipant: null
       });
     }
     logger.info('CompetitionState GET', { round: rec.round, state: rec.roundState, started: rec.competitionStarted });
     return json({
       competitionStarted: !!rec.competitionStarted,
       roundState: rec.roundState,
-      round: Number(rec.round) || 1
+      round: Number(rec.round) || 1,
+      activeParticipant: rec.activeParticipant
     });
   } catch (e: unknown) {
     const err = e as Error & { status?: number; url?: string; data?: unknown; message?: string };
     // If the collection doesn't exist yet, return safe defaults without error noise
     if (err?.status === 404) {
       logger.info('CompetitionState collection missing, returning defaults');
-      return json({ competitionStarted: false, roundState: 'break', round: 1 });
+      return json({ competitionStarted: false, roundState: 'result_locked', round: 1, activeParticipant: null });
     }
     logger.error('CompetitionState GET failed', {
       status: err?.status,

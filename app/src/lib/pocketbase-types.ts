@@ -50,6 +50,8 @@ export type UsersRecord = {
   lastName: string;
   artistName: string;
   role: UserRole;
+  eliminated?: boolean; // eliminated from competition
+  sangThisRound?: boolean; // performed in the current round
 };
 
 export type RatingsRecord = {
@@ -61,11 +63,12 @@ export type RatingsRecord = {
 };
 
 // Competition State
-export type RoundState = 'singing_phase' | 'rating_phase' | 'result_phase' | 'break';
+export type RoundState = 'singing_phase' | 'rating_phase' | 'result_phase' | 'result_locked' | 'break';
 export type CompetitionStateRecord = {
   competitionStarted: boolean;
   roundState: RoundState;
   round: number; // 1..5
+  activeParticipant?: string; // relation to users.id (currently active performer)
 };
 
 // Responses

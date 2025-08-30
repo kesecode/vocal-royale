@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import type { RoundState } from '$lib/pocketbase-types';
 
-  type Participant = { id: string; name: string; firstName?: string; artistName?: string };
+  type Participant = { id: string; name: string; firstName?: string; artistName?: string; eliminated?: boolean; sangThisRound?: boolean };
   type Rating = { rating: number; comment: string; saving?: boolean; saved?: boolean; error?: string };
 
   // activeRound controls progressbar state from global competition state
@@ -12,6 +13,17 @@
   let loading = false;
   let loadError: string | null = null;
   let selected: Participant | null = null;
+  let roundState: RoundState = 'result_locked';
+  let activeParticipantId: string | null = null;
+  let activeParticipant: Participant | null = null;
+  let canRate = false;
+  $: canRate = roundState === 'rating_phase' || roundState === 'break';
+  $: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null;
+  let showActions = false;
+  $: showActions = canRate && roundState !== 'rating_phase';
+  $: if (activeParticipant && !ratings[activeParticipant.id]) {
+    ratings[activeParticipant.id] = { rating: 0, comment: '' };
+  }
 
   async function fetchRound(round: number) {
     loading = true;
@@ -58,6 +70,18 @@
       const r = Number(data?.round) || 1;
       activeRound = Math.min(Math.max(r, 1), 5);
       currentRound = activeRound;
+      const rs = data?.roundState as RoundState | undefined;
+      if (
+        rs === 'singing_phase' ||
+        rs === 'rating_phase' ||
+        rs === 'result_phase' ||
+        rs === 'result_locked' ||
+        rs === 'break'
+      ) {
+        roundState = rs;
+      }
+      const ap = data?.activeParticipant;
+      activeParticipantId = typeof ap === 'string' && ap ? ap : null;
     } catch {
       // ignore; keep defaults
     }
@@ -85,6 +109,10 @@
     if (!entry) return;
     entry.error = undefined;
     entry.saved = false;
+    if (!canRate) {
+      entry.error = 'Bewertungen sind derzeit geschlossen.';
+      return;
+    }
     if (entry.rating < 1 || entry.rating > 5) {
       entry.error = 'Bitte 1-5 Sterne wählen.';
       return;
@@ -104,6 +132,8 @@
           ? 'Selbstbewertung ist nicht erlaubt.'
           : code === 'invalid_rating'
           ? 'Bitte 1-5 Sterne wählen.'
+          : code === 'rating_closed'
+          ? 'Bewertungen sind derzeit geschlossen.'
           : 'Konnte nicht speichern.';
         return;
       }
@@ -117,6 +147,7 @@
   }
 
   function openOverlay(p: Participant) {
+    if (!canRate) return;
     selected = p;
   }
 
@@ -127,6 +158,12 @@
   function saveSelected() {
     if (selected) {
       save(selected.id);
+    }
+  }
+
+  function saveActive() {
+    if (activeParticipantId) {
+      save(activeParticipantId);
     }
   }
 </script>
@@ -168,7 +205,57 @@
     </div>
 
     <div class="p-2 sm:p-4">
-      {#if participants.length === 0}
+      {#if roundState === 'singing_phase'}
+        <p class="text-sm text-white/80 px-2 py-3">Enjoy the show!</p>
+      {:else if roundState === 'rating_phase'}
+        {#if activeParticipant}
+          <div class="space-y-3">
+            <div>
+              <div class="text-sm text-white/60">Runde {currentRound}</div>
+              <div class="text-lg font-semibold">{activeParticipant.firstName || activeParticipant.name}</div>
+              {#if activeParticipant.artistName}
+                <div class="text-xs text-white/70">a.k.a. {activeParticipant.artistName}</div>
+              {/if}
+            </div>
+            <div>
+              <div class="mb-1 text-sm text-white/80">Sterne</div>
+              <div class="stars" aria-label="Sterne vergeben">
+                {#each [1,2,3,4,5] as s}
+                  <button
+                    type="button"
+                    class={`star ${ratings[activeParticipant.id]?.rating >= s ? 'on' : ''}`}
+                    on:click={() => setRating(activeParticipant.id, s)}
+                    aria-label={`${s} Stern${s>1?'e':''}`}
+                  >★</button>
+                {/each}
+              </div>
+              {#if ratings[activeParticipant.id]?.error}
+                <div class="text-xs text-rose-200 mt-1">{ratings[activeParticipant.id].error}</div>
+              {/if}
+            </div>
+            <div>
+              <div class="mb-1 text-sm text-white/80">Kommentar (optional)</div>
+              <input
+                class="input w-full"
+                type="text"
+                bind:value={ratings[activeParticipant.id].comment}
+                maxlength="100"
+                placeholder="(max. 100 Zeichen)"
+              />
+            </div>
+            <div class="flex items-center gap-2">
+              <button class="btn-brand" disabled={ratings[activeParticipant.id]?.saving} on:click={saveActive}>
+                {ratings[activeParticipant.id]?.saving ? 'Speichern…' : 'Speichern'}
+              </button>
+              {#if ratings[activeParticipant.id]?.saved}
+                <span class="text-xs">Gespeichert!</span>
+              {/if}
+            </div>
+          </div>
+        {:else}
+          <p class="text-sm text-white/80 px-2 py-3">Aktiver Teilnehmer ist nicht gesetzt.</p>
+        {/if}
+      {:else if participants.length === 0}
         <p class="text-sm text-white/80 px-2 py-3">Keine Nutzer gefunden.</p>
       {:else}
         <div class="overflow-x-auto">
@@ -177,7 +264,9 @@
               <tr class="text-left text-white/90">
                 <th class="p-2 sm:p-3">Teilnehmer</th>
                 <th class="p-2 sm:p-3">Bewertung</th>
-                <th class="p-2 sm:p-3">Aktion</th>
+                {#if showActions}
+                  <th class="p-2 sm:p-3">Aktion</th>
+                {/if}
               </tr>
             </thead>
             <tbody>
@@ -196,11 +285,20 @@
                       {/each}
                     </div>
                   </td>
-                  <td class="p-2 sm:p-3">
-                    <button type="button" class="btn-ghost" on:click={() => openOverlay(p)} aria-label={`Bewerten: ${p.name}`}>
-                      Bewerten
-                    </button>
-                  </td>
+                  {#if showActions}
+                    <td class="p-2 sm:p-3">
+                      <button
+                        type="button"
+                        class="btn-ghost"
+                        on:click={() => openOverlay(p)}
+                        aria-label={`Bewerten: ${p.name}`}
+                        disabled={!canRate}
+                        aria-disabled={!canRate}
+                      >
+                        Bewerten
+                      </button>
+                    </td>
+                  {/if}
                 </tr>
               {/each}
             </tbody>
@@ -246,7 +344,8 @@
                 <button
                   type="button"
                   class={`star ${ratings[selected.id]?.rating >= s ? 'on' : ''}`}
-                  on:click={() => selected && setRating(selected.id, s)}
+                  disabled={!canRate}
+                  on:click={() => canRate && selected && setRating(selected.id, s)}
                   aria-label={`${s} Stern${s>1?'e':''}`}
                 >★</button>
               {/each}
@@ -268,9 +367,12 @@
         </div>
         <div class="overlay-foot">
           <button class="btn-ghost" on:click={closeOverlay}>Abbrechen</button>
-          <button class="btn-brand" disabled={ratings[selected.id]?.saving} on:click={saveSelected}>
+          <button class="btn-brand" disabled={!canRate || ratings[selected.id]?.saving} on:click={saveSelected}>
             {ratings[selected.id]?.saving ? 'Speichern…' : 'Speichern'}
           </button>
+          {#if !canRate}
+            <span class="ml-2 text-xs text-white/80">Bewertungen sind derzeit geschlossen.</span>
+          {/if}
           {#if ratings[selected.id]?.saved}
             <span class="ml-2 text-xs">Gespeichert!</span>
           {/if}

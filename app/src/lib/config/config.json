@@ -6,5 +6,6 @@
     "LOG_COLOR": "true",
     "SONG_CHOICE_VALIDATE": "true",
     "APPLE_MUSIC_STOREFRONT": "de",
-    "APPLE_MUSIC_KEY_PATH": "src/lib/config/secrets/AppleMusicAuthKey.p8"
+    "APPLE_MUSIC_KEY_PATH": "src/lib/config/secrets/AppleMusicAuthKey.p8",
+    "PARTICIPANTS_TO_ELIMINATE": [1, 0, 0, 0]
 }
