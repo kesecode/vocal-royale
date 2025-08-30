@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  type Song = { artist: string; songTitle: string };
+  type Song = { artist: string; songTitle: string; appleMusicSongId?: string };
 
   let songs: Song[] = Array.from({ length: 5 }, () => ({ artist: '', songTitle: '' }));
   let openStates: boolean[] = [false, false, false, false, false];
@@ -19,7 +19,8 @@
         if (Array.isArray(data?.songs) && data.songs.length === 5) {
           songs = data.songs.map((s: any) => ({
             artist: s?.artist ?? '',
-            songTitle: s?.songTitle ?? s?.song_title ?? ''
+            songTitle: s?.songTitle ?? s?.song_title ?? '',
+            appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
           }));
         }
       }
@@ -74,9 +75,35 @@
       // ok
       savedStates[i] = true;
       setTimeout(() => (savedStates[i] = false), 1500);
+      // Refresh from server to receive appleMusicSongId
+      try {
+        const ref = await fetch('/song-choice/api');
+        if (ref.ok) {
+          const data = await ref.json();
+          if (Array.isArray(data?.songs) && data.songs.length === 5) {
+            songs = data.songs.map((s: any) => ({
+              artist: s?.artist ?? '',
+              songTitle: s?.songTitle ?? s?.song_title ?? '',
+              appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
+            }));
+          }
+        }
+      } catch {}
       return;
     } catch (e) {
       errors[i] = 'Netzwerkfehler beim Speichern.';
+    }
+  }
+
+  function openApple(i: number) {
+    const id = songs[i]?.appleMusicSongId?.trim();
+    if (!id) return;
+    const storefront = 'de';
+    const url = `https://music.apple.com/${storefront}/song/${id}`;
+    try {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      location.href = url;
     }
   }
 </script>
@@ -117,6 +144,12 @@
 
           <div class="flex items-center gap-3">
             <button type="button" class="btn-brand" on:click={() => save(i)}>Speichern</button>
+            {#if songs[i]?.appleMusicSongId}
+              <button type="button" class="btn-apple" on:click={() => openApple(i)} title="Bei Apple Music öffnen" aria-label="Bei Apple Music öffnen">
+                <span class="apple-mark" aria-hidden="true"></span>
+                <span>Music</span>
+              </button>
+            {/if}
             {#if savedStates[i]}
               <span class="text-xs text-white/90">Gespeichert!</span>
             {/if}
@@ -139,4 +172,22 @@
     line-height: 1;
     font-weight: 800;
   }
+
+  /* Apple Music button (solid pink, no gradients) */
+  .btn-apple {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    font-weight: 700;
+    border: 2px solid #333;
+    border-radius: 12px 10px 14px 10px/10px 14px 10px 12px;
+    color: #fff;
+    background: #ff2d55; /* Apple Music pink */
+    box-shadow: 4px 4px 0 rgba(255, 45, 85, 0.35);
+    transition: transform 0.05s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  }
+  .btn-apple:hover { box-shadow: 5px 5px 0 rgba(255, 45, 85, 0.45); filter: brightness(1.04); }
+  .btn-apple:active { transform: translateY(2px); }
+  .btn-apple .apple-mark { font-size: 1rem; line-height: 1; margin-right: 2px; }
 </style>
