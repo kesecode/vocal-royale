@@ -14,7 +14,7 @@
 <div class="min-h-dvh bg-brand bg-halftone text-white pt-3">
     <header class="header-float bg-accent text-white">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-            <a href="/" class="font-display text-xl sm:text-2xl tracking-tight drop-shadow">Aja 30!</a>
+            <a href="/" class="font-display text-xl sm:text-2xl tracking-tight drop-shadow">Aja, 30!</a>
             <nav class="flex items-center gap-4 text-sm">
                 {#if isLoggedIn}
                     {#if role === 'participant'}

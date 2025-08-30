@@ -8,8 +8,8 @@
 
 <section class="space-y-5 sm:space-y-8">
     <div class="space-y-2">
-        <h1 class="font-display text-3xl sm:text-4xl tracking-tight">Willkommen bei Aja 30!</h1>
-        <p class="text-white/90">Ein schlanker Start mit SvelteKit + PocketBase.</p>
+        <h1 class="font-display text-3xl sm:text-4xl tracking-tight">Ai Gude {displayName} wie!?</h1>
+        <p class="text-white/90">Der Bre wird 30, singt für mich!</p>
     </div>
 
     <div class="panel panel-accent p-4 sm:p-6">
