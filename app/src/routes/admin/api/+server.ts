@@ -108,7 +108,7 @@ function toName(u: UsersResponse | null | undefined): string | null {
 }
 
 export const GET: RequestHandler = async ({ locals }) => {
-  if (!locals.user || (locals.user as UsersResponse).role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'admin') {
     return json({ error: 'forbidden' }, { status: 403 });
   }
   const state = await getLatestState(locals);
@@ -119,7 +119,7 @@ export const GET: RequestHandler = async ({ locals }) => {
           competitionStarted: !!state.competitionStarted,
           roundState: state.roundState,
           round: Number(state.round) || 1,
-          competitionFinished: Boolean((state as any).competitionFinished ?? false),
+          competitionFinished: Boolean(state.competitionFinished ?? false),
           // sanitize: only expose activeParticipant if it exists
           activeParticipant: active ? active.id : null
         }
@@ -140,7 +140,7 @@ type AdminAction =
   | 'reset_game';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
-  if (!locals.user || (locals.user as UsersResponse).role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'admin') {
     return json({ error: 'forbidden' }, { status: 403 });
   }
 
@@ -346,34 +346,32 @@ export const POST: RequestHandler = async ({ locals, request }) => {
             locals.pb.collection(USERS_COLLECTION).update(p.id, { eliminated: false, sangThisRound: false })
           )
         );
-      } catch (e) {
-        logger.warn('Admin API: reset participants failed (continuing)', { error: (e as Error)?.message });
+      } catch (err) {
+        logger.warn('Admin API: reset participants failed (continuing)', { error: (err as Error)?.message });
       }
 
       // Delete all ratings
       try {
         const ratings = (await locals.pb.collection(RATINGS_COLLECTION).getFullList()) as RatingsResponse[];
         await Promise.all(ratings.map((r) => locals.pb.collection(RATINGS_COLLECTION).delete(r.id)));
-      } catch (e) {
-        logger.warn('Admin API: delete ratings failed (continuing)', { error: (e as Error)?.message });
+      } catch (err) {
+        logger.warn('Admin API: delete ratings failed (continuing)', { error: (err as Error)?.message });
       }
 
       // Reset competition state
       const current = await getLatestState(locals);
       let updated: CompetitionStateResponse;
       if (current) {
-        updated = (await locals.pb
-          .collection(STATE_COLLECTION)
-          // set activeParticipant to null explicitly to clear relation
-          .update(current.id, {
-            competitionStarted: false,
-            round: 1,
-            roundState: 'result_locked',
-            competitionFinished: false,
-            activeParticipant: null as any
-          } as any)) as CompetitionStateResponse;
+        const patch: Partial<CompetitionStateRecord> & { activeParticipant?: string | null } = {
+          competitionStarted: false,
+          round: 1,
+          roundState: 'result_locked',
+          competitionFinished: false,
+          activeParticipant: undefined
+        };
+        updated = (await locals.pb.collection(STATE_COLLECTION).update(current.id, patch)) as CompetitionStateResponse;
       } else {
-        const createData: CompetitionStateRecord & { competitionFinished?: boolean } = {
+        const createData: CompetitionStateRecord = {
           competitionStarted: false,
           round: 1,
           roundState: 'result_locked',

@@ -26,7 +26,7 @@ export const GET: RequestHandler = async ({ locals }) => {
       });
     }
     const round = Number(rec.round) || 1;
-    const finished = Boolean((rec as any).competitionFinished ?? false);
+    const finished = Boolean(rec.competitionFinished ?? false);
 
     let winner: { id: string; name: string | null; artistName?: string; avg: number; sum: number; count: number } | null = null;
 
@@ -59,8 +59,8 @@ export const GET: RequestHandler = async ({ locals }) => {
         winner = rows
           .slice()
           .sort((a, b) => (b.avg - a.avg) || (b.count - a.count) || (a.name?.localeCompare(b.name || '') || 0))[0] ?? null;
-      } catch (e) {
-        logger.warn('Failed computing winner', e as any);
+      } catch (err) {
+        logger.warn('Failed computing winner', { error: (err as Error)?.message });
       }
     }
 

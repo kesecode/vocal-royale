@@ -4,7 +4,7 @@
 
 		let { children, data } = $props();
     const isLoggedIn = $derived(!!data?.user);
-    const role = $derived(data?.user?.role as ('participant'|'spectator'|'juror'|'admin'|undefined));
+    const role = $derived(data?.user?.role);
 </script>
 
 <svelte:head>

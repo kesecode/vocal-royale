@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
     const participants = users
         .filter((u) => u.role === 'participant')
-        .map((u) => ({ id: u.id, name: mkName(u), artistName: u.artistName, eliminated: Boolean((u as any).eliminated ?? false) }))
+        .map((u) => ({ id: u.id, name: mkName(u), artistName: u.artistName, eliminated: Boolean(u.eliminated ?? false) }))
         .sort((a, b) => a.name.localeCompare(b.name, 'de'));
     const spectators = users
         .filter((u) => u.role === 'spectator')
@@ -33,10 +33,10 @@ export const load: PageServerLoad = async ({ locals }) => {
         const list = (await locals.pb.collection('competition_state').getList(1, 1, { sort: '-updated' })) as import('pocketbase').ListResult<CompetitionStateResponse>;
         const rec = list.items[0];
         if (rec) {
-            competitionFinished = Boolean((rec as any).competitionFinished ?? false);
+            competitionFinished = Boolean(rec.competitionFinished ?? false);
             if (competitionFinished) {
                 const round = Number(rec.round) || 1;
-                const activeParticipants = users.filter((u) => u.role === 'participant' && !Boolean((u as any).eliminated ?? false));
+                const activeParticipants = users.filter((u) => u.role === 'participant' && !(u.eliminated ?? false));
                 const ids = new Set(activeParticipants.map((p) => p.id));
                 const ratings = (await locals.pb.collection('ratings').getFullList({ filter: `round = ${round}` })) as RatingsResponse[];
                 const grouped = new Map<string, { sum: number; count: number }>();
@@ -63,7 +63,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     return {
-        user: locals.user as UsersResponse | null,
+        user: locals.user,
         pb_healthy: healthy,
         participants,
         spectators,

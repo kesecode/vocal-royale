@@ -5,7 +5,7 @@
     
     const props = $props();
     let { data } = props as PageProps;
-    const user = data.user as UsersResponse | null;
+    const user = data.user;
 
     // Toggles for separate edit sections
     let showPwd = $state(false);

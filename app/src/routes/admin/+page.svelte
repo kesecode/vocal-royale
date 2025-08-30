@@ -29,7 +29,7 @@
       const data = await res.json();
       state = data?.state ?? state;
       active = data?.activeParticipant ?? null;
-    } catch (e) {
+    } catch {
       errorMsg = 'Fehler beim Laden.';
     } finally {
       loading = false;
@@ -72,7 +72,7 @@
       if (action === 'next_participant') infoMsg = 'Nächster Teilnehmer gesetzt.';
       if (action === 'finalize_ratings') infoMsg = 'Bewertungen abgeschlossen.';
       if (action === 'reset_game') infoMsg = 'Spiel zurückgesetzt.';
-    } catch (e) {
+    } catch {
       errorMsg = 'Netzwerkfehler.';
     }
   }
@@ -256,20 +256,4 @@
   {/if}
 </section>
 
-<style>
-  .btn-brand {
-    background: var(--color-brand-600, #9333ea);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 8px;
-    color: #fff;
-    padding: 6px 12px;
-    font-weight: 600;
-  }
-  .btn-ghost {
-    background: transparent;
-    color: white;
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 8px;
-    padding: 6px 10px;
-  }
-</style>
+<!-- styles removed; centralized in app.css -->

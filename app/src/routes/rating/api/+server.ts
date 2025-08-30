@@ -25,7 +25,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
   if (!locals.user) {
     return json({ error: 'not_authenticated' }, { status: 401 });
   }
-  const role = (locals.user as UsersResponse).role;
+  const role = locals.user.role;
   if (role !== 'spectator' && role !== 'juror') {
     return json({ error: 'forbidden' }, { status: 403 });
   }
@@ -40,18 +40,17 @@ export const GET: RequestHandler = async ({ locals, url }) => {
     const users = (await locals.pb.collection('users').getFullList()) as UsersResponse[];
     const participants: Participant[] = users
       .filter((u) => u.id !== locals.user!.id)
-      .filter((u) => (u as UsersResponse).role === 'participant')
-      .filter((u) => !Boolean((u as any).eliminated ?? false))
+      .filter((u) => u.role === 'participant')
+      .filter((u) => !Boolean(u.eliminated ?? false))
       .map((u) => {
         const name = u.name || `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() || u.email || u.username || u.id;
-        const uu = u as UsersResponse;
         return {
           id: u.id,
           name,
           firstName: u.firstName,
-          artistName: uu.artistName,
-          eliminated: Boolean((uu as any).eliminated ?? false),
-          sangThisRound: Boolean((uu as any).sangThisRound ?? false)
+          artistName: u.artistName,
+          eliminated: Boolean(u.eliminated ?? false),
+          sangThisRound: Boolean(u.sangThisRound ?? false)
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name, 'de')); // simple stable order
@@ -85,9 +84,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) {
     return json({ error: 'not_authenticated' }, { status: 401 });
   }
-  const role = locals.user.role as string;
   // Nur Zuschauer (spectator) dürfen Bewertungen schreiben
-  if (role !== 'spectator') {
+  if (locals.user.role !== 'spectator') {
     return json({ error: 'forbidden' }, { status: 403 });
   }
 

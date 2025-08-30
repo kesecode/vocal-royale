@@ -17,7 +17,8 @@
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data?.songs) && data.songs.length === 5) {
-          songs = data.songs.map((s: any) => ({
+          type ServerSongChoice = { artist?: string; songTitle?: string; song_title?: string; appleMusicSongId?: string; apple_music_song_id?: string };
+          songs = (data.songs as ServerSongChoice[]).map((s) => ({
             artist: s?.artist ?? '',
             songTitle: s?.songTitle ?? s?.song_title ?? '',
             appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
@@ -81,7 +82,8 @@
         if (ref.ok) {
           const data = await ref.json();
           if (Array.isArray(data?.songs) && data.songs.length === 5) {
-            songs = data.songs.map((s: any) => ({
+            type ServerSongChoice = { artist?: string; songTitle?: string; song_title?: string; appleMusicSongId?: string; apple_music_song_id?: string };
+            songs = (data.songs as ServerSongChoice[]).map((s) => ({
               artist: s?.artist ?? '',
               songTitle: s?.songTitle ?? s?.song_title ?? '',
               appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
@@ -169,31 +171,4 @@
   {/each}
 </div>
 
-<style>
-  /* Small comic arrow button */
-  .arrow-btn {
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    line-height: 1;
-    font-weight: 800;
-  }
-
-  /* Apple Music button (solid pink, no gradients) */
-  .btn-apple {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.9rem;
-    font-weight: 700;
-    border: 2px solid #333;
-    border-radius: 12px 10px 14px 10px/10px 14px 10px 12px;
-    color: #fff;
-    background: #ff2d55; /* Apple Music pink */
-    box-shadow: 4px 4px 0 rgba(255, 45, 85, 0.35);
-    transition: transform 0.05s ease, box-shadow 0.15s ease, filter 0.15s ease;
-  }
-  .btn-apple:hover { box-shadow: 5px 5px 0 rgba(255, 45, 85, 0.45); filter: brightness(1.04); }
-  .btn-apple:active { transform: translateY(2px); }
-  .btn-apple .apple-mark { font-size: 1rem; line-height: 1; margin-right: 2px; }
-</style>
+<!-- styles removed; centralized in app.css -->
