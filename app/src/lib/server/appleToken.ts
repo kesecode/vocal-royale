@@ -15,13 +15,10 @@ function b64url(input: Buffer | string) {
 export function getAppleMusicToken(): string | null {
   // If a token is provided directly, prefer it
   logger.debug('getAppleMusicToken called');
-  const keyId = secrets.APPLE_MUSIC_KEY_ID;
-  const teamId = secrets.APPLE_TEAM_ID;
-  const configuredPath = '$lib/secrets/AppleMusicAuthKey.p8';
-  if (!keyId || !teamId) {
+  if (!secrets.APPLE_MUSIC_KEY_ID || !secrets.APPLE_TEAM_ID) {
     logger.warn('Apple Music token: missing key id or team id', {
-      hasKeyId: Boolean(keyId),
-      hasTeamId: Boolean(teamId)
+      hasKeyId: Boolean(secrets.APPLE_MUSIC_KEY_ID),
+      hasTeamId: Boolean(secrets.APPLE_TEAM_ID)
     });
     return null;
   }
@@ -35,35 +32,17 @@ export function getAppleMusicToken(): string | null {
   const ttlDays = Number(config.APPLE_MUSIC_TOKEN_TTL_DAYS || '7');
   const exp = now + Math.max(1, Math.min(ttlDays, 180)) * 24 * 60 * 60; // cap at 180 days
 
-  const header = { alg: 'ES256', kid: keyId, typ: 'JWT' } as const;
-  const payload = { iss: teamId, iat: now, exp } as const;
-
-  // Try resolve private key from configured path and common fallbacks
-  const candidates: string[] = [];
-  if (configuredPath) {
-    if (path.isAbsolute(configuredPath)) candidates.push(configuredPath);
-    else candidates.push(path.resolve(process.cwd(), configuredPath));
-  }
-  // Back-compat fallback if dev server runs from repo root
-  candidates.push(path.resolve(process.cwd(), 'aja30/secrets/AppleMusicAuthKey.p8'));
-  logger.debug('Resolving Apple Music private key', { cwd: process.cwd(), candidates });
+  const header = { alg: 'ES256', kid: secrets.APPLE_MUSIC_KEY_ID, typ: 'JWT' } as const;
+  const payload = { iss: secrets.APPLE_TEAM_ID, iat: now, exp } as const;
 
   let privateKeyPem = '';
-  let resolvedPath: string | null = null;
-  for (const p of candidates) {
+  const resolvedPath: string | null = path.resolve(process.cwd(), config.APPLE_MUSIC_KEY_PATH);
     try {
-      privateKeyPem = fs.readFileSync(p, 'utf8');
-      resolvedPath = p;
-      break;
+      privateKeyPem = fs.readFileSync(resolvedPath, 'utf8');
+      logger.debug('Apple Music private key read', { keyPath: resolvedPath });
     } catch {
-      continue;
+      logger.warn('Failed to read Apple Music private key from configured path', { path: resolvedPath });
     }
-  }
-  if (!resolvedPath) {
-    logger.error('Failed to read Apple Music private key', { tried: candidates });
-    return null;
-  }
-  logger.debug('Apple Music private key read', { keyPath: resolvedPath });
 
   const unsigned = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
   const sign = crypto.createSign('sha256');
@@ -73,7 +52,7 @@ export function getAppleMusicToken(): string | null {
     const signature = sign.sign({ key: privateKeyPem, dsaEncoding: 'ieee-p1363' });
     const token = `${unsigned}.${b64url(signature)}`;
     cached = { token, exp };
-    logger.info('Apple Music token generated', { expiresAt: new Date(exp * 1000).toISOString(), kid: keyId });
+    logger.info('Apple Music token generated', { expiresAt: new Date(exp * 1000).toISOString(), kid: secrets.APPLE_MUSIC_KEY_ID });
     return token;
   } catch {
     logger.error('Failed to sign Apple Music token');
