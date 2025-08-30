@@ -40,6 +40,16 @@
   --color-gold-700: #CC9900;   /* darkest useful */
   --color-gold: var(--color-gold-500);
   --shadow-gold: rgba(204, 153, 0, 0.55);
+
+  /* Info (for tooltips) */
+  --color-info-400: #2A86CF;   /* lighter */
+  --color-info-500: #1E74BB;   /* base */
+  --color-info-600: #1964A4;   /* darker */
+  --color-info-700: #14558D;   /* darker */
+  --color-info-800: #0F4676;   /* much darker */
+  --color-info-900: #0A375F;   /* deepest */
+  --color-info: var(--color-info-500);
+  --shadow-info: rgba(10, 55, 95, 0.55);
 }
 
 /* Base styling */
@@ -98,6 +108,33 @@
 
   /* Floating header with comic border */
   .header-float { border: 2px solid #333; border-radius: 18px 10px 10px 22px/8px 20px 12px 22px; box-shadow: 5px 5px 0 var(--shadow-1); margin: 0 12px; overflow: clip; }
+
+  /* Tooltip (compact, reusable) */
+  [data-tooltip] { position: relative; }
+  [data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translate(-50%, 2px);
+    opacity: 0;
+    pointer-events: none;
+    color: #fff;
+    background: var(--color-info-600);
+    border: 2px solid #333;
+    border-radius: 12px 10px 10px 14px/10px 14px 12px 12px;
+    padding: 6px 10px;
+    box-shadow: 4px 4px 0 var(--shadow-info);
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.1;
+    z-index: 30; /* bubble below tail so shadow doesn't cover tail */
+    transition: opacity .15s ease, transform .15s ease;
+    transition-delay: 0s;
+  }
+  [data-tooltip]:hover::after,
+  [data-tooltip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: 1s; }
+  /* Tail removed intentionally for a compact bubble-only tooltip */
 }
 
 /* Animations removed per request */

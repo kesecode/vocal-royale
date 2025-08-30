@@ -145,7 +145,13 @@
           <div class="flex items-center gap-3">
             <button type="button" class="btn-brand" on:click={() => save(i)}>Speichern</button>
             {#if songs[i]?.appleMusicSongId}
-              <button type="button" class="btn-apple" on:click={() => openApple(i)} title="Bei Apple Music öffnen" aria-label="Bei Apple Music öffnen">
+              <button
+                type="button"
+                class="btn-apple"
+                data-tooltip="Schaue nach ob du den richtigen Song verlinkt hast."
+                on:click={() => openApple(i)}
+                aria-label="Bei Apple Music öffnen"
+              >
                 <span class="apple-mark" aria-hidden="true"></span>
                 <span>Music</span>
               </button>
