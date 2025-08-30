@@ -114,12 +114,13 @@ export const GET: RequestHandler = async ({ locals }) => {
     const present = songs.filter((s) => (s.artist || s.songTitle)).length;
     logger.info('SongChoices GET success', { fetched: list.length, present });
     return json({ songs });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as Error & { status?: number; url?: string; data?: unknown };
     logger.error('SongChoices GET failed', {
-      status: e?.status,
-      message: e?.message,
-      url: e?.url,
-      data: e?.data
+      status: err?.status,
+      message: err?.message,
+      url: err?.url,
+      data: err?.data
     });
     return json({ error: 'fetch_failed' }, { status: 500 });
   }
@@ -197,12 +198,13 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
     logger.info('SongChoices create', { round });
     const created = await locals.pb.collection(COLLECTION).create(createData);
     return json({ ok: true, id: created.id });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as Error & { status?: number; url?: string; data?: unknown };
     logger.error('SongChoices save failed', {
-      status: e?.status,
-      message: e?.message,
-      url: e?.url,
-      data: e?.data
+      status: err?.status,
+      message: err?.message,
+      url: err?.url,
+      data: err?.data
     });
     return json({ error: 'save_failed' }, { status: 500 });
   }
