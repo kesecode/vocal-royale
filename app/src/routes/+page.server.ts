@@ -1,4 +1,5 @@
 import type { PageServerLoad } from './$types';
+import type { UsersResponse } from '$lib/pocketbase-types';
 
 export const load: PageServerLoad = async ({ locals }) => {
     let healthy = false;
@@ -10,8 +11,7 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     return {
-        user: locals.user,
+        user: locals.user as UsersResponse | null,
         pb_healthy: healthy
     };
 };
-
