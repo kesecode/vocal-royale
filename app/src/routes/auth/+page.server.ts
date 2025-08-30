@@ -9,11 +9,14 @@ export const actions: Actions = {
     signup: async ({ request, locals }) => {
         const form = await request.formData();
         const email = String(form.get('email') || '').trim();
+        const firstName = String(form.get('firstName') || '').trim();
+        const lastName = String(form.get('lastName') || '').trim();
+        const artistName = String(form.get('artistName') || '').trim();
         const password = String(form.get('password') || '');
         const passwordConfirm = String(form.get('passwordConfirm') || '');
         const next = String(form.get('next') || '').trim();
 
-        if (!email || !password || !passwordConfirm) {
+        if (!email || !password || !passwordConfirm || !firstName || !lastName || !artistName) {
             return fail(400, { message: 'Bitte alle Felder ausfüllen.' });
         }
         if (password !== passwordConfirm) {
@@ -21,7 +24,16 @@ export const actions: Actions = {
         }
 
         try {
-            await locals.pb.collection('users').create({ email, password, passwordConfirm });
+            const name = `${firstName} ${lastName}`.trim();
+            await locals.pb.collection('users').create({
+                email,
+                password,
+                passwordConfirm,
+                firstName,
+                lastName,
+                artistName,
+                name
+            });
 
             // Auto-Login nach Registrierung
             await locals.pb.collection('users').authWithPassword(email, password);
@@ -45,7 +57,7 @@ export const actions: Actions = {
         try {
             await locals.pb.collection('users').authWithPassword(email, password);
         } catch {
-            return fail(400, { message: 'Login fehlgeschlagen.' });
+            return fail(400, { message: 'Passwort falsch oder Benutzer existiert nicht.' });
         }
 
         throw redirect(303, next || '/');

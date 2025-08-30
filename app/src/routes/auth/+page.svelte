@@ -1,8 +1,11 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    let mode: 'login' | 'signup' = 'login';
-    let banner: string | null = null;
-    let next: string = '';
+    import { enhance } from '$app/forms';
+    let mode = $state<'login' | 'signup'>('login');
+    let banner = $state<string | null>(null);
+    let next = $state('');
+
+    let { form: formData }: { form?: { message?: string } } = $props();
 
     onMount(() => {
         if (typeof window !== 'undefined' && window.location.hash === '#signup') {
@@ -28,7 +31,10 @@
     {#if mode === 'login'}
         <section class="panel panel-accent p-4 sm:p-6">
             <h2 class="font-semibold">Login</h2>
-            <form method="post" action="?/login" class="mt-4 space-y-4">
+            {#if formData?.message}
+                <div class="mt-2 text-sm text-rose-200">{formData.message}</div>
+            {/if}
+            <form method="post" action="?/login" class="mt-4 space-y-4" use:enhance>
                 <input type="hidden" name="next" value={next} />
                 <label class="block text-sm font-medium">
                     E-Mail
@@ -44,11 +50,28 @@
     {:else}
         <section id="signup" class="panel panel-brand p-4 sm:p-6">
             <h2 class="font-semibold">Sign up</h2>
-            <form method="post" action="?/signup" class="mt-4 space-y-4">
+            {#if formData?.message}
+                <div class="mt-2 text-sm text-rose-200">{formData.message}</div>
+            {/if}
+            <form method="post" action="?/signup" class="mt-4 space-y-4" use:enhance>
                 <input type="hidden" name="next" value={next} />
                 <label class="block text-sm font-medium">
                     E-Mail
                     <input class="mt-1 input" name="email" type="email" required />
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <label class="block text-sm font-medium">
+                        Vorname
+                        <input class="mt-1 input" name="firstName" type="text" required />
+                    </label>
+                    <label class="block text-sm font-medium">
+                        Nachname
+                        <input class="mt-1 input" name="lastName" type="text" required />
+                    </label>
+                </div>
+                <label class="block text-sm font-medium">
+                    Künstlername
+                    <input class="mt-1 input" name="artistName" type="text" required />
                 </label>
                 <label class="block text-sm font-medium">
                     Passwort
@@ -65,8 +88,9 @@
     <div class="flex justify-center">
         <button
             type="button"
-            class="text-sm text-accent hover:underline"
-            on:click={toggle}
+            class="text-sm hover:underline"
+            style="color: var(--color-gold-500)"
+            onclick={toggle}
             aria-pressed={mode === 'signup'}
         >
             {mode === 'login' ? 'Noch nicht registriert?' : 'Schon registriert?'}

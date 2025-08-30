@@ -2,8 +2,8 @@
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
 
-	let { children, data } = $props();
-    const isLoggedIn = !!data?.user;
+		let { children, data } = $props();
+	    const isLoggedIn = $derived(!!data?.user);
 </script>
 
 <svelte:head>
@@ -16,11 +16,8 @@
             <a href="/" class="font-display text-xl sm:text-2xl tracking-tight drop-shadow">Aja 30!</a>
             <nav class="flex items-center gap-4 text-sm">
                 {#if isLoggedIn}
-                    <a href="/" class="text-white/90 hover:text-white link-fun">Home</a>
-                    <a href="/song-choice" class="text-white/90 hover:text-white link-fun">Songauswahl</a>
-                    <a href="/profile" class="text-white/90 hover:text-white link-fun">Profil</a>
-                {:else}
-                    <a href="/auth" class="text-white/90 hover:text-white link-fun">Anmelden</a>
+                    <a href="/song-choice" class="font-display text-xl sm:text-2xl tracking-tight drop-shadow hover:underline">Songauswahl</a>
+                    <a href="/rating" class="font-display text-xl sm:text-2xl tracking-tight drop-shadow hover:underline">Bewertung</a>
                 {/if}
             </nav>
         </div>

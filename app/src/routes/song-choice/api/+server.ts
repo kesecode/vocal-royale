@@ -104,9 +104,9 @@ export const GET: RequestHandler = async ({ locals }) => {
       if (r >= 1 && r <= 5) {
         songs[r - 1] = {
           artist: rec.artist ?? '',
-          songTitle: rec.song_title ?? '',
+          songTitle: rec.songTitle ?? '',
           confirmed: Boolean(rec.confirmed ?? false),
-          appleMusicSongId: rec.apple_music_song_id ?? undefined
+          appleMusicSongId: rec.appleMusicSongId ?? undefined
         };
       }
     }
@@ -180,8 +180,8 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 
     if (list.items.length > 0) {
       const rec = list.items[0];
-      const updateData: Partial<SongChoicesRecord> = { artist, song_title: songTitle, confirmed };
-      if (payload.appleMusicSongId) updateData.apple_music_song_id = payload.appleMusicSongId;
+      const updateData: Partial<SongChoicesRecord> = { artist, songTitle: songTitle, confirmed };
+      if (payload.appleMusicSongId) updateData.appleMusicSongId = payload.appleMusicSongId;
       logger.info('SongChoices update', { id: rec.id, round });
       const updated = await locals.pb.collection(COLLECTION).update(rec.id, updateData);
       return json({ ok: true, id: updated.id });
@@ -191,9 +191,9 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
       user: locals.user.id,
       round,
       artist,
-      song_title: songTitle,
+      songTitle: songTitle,
       confirmed,
-      apple_music_song_id: payload.appleMusicSongId
+      appleMusicSongId: payload.appleMusicSongId
     };
     logger.info('SongChoices create', { round });
     const created = await locals.pb.collection(COLLECTION).create(createData);

@@ -3,7 +3,7 @@ import fs from 'fs';
 import crypto from 'crypto';
 import { logger } from '$lib/server/logger';
 import path from 'path';
-import keys from '$lib/secrets/keys.json';
+import secrets from '$lib/secrets/secrets.json';
 
 let cached: { token: string; exp: number } | null = null;
 
@@ -21,8 +21,8 @@ export function getAppleMusicToken(): string | null {
     return direct;
   }
 
-  const keyId = env.APPLE_MUSIC_KEY_ID || keys.appleMusicKeyId;
-  const teamId = env.APPLE_TEAM_ID || keys.appleTeamId;
+  const keyId = env.APPLE_MUSIC_KEY_ID || secrets.appleMusicKeyId;
+  const teamId = env.APPLE_TEAM_ID || secrets.appleTeamId;
   const configuredPath = env.APPLE_MUSIC_PRIVATE_KEY_PATH || '$lib/secrets/AppleMusicAuthKey.p8';
   if (!keyId || !teamId) {
     logger.warn('Apple Music token: missing key id or team id', {

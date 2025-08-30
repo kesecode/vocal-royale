@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { PageProps } from './$types';
     let { data }: PageProps = $props();
-    const displayName = data.user?.email ?? data.user?.username ?? data.user?.id;
+    const displayName = data.user?.firstName || data.user?.name || data.user?.username || data.user?.id;
     const healthyText = data.pb_healthy ? 'online' : 'offline';
     const healthyColor = data.pb_healthy ? 'text-emerald-600' : 'text-rose-600';
  </script>
@@ -14,8 +14,8 @@
 
     <div class="panel panel-accent p-4 sm:p-6">
         {#if data.user}
-            <p class="text-white/80">Eingeloggt als</p>
-            <p class="mt-1 text-lg font-semibold">{displayName}</p>
+            <p class="text-white/80">Hallo {displayName}!</p>
+            <p class="mt-1 text-sm text-white/70">Schön, dass du da bist.</p>
             <div class="mt-4 flex flex-wrap gap-3">
                 <a href="/profile" class="btn-brand">Profil</a>
             </div>

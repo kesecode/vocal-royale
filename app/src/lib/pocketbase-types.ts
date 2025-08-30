@@ -22,7 +22,8 @@ export type AuthSystemFields<Texpand = unknown> = BaseSystemFields<Texpand> & {
 
 // Collections
 export type Collections = {
-  song_choices: SongChoicesResponse;
+  songChoices: SongChoicesResponse;
+  ratings: RatingsResponse;
   users: UsersResponse;
 };
 
@@ -31,9 +32,9 @@ export type SongChoicesRecord = {
   user: string; // relation to users.id
   round: number; // 1..5
   artist: string;
-  song_title: string;
+  songTitle: string;
   confirmed: boolean;
-  apple_music_song_id?: string;
+  appleMusicSongId?: string;
 };
 
 export type UsersRecord = {
@@ -42,18 +43,28 @@ export type UsersRecord = {
   verified: boolean;
   name: string;
   avatar: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
+  artistName: string;
+};
+
+export type RatingsRecord = {
+  author: string; // relation to users.id (who rated)
+  ratedUser: string; // relation to users.id (who was rated)
+  round: number; // 1..5
+  rating: number; // 1..5
+  comment?: string; // max 100 chars
 };
 
 // Responses
 export type SongChoicesResponse<Texpand = unknown> = SongChoicesRecord & BaseSystemFields<Texpand>;
 export type UsersResponse<Texpand = unknown> = UsersRecord & AuthSystemFields<Texpand>;
+export type RatingsResponse<Texpand = unknown> = RatingsRecord & BaseSystemFields<Texpand>;
 
 // Typed PocketBase instance
 export interface TypedPocketBase extends PocketBase {
   collection(idOrName: 'song_choices'): RecordService<SongChoicesResponse>;
+  collection(idOrName: 'ratings'): RecordService<RatingsResponse>;
   collection(idOrName: 'users'): RecordService<UsersResponse>;
   collection(idOrName: string): RecordService<RecordModel>;
 }
-
