@@ -1,0 +1,42 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: aja30-backend
+    container_name: aja30-backend
+    ports:
+      # Map host 8090 → container 8080 (PocketBase)
+      - "8090:8080"
+    volumes:
+      # Persist PocketBase data on the host
+      - pb_data:/pb/pb_data
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: aja30-app
+    container_name: aja30-app
+    environment:
+      # App talks to the backend service by its compose name
+      PB_URL: http://backend:8080
+      NODE_ENV: production
+      # Apple Music credentials (placeholders)
+      APPLE_MUSIC_KEY_ID: <CHANGE_ME_KEY_ID>
+      APPLE_TEAM_ID: <CHANGE_ME_TEAM_ID>
+      # Path INSIDE the container (we mount the file below)
+      APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      # Mount a local key file (outside repo) as read-only into the container
+      # Adjust APPLE_MUSIC_KEY_FILE in your shell or .env to an absolute/relative path
+      - ${APPLE_MUSIC_KEY_FILE:-./.secrets/AppleMusicAuthKey.p8}:/run/secrets/AppleMusicAuthKey.p8:ro
+    restart: unless-stopped
+
+volumes:
+  pb_data:
