@@ -96,7 +96,7 @@ export const GET: RequestHandler = async ({ locals }) => {
     const list = await locals.pb.collection(COLLECTION).getFullList({
       filter: `user = "${locals.user.id}"`,
       sort: 'round'
-    }) as SongChoicesRecord[];
+    }) as SongChoicesResponse[];
 
     const songs: SongChoice[] = Array.from({ length: 5 }, () => ({ artist: '', songTitle: '' }));
     for (const rec of list) {

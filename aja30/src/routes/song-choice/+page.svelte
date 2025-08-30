@@ -9,35 +9,17 @@
   let errors: (string | null)[] = [null, null, null, null, null];
 
   const STORAGE_KEY = 'song-choice.songs.v1';
-  let notAuthenticated = false;
 
   onMount(async () => {
-    // Try PocketBase first
+    // Load existing choices from server (guard ensures auth)
     try {
       const res = await fetch('/song-choice/api');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data?.songs) && data.songs.length === 5) {
           songs = data.songs.map((s: any) => ({
-            artist: s?.artist ?? s?.interpret ?? '',
-            songTitle: s?.songTitle ?? s?.song_title ?? s?.titel ?? ''
-          }));
-          return;
-        }
-      } else if (res.status === 401) {
-        notAuthenticated = true;
-      }
-    } catch {}
-
-    // Fallback to localStorage
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length === 5) {
-          songs = parsed.map((s: any) => ({
-            artist: s?.artist ?? s?.interpret ?? '',
-            songTitle: s?.songTitle ?? s?.song_title ?? s?.titel ?? ''
+            artist: s?.artist ?? '',
+            songTitle: s?.songTitle ?? s?.song_title ?? ''
           }));
         }
       }
@@ -102,9 +84,6 @@
 <h1 class="font-display text-2xl sm:text-3xl tracking-tight mb-4">Songauswahl</h1>
 
 <p class="mb-4 text-white/80">Trage bis zu 5 Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf- und zuklappen.</p>
-{#if notAuthenticated}
-  <div class="mb-4 text-sm text-yellow-200">Hinweis: Zum Speichern in PocketBase bitte anmelden. Bis dahin wird lokal gespeichert.</div>
-{/if}
 
 <div class="space-y-4">
   {#each songs as song, i}
