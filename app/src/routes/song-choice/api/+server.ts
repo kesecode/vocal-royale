@@ -1,6 +1,7 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
 import configData from '$lib/config/config.json'
+import { env } from '$env/dynamic/private'
 import { getAppleMusicToken } from '$lib/server/appleToken'
 import type { ListResult } from 'pocketbase'
 import type { SongChoicesRecord, SongChoicesResponse } from '$lib/pocketbase-types'
@@ -10,7 +11,7 @@ type AppConfig = { SONG_CHOICE_VALIDATE?: string; APPLE_MUSIC_STOREFRONT?: strin
 const config: AppConfig = configData as AppConfig
 
 const COLLECTION = 'song_choices' as const
-const VALIDATE = (config.SONG_CHOICE_VALIDATE ?? 'true') === 'true'
+const VALIDATE = ((env.SONG_CHOICE_VALIDATE ?? config.SONG_CHOICE_VALIDATE ?? 'true') === 'true')
 
 type SongChoice = {
 	artist: string
@@ -46,7 +47,7 @@ async function verifyWithApple(
 	fetchImpl: typeof fetch
 ): Promise<VerifyOk | VerifyErr> {
 	const token = getAppleMusicToken()
-	const storefront = config.APPLE_MUSIC_STOREFRONT || 'de'
+    const storefront = env.APPLE_MUSIC_STOREFRONT || config.APPLE_MUSIC_STOREFRONT || 'de'
 	if (!token) {
 		return { ok: false, code: 'apple_token_missing' }
 	}

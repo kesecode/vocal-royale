@@ -10,6 +10,10 @@ vi.mock('$lib/server/logger', () => ({
   }
 }))
 
+// Provide env access in tests like SvelteKit's $env/dynamic/private
+vi.mock('$env/dynamic/private', () => ({
+  env: process.env as Record<string, string | undefined>
+}))
+
 // Ensure a stable timezone for snapshots (if any)
 process.env.TZ = 'UTC'
-

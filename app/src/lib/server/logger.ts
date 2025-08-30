@@ -1,4 +1,5 @@
 import configData from '$lib/config/config.json'
+import { env } from '$env/dynamic/private'
 
 type AppConfig = {
 	LOG_LEVEL?: string
@@ -18,12 +19,12 @@ const levelWeights: Record<LevelName, number> = {
 }
 
 // LOG_LEVEL supports: error, warn, info, debug (default: info)
-const currentLevel = (config.LOG_LEVEL?.toLowerCase() as LevelName) || 'info'
+const currentLevel = ((env.LOG_LEVEL || config.LOG_LEVEL || 'info').toLowerCase() as LevelName) || 'info'
 const threshold = levelWeights[currentLevel] ?? levelWeights.info
 
 // LOG_FORMAT: 'pretty' | 'json' (default: pretty)
-const format = config.LOG_FORMAT?.toLowerCase() === 'json' ? 'json' : 'pretty'
-const colorEnabled = (config.LOG_COLOR ?? 'true') !== 'false'
+const format = (env.LOG_FORMAT || config.LOG_FORMAT || 'pretty').toLowerCase() === 'json' ? 'json' : 'pretty'
+const colorEnabled = (env.LOG_COLOR ?? config.LOG_COLOR ?? 'true') !== 'false'
 
 // ANSI helpers
 const codes = {
