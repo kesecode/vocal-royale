@@ -4,6 +4,8 @@
   type Participant = { id: string; name: string; firstName?: string; artistName?: string };
   type Rating = { rating: number; comment: string; saving?: boolean; saved?: boolean; error?: string };
 
+  // activeRound controls progressbar state from global competition state
+  let activeRound = 1;
   let currentRound = 1;
   let participants: Participant[] = [];
   let ratings: Record<string, Rating> = {};
@@ -48,12 +50,27 @@
     }
   }
 
-  onMount(() => {
-    fetchRound(currentRound);
+  async function fetchCompetitionState() {
+    try {
+      const res = await fetch('/rating/state');
+      if (!res.ok) return;
+      const data = await res.json();
+      const r = Number(data?.round) || 1;
+      activeRound = Math.min(Math.max(r, 1), 5);
+      currentRound = activeRound;
+    } catch {
+      // ignore; keep defaults
+    }
+  }
+
+  onMount(async () => {
+    await fetchCompetitionState();
+    await fetchRound(currentRound);
   });
 
   function setRound(r: number) {
     if (r < 1 || r > 5 || r === currentRound) return;
+    if (r > activeRound) return; // future rounds disabled
     currentRound = r;
     fetchRound(currentRound);
   }
@@ -117,17 +134,24 @@
 <section class="space-y-5">
   <h1 class="font-display text-2xl sm:text-3xl tracking-tight">Bewertung</h1>
 
-  <!-- Progress with 5 rounds -->
+  <!-- Progress with 5 rounds: past = yellow, current = green, future = black (disabled) -->
   <div class="panel panel-accent p-3 sm:p-4">
-    <div class="flex items-center justify-between gap-2">
-      {#each Array.from({ length: 5 }) as _, i}
+    <div class="progress">
+      {#each [1,2,3,4,5] as r}
         <button
           type="button"
-          class={`progress-dot ${currentRound === i + 1 ? 'is-active' : ''}`}
-          on:click={() => setRound(i + 1)}
-          aria-current={currentRound === i + 1}
-          aria-label={`Runde ${i + 1}`}
-        >{i + 1}</button>
+          class={`progress-btn ${r < activeRound ? 'is-past' : r === activeRound ? 'is-current' : 'is-future'} ${currentRound === r ? 'is-selected' : ''}`}
+          on:click={() => setRound(r)}
+          disabled={r > activeRound}
+          aria-current={r === activeRound}
+          aria-disabled={r > activeRound}
+          aria-label={`Runde ${r}`}
+        >
+          {r}
+        </button>
+        {#if r < 5}
+          <span class={`progress-conn ${r < activeRound ? 'is-on' : ''}`} aria-hidden="true"></span>
+        {/if}
       {/each}
     </div>
   </div>
@@ -257,7 +281,8 @@
 </section>
 
 <style>
-  .progress-dot {
+  .progress { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .progress-btn {
     width: 2.25rem;
     height: 2.25rem;
     border: 2px solid #333;
@@ -266,14 +291,42 @@
     align-items: center;
     justify-content: center;
     font-weight: 800;
+    transition: transform 0.05s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  }
+  .progress-btn.is-past {
     color: var(--color-ink);
     background: var(--color-gold-500);
     box-shadow: 3px 3px 0 var(--shadow-gold);
-    transition: transform 0.05s ease, box-shadow 0.15s ease, filter 0.15s ease;
   }
-  .progress-dot:hover { box-shadow: 4px 4px 0 var(--shadow-gold); filter: brightness(1.04); }
-  .progress-dot:active { transform: translateY(2px); }
-  .progress-dot.is-active { background: var(--color-gold-600); box-shadow: 5px 5px 0 var(--shadow-gold); }
+  .progress-btn.is-past:hover { box-shadow: 4px 4px 0 var(--shadow-gold); filter: brightness(1.04); }
+  .progress-btn.is-current {
+    color: #0b1e0f;
+    background: #16a34a; /* green-600 */
+    box-shadow: 4px 4px 0 rgba(7, 42, 18, 0.55);
+  }
+  .progress-btn.is-future {
+    color: #fff;
+    background: #000;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+    opacity: 0.95;
+  }
+  .progress-btn.is-future[disabled] { cursor: not-allowed; filter: grayscale(0.1); }
+  .progress-btn:active { transform: translateY(2px); }
+  .progress-btn.is-selected { outline: 2px solid rgba(255,255,255,0.3); outline-offset: 2px; }
+
+  .progress-conn {
+    flex: 1 1 0%;
+    height: 6px;
+    border: 2px solid #333;
+    border-left-width: 0;
+    border-right-width: 0;
+    border-radius: 4px;
+    background: #000; /* default off */
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.5) inset;
+  }
+  .progress-conn.is-on { background: var(--color-gold-500); box-shadow: 2px 2px 0 var(--shadow-gold) inset; }
+
+  
 
   .stars { display: inline-flex; gap: 6px; }
   .star {
