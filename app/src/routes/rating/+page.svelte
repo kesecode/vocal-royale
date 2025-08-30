@@ -17,6 +17,9 @@
   let activeParticipantId: string | null = null;
   let activeParticipant: Participant | null = null;
   let canRate = false;
+  let competitionFinished = false;
+  type Winner = { id: string; name: string | null; artistName?: string; avg?: number; sum?: number; count?: number } | null;
+  let winner: Winner = null;
   $: canRate = roundState === 'rating_phase' || roundState === 'break';
   $: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null;
   let showActions = false;
@@ -70,6 +73,8 @@
       const r = Number(data?.round) || 1;
       activeRound = Math.min(Math.max(r, 1), 5);
       currentRound = activeRound;
+      competitionFinished = Boolean(data?.competitionFinished ?? false);
+      winner = data?.winner ?? null;
       const rs = data?.roundState as RoundState | undefined;
       if (
         rs === 'singing_phase' ||
@@ -89,7 +94,9 @@
 
   onMount(async () => {
     await fetchCompetitionState();
-    await fetchRound(currentRound);
+    if (!competitionFinished) {
+      await fetchRound(currentRound);
+    }
   });
 
   function setRound(r: number) {
@@ -193,6 +200,23 @@
     </div>
   </div>
 
+  {#if competitionFinished}
+    <div class="panel panel-brand p-0 overflow-hidden">
+      <div class="px-4 sm:px-6 py-3 border-b border-[#333]/60">
+        <div class="font-semibold">Wettbewerb beendet</div>
+      </div>
+      <div class="p-3 sm:p-4">
+        {#if winner}
+          <div class="text-lg font-semibold">Sieger: {winner.name}</div>
+          {#if winner.avg !== undefined}
+            <div class="text-sm text-white/80">Ø Bewertung: {winner.avg.toFixed(2)}{#if winner.count} (Stimmen: {winner.count}){/if}</div>
+          {/if}
+        {:else}
+          <div class="text-sm text-white/80">Der Sieger wird geladen…</div>
+        {/if}
+      </div>
+    </div>
+  {:else}
   <div class="panel panel-brand p-0 overflow-hidden">
     <div class="px-4 sm:px-6 py-3 border-b border-[#333]/60 flex items-center justify-between">
       <div class="font-semibold">Runde {currentRound}</div>
@@ -307,6 +331,7 @@
       {/if}
     </div>
   </div>
+  {/if}
 
   {#if selected}
     <div class="overlay">

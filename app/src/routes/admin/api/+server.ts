@@ -40,7 +40,11 @@ async function upsertState(
       competitionStarted: Boolean(patch.competitionStarted ?? false),
       roundState: (patch.roundState ?? 'result_locked') as CompetitionStateRecord['roundState'],
       round: Number(patch.round ?? 1) || 1,
-      activeParticipant: patch.activeParticipant
+      activeParticipant: patch.activeParticipant,
+      // Only include competitionFinished if explicitly provided to avoid schema mismatch
+      ...(patch.competitionFinished !== undefined
+        ? { competitionFinished: Boolean(patch.competitionFinished) }
+        : {})
     };
     const created = (await locals.pb.collection(STATE_COLLECTION).create(createData)) as CompetitionStateResponse;
     return created;
@@ -115,10 +119,11 @@ export const GET: RequestHandler = async ({ locals }) => {
           competitionStarted: !!state.competitionStarted,
           roundState: state.roundState,
           round: Number(state.round) || 1,
+          competitionFinished: Boolean((state as any).competitionFinished ?? false),
           // sanitize: only expose activeParticipant if it exists
           activeParticipant: active ? active.id : null
         }
-      : { competitionStarted: false, roundState: 'result_locked', round: 1, activeParticipant: null },
+      : { competitionStarted: false, roundState: 'result_locked', round: 1, competitionFinished: false, activeParticipant: null },
     activeParticipant: active
       ? { id: active.id, name: toName(active), artistName: active.artistName, sangThisRound: !!active.sangThisRound }
       : null
@@ -281,15 +286,18 @@ export const POST: RequestHandler = async ({ locals, request }) => {
         for (const r of toEliminate) r.eliminated = true;
       }
 
-      // Switch to result_phase
-      const updated = await upsertState(locals, { roundState: 'result_phase' });
+      // Switch to result_phase; finalize competition on finale (round 5)
+      const updated = await upsertState(locals, {
+        roundState: 'result_phase',
+        ...(round === 5 ? { competitionFinished: true } : {})
+      });
 
       // Winner convenience
       const winner = rows
         .slice()
         .sort((a, b) => (b.avg - a.avg) || (b.count - a.count) || (a.name?.localeCompare(b.name || '') || 0))[0] ?? null;
 
-      logger.info('Admin API: show_results', { round, eliminateCount, participants: rows.length });
+      logger.info('Admin API: show_results', { round, eliminateCount, participants: rows.length, competitionFinished: round === 5 });
       return json({ ok: true, state: updated, results: rows, winner });
     }
 

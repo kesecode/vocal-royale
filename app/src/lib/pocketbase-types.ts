@@ -69,6 +69,8 @@ export type CompetitionStateRecord = {
   roundState: RoundState;
   round: number; // 1..5
   activeParticipant?: string; // relation to users.id (currently active performer)
+  // Indicates that the competition is fully finished (post finale)
+  competitionFinished?: boolean;
 };
 
 // Responses

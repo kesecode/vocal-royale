@@ -6,11 +6,12 @@
     competitionStarted: boolean;
     roundState: RoundState;
     round: number;
+    competitionFinished: boolean;
     activeParticipant: string | null;
   };
   type ActiveInfo = { id: string; name: string | null; artistName?: string; sangThisRound?: boolean } | null;
 
-  let state: AdminState = { competitionStarted: false, roundState: 'result_locked', round: 1, activeParticipant: null };
+  let state: AdminState = { competitionStarted: false, roundState: 'result_locked', round: 1, competitionFinished: false, activeParticipant: null };
   let active: ActiveInfo = null;
   let loading = false;
   let errorMsg: string | null = null;
