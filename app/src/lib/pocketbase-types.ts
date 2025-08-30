@@ -25,6 +25,7 @@ export type Collections = {
   songChoices: SongChoicesResponse;
   ratings: RatingsResponse;
   users: UsersResponse;
+  competitionState: CompetitionStateResponse;
 };
 
 // Records
@@ -59,15 +60,24 @@ export type RatingsRecord = {
   comment?: string; // max 100 chars
 };
 
+// Competition State
+export type CompetitionStateRecord = {
+  competitionStarted: boolean;
+  roundActive: boolean;
+  round: number; // 1..5
+};
+
 // Responses
 export type SongChoicesResponse<Texpand = unknown> = SongChoicesRecord & BaseSystemFields<Texpand>;
 export type UsersResponse<Texpand = unknown> = UsersRecord & AuthSystemFields<Texpand>;
 export type RatingsResponse<Texpand = unknown> = RatingsRecord & BaseSystemFields<Texpand>;
+export type CompetitionStateResponse<Texpand = unknown> = CompetitionStateRecord & BaseSystemFields<Texpand>;
 
 // Typed PocketBase instance
 export interface TypedPocketBase extends PocketBase {
-  collection(idOrName: 'songChoices'): RecordService<SongChoicesResponse>;
+  collection(idOrName: 'song_choices'): RecordService<SongChoicesResponse>;
   collection(idOrName: 'ratings'): RecordService<RatingsResponse>;
   collection(idOrName: 'users'): RecordService<UsersResponse>;
+  collection(idOrName: 'competition_state'): RecordService<CompetitionStateResponse>;
   collection(idOrName: string): RecordService<RecordModel>;
 }

@@ -9,7 +9,7 @@ import { logger } from '$lib/server/logger';
 type AppConfig = { SONG_CHOICE_VALIDATE?: string; APPLE_MUSIC_STOREFRONT?: string };
 const config: AppConfig = configData as AppConfig;
 
-const COLLECTION = 'songChoices' as const;
+const COLLECTION = 'song_choices' as const;
 const VALIDATE = ((config.SONG_CHOICE_VALIDATE ?? 'true') === 'true');
 
 type SongChoice = { 
