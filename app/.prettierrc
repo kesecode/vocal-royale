@@ -3,14 +3,29 @@
 	"singleQuote": true,
 	"trailingComma": "none",
 	"printWidth": 100,
+	"semi": false,
+	"bracketSpacing": true,
+	"arrowParens": "always",
+	"endOfLine": "lf",
+
 	"plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
+
 	"overrides": [
 		{
 			"files": "*.svelte",
 			"options": {
-				"parser": "svelte"
+				"parser": "svelte",
+				"htmlWhitespaceSensitivity": "ignore",
+				"svelteSortOrder": "markup-options-scripts-styles",
+				"svelteStrictMode": true,
+				"svelteBracketNewLine": true,
+				"svelteAllowShorthand": true,
+				"svelteIndentScriptAndStyle": true
 			}
 		}
 	],
-	"tailwindStylesheet": "./src/app.css"
+
+	"tailwindStylesheet": "./src/app.css",
+	"tailwindConfig": "./tailwind.config.cjs",
+	"tailwindFunctions": ["clsx", "cn"]
 }

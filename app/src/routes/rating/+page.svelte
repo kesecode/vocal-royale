@@ -1,218 +1,3 @@
-<script lang="ts">
-	import { onMount } from 'svelte';
-	import type { RoundState } from '$lib/pocketbase-types';
-	import ProgressRounds from '$lib/components/ProgressRounds.svelte';
-	import StarRating from '$lib/components/StarRating.svelte';
-	import Modal from '$lib/components/Modal.svelte';
-
-	type Participant = {
-		id: string;
-		name: string;
-		firstName?: string;
-		artistName?: string;
-		eliminated?: boolean;
-		sangThisRound?: boolean;
-	};
-	type Rating = {
-		rating: number;
-		comment: string;
-		saving?: boolean;
-		saved?: boolean;
-		error?: string;
-	};
-
-	// activeRound controls progressbar state from global competition state
-	let activeRound = 1;
-	let currentRound = 1;
-	let participants: Participant[] = [];
-	let ratings: Record<string, Rating> = {};
-	let loading = false;
-	let loadError: string | null = null;
-	let selected: Participant | null = null;
-	let roundState: RoundState = 'result_locked';
-	let activeParticipantId: string | null = null;
-	let activeParticipant: Participant | null = null;
-	let canRate = false;
-	let competitionFinished = false;
-	type Winner = {
-		id: string;
-		name: string | null;
-		artistName?: string;
-		avg?: number;
-		sum?: number;
-		count?: number;
-	} | null;
-	let winner: Winner = null;
-	$: canRate = roundState === 'rating_phase' || roundState === 'break';
-	$: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null;
-	let showActions = false;
-	$: showActions = canRate && roundState !== 'rating_phase';
-	$: if (activeParticipant && !ratings[activeParticipant.id]) {
-		ratings[activeParticipant.id] = { rating: 0, comment: '' };
-	}
-
-	async function fetchRound(round: number) {
-		loading = true;
-		loadError = null;
-		try {
-			const res = await fetch(`/rating/api?round=${round}`);
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				loadError = data?.error ?? 'Fehler beim Laden';
-				return;
-			}
-			const data = await res.json();
-			participants = Array.isArray(data?.participants) ? data.participants : [];
-			// prime rating map with existing values
-			ratings = {};
-			for (const p of participants) {
-				ratings[p.id] = { rating: 0, comment: '' };
-			}
-			type ServerRating = {
-				ratedUser?: string;
-				target?: string;
-				rating?: number | string;
-				stars?: number | string;
-				comment?: string;
-			};
-			const existing = Array.isArray(data?.ratings) ? (data.ratings as ServerRating[]) : [];
-			for (const r of existing) {
-				const id = r.ratedUser ?? r.target; // backward-compat
-				if (id) {
-					const raw = r.rating ?? r.stars;
-					const value = typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : 0;
-					if (ratings[id]) {
-						ratings[id].rating = value;
-						ratings[id].comment = String(r.comment ?? '');
-					}
-				}
-			}
-		} catch {
-			loadError = 'Netzwerkfehler beim Laden.';
-		} finally {
-			loading = false;
-		}
-	}
-
-	async function fetchCompetitionState() {
-		try {
-			const res = await fetch('/rating/state');
-			if (!res.ok) return;
-			const data = await res.json();
-			const r = Number(data?.round) || 1;
-			activeRound = Math.min(Math.max(r, 1), 5);
-			currentRound = activeRound;
-			competitionFinished = Boolean(data?.competitionFinished ?? false);
-			winner = data?.winner ?? null;
-			const rs = data?.roundState as RoundState | undefined;
-			if (
-				rs === 'singing_phase' ||
-				rs === 'rating_phase' ||
-				rs === 'result_phase' ||
-				rs === 'result_locked' ||
-				rs === 'break'
-			) {
-				roundState = rs;
-			}
-			const ap = data?.activeParticipant;
-			activeParticipantId = typeof ap === 'string' && ap ? ap : null;
-		} catch {
-			// ignore; keep defaults
-		}
-	}
-
-	onMount(async () => {
-		await fetchCompetitionState();
-		if (!competitionFinished) {
-			await fetchRound(currentRound);
-		}
-	});
-
-	function setRound(r: number) {
-		if (r < 1 || r > 5 || r === currentRound) return;
-		if (r > activeRound) return; // future rounds disabled
-		currentRound = r;
-		fetchRound(currentRound);
-	}
-
-	function setRating(userId: string, value: number) {
-		if (!ratings[userId]) ratings[userId] = { rating: 0, comment: '' };
-		ratings[userId].rating = value;
-	}
-
-	async function save(ratedUserId: string) {
-		const entry = ratings[ratedUserId];
-		if (!entry) return;
-		entry.error = undefined;
-		entry.saved = false;
-		if (!canRate) {
-			entry.error = 'Bewertungen sind derzeit geschlossen.';
-			return;
-		}
-		if (entry.rating < 1 || entry.rating > 5) {
-			entry.error = 'Bitte 1-5 Sterne wählen.';
-			return;
-		}
-		try {
-			entry.saving = true;
-			const payload = {
-				round: currentRound,
-				ratedUser: ratedUserId,
-				rating: entry.rating,
-				comment: (entry.comment ?? '').slice(0, 100)
-			};
-			const res = await fetch('/rating/api', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-			if (!res.ok) {
-				const data = await res.json().catch(() => ({}));
-				const code = data?.error ?? '';
-				entry.error =
-					code === 'self_rating_not_allowed'
-						? 'Selbstbewertung ist nicht erlaubt.'
-						: code === 'invalid_rating'
-							? 'Bitte 1-5 Sterne wählen.'
-							: code === 'rating_closed'
-								? 'Bewertungen sind derzeit geschlossen.'
-								: 'Konnte nicht speichern.';
-				return;
-			}
-			entry.saved = true;
-			setTimeout(() => (entry.saved = false), 1500);
-		} catch {
-			entry.error = 'Netzwerkfehler beim Speichern.';
-		} finally {
-			entry.saving = false;
-		}
-	}
-
-	function openOverlay(p: Participant) {
-		if (!canRate) return;
-		if (!ratings[p.id]) {
-			ratings[p.id] = { rating: 0, comment: '' };
-		}
-		selected = p;
-	}
-
-	function closeOverlay() {
-		selected = null;
-	}
-
-	function saveSelected() {
-		if (selected) {
-			save(selected.id);
-		}
-	}
-
-	function saveActive() {
-		if (activeParticipantId) {
-			save(activeParticipantId);
-		}
-	}
-</script>
-
 <section class="space-y-5">
 	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Bewertung</h1>
 
@@ -418,3 +203,218 @@
 </section>
 
 <!-- styles removed; centralized in app.css -->
+
+<script lang="ts">
+	import { onMount } from 'svelte'
+	import type { RoundState } from '$lib/pocketbase-types'
+	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
+	import StarRating from '$lib/components/StarRating.svelte'
+	import Modal from '$lib/components/Modal.svelte'
+
+	type Participant = {
+		id: string
+		name: string
+		firstName?: string
+		artistName?: string
+		eliminated?: boolean
+		sangThisRound?: boolean
+	}
+	type Rating = {
+		rating: number
+		comment: string
+		saving?: boolean
+		saved?: boolean
+		error?: string
+	}
+
+	// activeRound controls progressbar state from global competition state
+	let activeRound = 1
+	let currentRound = 1
+	let participants: Participant[] = []
+	let ratings: Record<string, Rating> = {}
+	let loading = false
+	let loadError: string | null = null
+	let selected: Participant | null = null
+	let roundState: RoundState = 'result_locked'
+	let activeParticipantId: string | null = null
+	let activeParticipant: Participant | null = null
+	let canRate = false
+	let competitionFinished = false
+	type Winner = {
+		id: string
+		name: string | null
+		artistName?: string
+		avg?: number
+		sum?: number
+		count?: number
+	} | null
+	let winner: Winner = null
+	$: canRate = roundState === 'rating_phase' || roundState === 'break'
+	$: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null
+	let showActions = false
+	$: showActions = canRate && roundState !== 'rating_phase'
+	$: if (activeParticipant && !ratings[activeParticipant.id]) {
+		ratings[activeParticipant.id] = { rating: 0, comment: '' }
+	}
+
+	async function fetchRound(round: number) {
+		loading = true
+		loadError = null
+		try {
+			const res = await fetch(`/rating/api?round=${round}`)
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				loadError = data?.error ?? 'Fehler beim Laden'
+				return
+			}
+			const data = await res.json()
+			participants = Array.isArray(data?.participants) ? data.participants : []
+			// prime rating map with existing values
+			ratings = {}
+			for (const p of participants) {
+				ratings[p.id] = { rating: 0, comment: '' }
+			}
+			type ServerRating = {
+				ratedUser?: string
+				target?: string
+				rating?: number | string
+				stars?: number | string
+				comment?: string
+			}
+			const existing = Array.isArray(data?.ratings) ? (data.ratings as ServerRating[]) : []
+			for (const r of existing) {
+				const id = r.ratedUser ?? r.target // backward-compat
+				if (id) {
+					const raw = r.rating ?? r.stars
+					const value = typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : 0
+					if (ratings[id]) {
+						ratings[id].rating = value
+						ratings[id].comment = String(r.comment ?? '')
+					}
+				}
+			}
+		} catch {
+			loadError = 'Netzwerkfehler beim Laden.'
+		} finally {
+			loading = false
+		}
+	}
+
+	async function fetchCompetitionState() {
+		try {
+			const res = await fetch('/rating/state')
+			if (!res.ok) return
+			const data = await res.json()
+			const r = Number(data?.round) || 1
+			activeRound = Math.min(Math.max(r, 1), 5)
+			currentRound = activeRound
+			competitionFinished = Boolean(data?.competitionFinished ?? false)
+			winner = data?.winner ?? null
+			const rs = data?.roundState as RoundState | undefined
+			if (
+				rs === 'singing_phase' ||
+				rs === 'rating_phase' ||
+				rs === 'result_phase' ||
+				rs === 'result_locked' ||
+				rs === 'break'
+			) {
+				roundState = rs
+			}
+			const ap = data?.activeParticipant
+			activeParticipantId = typeof ap === 'string' && ap ? ap : null
+		} catch {
+			// ignore; keep defaults
+		}
+	}
+
+	onMount(async () => {
+		await fetchCompetitionState()
+		if (!competitionFinished) {
+			await fetchRound(currentRound)
+		}
+	})
+
+	function setRound(r: number) {
+		if (r < 1 || r > 5 || r === currentRound) return
+		if (r > activeRound) return // future rounds disabled
+		currentRound = r
+		fetchRound(currentRound)
+	}
+
+	function setRating(userId: string, value: number) {
+		if (!ratings[userId]) ratings[userId] = { rating: 0, comment: '' }
+		ratings[userId].rating = value
+	}
+
+	async function save(ratedUserId: string) {
+		const entry = ratings[ratedUserId]
+		if (!entry) return
+		entry.error = undefined
+		entry.saved = false
+		if (!canRate) {
+			entry.error = 'Bewertungen sind derzeit geschlossen.'
+			return
+		}
+		if (entry.rating < 1 || entry.rating > 5) {
+			entry.error = 'Bitte 1-5 Sterne wählen.'
+			return
+		}
+		try {
+			entry.saving = true
+			const payload = {
+				round: currentRound,
+				ratedUser: ratedUserId,
+				rating: entry.rating,
+				comment: (entry.comment ?? '').slice(0, 100)
+			}
+			const res = await fetch('/rating/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify(payload)
+			})
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				const code = data?.error ?? ''
+				entry.error =
+					code === 'self_rating_not_allowed'
+						? 'Selbstbewertung ist nicht erlaubt.'
+						: code === 'invalid_rating'
+							? 'Bitte 1-5 Sterne wählen.'
+							: code === 'rating_closed'
+								? 'Bewertungen sind derzeit geschlossen.'
+								: 'Konnte nicht speichern.'
+				return
+			}
+			entry.saved = true
+			setTimeout(() => (entry.saved = false), 1500)
+		} catch {
+			entry.error = 'Netzwerkfehler beim Speichern.'
+		} finally {
+			entry.saving = false
+		}
+	}
+
+	function openOverlay(p: Participant) {
+		if (!canRate) return
+		if (!ratings[p.id]) {
+			ratings[p.id] = { rating: 0, comment: '' }
+		}
+		selected = p
+	}
+
+	function closeOverlay() {
+		selected = null
+	}
+
+	function saveSelected() {
+		if (selected) {
+			save(selected.id)
+		}
+	}
+
+	function saveActive() {
+		if (activeParticipantId) {
+			save(activeParticipantId)
+		}
+	}
+</script>
