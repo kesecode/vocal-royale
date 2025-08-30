@@ -90,7 +90,7 @@
         }
       } catch {}
       return;
-    } catch (e) {
+    } catch {
       errors[i] = 'Netzwerkfehler beim Speichern.';
     }
   }

@@ -28,16 +28,20 @@
       for (const p of participants) {
         ratings[p.id] = { rating: 0, comment: '' };
       }
-      const existing = Array.isArray(data?.ratings) ? data.ratings : [];
+      type ServerRating = { ratedUser?: string; target?: string; rating?: number | string; stars?: number | string; comment?: string };
+      const existing = Array.isArray(data?.ratings) ? (data.ratings as ServerRating[]) : [];
       for (const r of existing) {
         const id = r.ratedUser ?? r.target; // backward-compat
-        const value = Number((r as any).rating ?? (r as any).stars) || 0;
-        if (ratings[id]) {
-          ratings[id].rating = value;
-          ratings[id].comment = String(r.comment ?? '');
+        if (id) {
+          const raw = r.rating ?? r.stars;
+          const value = typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : 0;
+          if (ratings[id]) {
+            ratings[id].rating = value;
+            ratings[id].comment = String(r.comment ?? '');
+          }
         }
       }
-    } catch (e) {
+    } catch {
       loadError = 'Netzwerkfehler beim Laden.';
     } finally {
       loading = false;
@@ -88,7 +92,7 @@
       }
       entry.saved = true;
       setTimeout(() => (entry.saved = false), 1500);
-    } catch (e) {
+    } catch {
       entry.error = 'Netzwerkfehler beim Speichern.';
     } finally {
       entry.saving = false;

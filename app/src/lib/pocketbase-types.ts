@@ -37,6 +37,8 @@ export type SongChoicesRecord = {
   appleMusicSongId?: string;
 };
 
+export type UserRole = 'participant' | 'spectator' | 'juror' | 'admin';
+
 export type UsersRecord = {
   email: string;
   emailVisibility: boolean;
@@ -46,6 +48,7 @@ export type UsersRecord = {
   firstName: string;
   lastName: string;
   artistName: string;
+  role: UserRole;
 };
 
 export type RatingsRecord = {

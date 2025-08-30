@@ -1,13 +1,16 @@
 import type { RequestHandler } from './$types';
 import { json } from '@sveltejs/kit';
-import { env } from '$env/dynamic/private';
+import configData from '$lib/config/config.json';
 import { getAppleMusicToken } from '$lib/server/appleToken';
 import type { ListResult } from 'pocketbase';
 import type { SongChoicesRecord, SongChoicesResponse } from '$lib/pocketbase-types';
 import { logger } from '$lib/server/logger';
 
+type AppConfig = { SONG_CHOICE_VALIDATE?: string; APPLE_MUSIC_STOREFRONT?: string };
+const config: AppConfig = configData as AppConfig;
+
 const COLLECTION = 'songChoices' as const;
-const VALIDATE = (env.SONG_CHOICE_VALIDATE ?? 'true') === 'true';
+const VALIDATE = ((config.SONG_CHOICE_VALIDATE ?? 'true') === 'true');
 
 type SongChoice = { 
   artist: string; 
@@ -40,7 +43,7 @@ type VerifyErr = { ok: false; code: VerifyErrCode };
 
 async function verifyWithApple(artist: string, songTitle: string, fetchImpl: typeof fetch): Promise<VerifyOk | VerifyErr> {
   const token = getAppleMusicToken();
-  const storefront = env.APPLE_MUSIC_STOREFRONT || 'de';
+  const storefront = config.APPLE_MUSIC_STOREFRONT || 'de';
   if (!token) {
     return { ok: false, code: 'apple_token_missing' };
   }
@@ -89,6 +92,9 @@ export const GET: RequestHandler = async ({ locals }) => {
   if (!locals.user) {
     return json({ error: 'not_authenticated' }, { status: 401 });
   }
+  if ((locals.user).role !== 'participant') {
+    return json({ error: 'forbidden' }, { status: 403 });
+  }
 
   try {
     logger.info('SongChoices GET', { userId: locals.user.id });
@@ -129,6 +135,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 export const POST: RequestHandler = async ({ request, locals, fetch }) => {
   if (!locals.user) {
     return json({ error: 'not_authenticated' }, { status: 401 });
+  }
+  if ((locals.user).role !== 'participant') {
+    return json({ error: 'forbidden' }, { status: 403 });
   }
 
   let payload: SongChoicePayload;

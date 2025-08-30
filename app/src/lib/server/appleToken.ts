@@ -1,9 +1,9 @@
-import { env } from '$env/dynamic/private';
 import fs from 'fs';
 import crypto from 'crypto';
 import { logger } from '$lib/server/logger';
 import path from 'path';
-import secrets from '$lib/secrets/secrets.json';
+import secrets from '$lib/config/secrets/secrets.json';
+import config from '$lib/config/config.json';
 
 let cached: { token: string; exp: number } | null = null;
 
@@ -15,15 +15,9 @@ function b64url(input: Buffer | string) {
 export function getAppleMusicToken(): string | null {
   // If a token is provided directly, prefer it
   logger.debug('getAppleMusicToken called');
-  const direct = env.APPLE_MUSIC_TOKEN;
-  if (direct) {
-    logger.info('Using APPLE_MUSIC_TOKEN from env');
-    return direct;
-  }
-
-  const keyId = env.APPLE_MUSIC_KEY_ID || secrets.appleMusicKeyId;
-  const teamId = env.APPLE_TEAM_ID || secrets.appleTeamId;
-  const configuredPath = env.APPLE_MUSIC_PRIVATE_KEY_PATH || '$lib/secrets/AppleMusicAuthKey.p8';
+  const keyId = secrets.APPLE_MUSIC_KEY_ID;
+  const teamId = secrets.APPLE_TEAM_ID;
+  const configuredPath = '$lib/secrets/AppleMusicAuthKey.p8';
   if (!keyId || !teamId) {
     logger.warn('Apple Music token: missing key id or team id', {
       hasKeyId: Boolean(keyId),
@@ -38,7 +32,7 @@ export function getAppleMusicToken(): string | null {
     return cached.token;
   }
 
-  const ttlDays = Number(env.APPLE_MUSIC_TOKEN_TTL_DAYS || '7');
+  const ttlDays = Number(config.APPLE_MUSIC_TOKEN_TTL_DAYS || '7');
   const exp = now + Math.max(1, Math.min(ttlDays, 180)) * 24 * 60 * 60; // cap at 180 days
 
   const header = { alg: 'ES256', kid: keyId, typ: 'JWT' } as const;

@@ -1,0 +1,9 @@
+{
+    "APPLE_MUSIC_TOKEN_TTL_DAYS": "7",
+    "PB_URL": "http://127.0.0.1:8090",
+    "LOG_LEVEL": "info",
+    "LOG_FORMAT": "pretty",
+    "LOG_COLOR": "true",
+    "SONG_CHOICE_VALIDATE": "true",
+    "APPLE_MUSIC_STOREFRONT": "de"
+}

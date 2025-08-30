@@ -17,6 +17,6 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
     throw redirect(303, '/');
   }
 
-  return { user: locals.user };
+  const reason = url.searchParams.get('reason') || null;
+  return { user: locals.user, reason };
 };
-

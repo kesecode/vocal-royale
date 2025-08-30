@@ -23,6 +23,10 @@ export const GET: RequestHandler = async ({ locals, url }) => {
   if (!locals.user) {
     return json({ error: 'not_authenticated' }, { status: 401 });
   }
+  const role = (locals.user as UsersResponse).role;
+  if (role !== 'spectator' && role !== 'juror') {
+    return json({ error: 'forbidden' }, { status: 403 });
+  }
 
   const roundParam = url.searchParams.get('round') || '1';
   const round = Number(roundParam);
@@ -68,6 +72,11 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) {
     return json({ error: 'not_authenticated' }, { status: 401 });
+  }
+  const role = locals.user.role as string;
+  // Nur Zuschauer (spectator) dürfen Bewertungen schreiben
+  if (role !== 'spectator') {
+    return json({ error: 'forbidden' }, { status: 403 });
   }
 
   type Payload = { round?: number; ratedUser?: string; rating?: number; comment?: string };

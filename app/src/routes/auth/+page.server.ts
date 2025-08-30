@@ -32,7 +32,8 @@ export const actions: Actions = {
                 firstName,
                 lastName,
                 artistName,
-                name
+                name,
+                role: 'participant'
             });
 
             // Auto-Login nach Registrierung

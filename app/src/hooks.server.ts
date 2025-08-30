@@ -3,9 +3,15 @@ import type { TypedPocketBase } from '$lib/pocketbase-types';
 import type { Handle } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
 import { logger } from '$lib/server/logger';
-import { env } from '$env/dynamic/private';
+import configData from '$lib/config/config.json';
+import type { UsersResponse } from '$lib/pocketbase-types';
 
-const BASE_URL = env.PB_URL || 'http://127.0.0.1:8090';
+type AppConfig = {
+    PB_URL?: string;
+};
+const config: AppConfig = configData as AppConfig;
+
+const BASE_URL = config.PB_URL || 'http://127.0.0.1:8090';
 
 export const handle: Handle = async ({ event, resolve }) => {
     const pb = new PocketBase(BASE_URL) as TypedPocketBase;
@@ -16,9 +22,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 
     // Expose on locals for load/functions
     event.locals.pb = pb;
-    event.locals.user = pb.authStore.record;
+    event.locals.user = pb.authStore.record as UsersResponse | null;
 
-    // Guard: only '/auth' is public; redirect others if not logged-in.
+    // Guard: only '/auth' is public; enforce role-based route access
     const pathname = event.url.pathname;
     const isAuthRoute = pathname === '/auth' || pathname.startsWith('/auth/');
     const isLoggedIn = Boolean(event.locals.user);
@@ -32,6 +38,28 @@ export const handle: Handle = async ({ event, resolve }) => {
     if (isLoggedIn && isAuthRoute) {
         logger.debug('Guard redirect to / (already logged in)', { pathname });
         throw redirect(303, '/');
+    }
+
+    // Role-based route allowlist
+    if (isLoggedIn && !isAsset) {
+        const role = (event.locals.user?.role) as string | undefined;
+        const allowCommon = pathname === '/' || pathname === '/profile' || pathname.startsWith('/profile');
+        const allowForbidden = pathname === '/forbidden';
+
+        const allowParticipant = pathname.startsWith('/song-choice');
+        const allowSpectatorJuror = pathname.startsWith('/rating');
+        const allowAdmin = pathname.startsWith('/admin');
+
+        let allowed = allowCommon || allowForbidden;
+        if (role === 'participant') allowed ||= allowParticipant;
+        else if (role === 'spectator' || role === 'juror') allowed ||= allowSpectatorJuror;
+        else if (role === 'admin') allowed ||= allowAdmin;
+
+        if (!allowed) {
+            logger.debug('Guard role deny', { pathname, role });
+            // Redirect to dedicated forbidden page
+            throw redirect(303, '/forbidden');
+        }
     }
 
     const response = await resolve(event);

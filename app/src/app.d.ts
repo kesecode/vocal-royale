@@ -6,7 +6,7 @@ declare global {
     namespace App {
         interface Locals {
             pb: TypedPocketBase;
-            user: import('pocketbase').RecordModel | null;
+            user: import('$lib/pocketbase-types').UsersResponse | null;
         }
         // interface PageData {}
         // interface PageState {}

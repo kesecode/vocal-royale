@@ -44,7 +44,7 @@ jspm_packages/
 
 # Secrets
 *.p8
-keys.json
+secrets.json
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
