@@ -7,7 +7,7 @@
     <h1 class="font-display text-2xl sm:text-3xl">Profil</h1>
     <div class="panel panel-accent p-4 sm:p-6 space-y-4">
         <p class="text-sm text-white/80">Eingeloggt als:</p>
-        <p class="font-medium">{data.user.email ?? data.user.username ?? data.user.id}</p>
+        <p class="font-medium">{data?.user?.email ?? data?.user?.username ?? data?.user?.id}</p>
         <form method="post" action="?/logout">
             <button type="submit" class="btn-brand">Logout</button>
         </form>
