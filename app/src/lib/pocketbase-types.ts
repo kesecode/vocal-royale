@@ -61,9 +61,10 @@ export type RatingsRecord = {
 };
 
 // Competition State
+export type RoundState = 'singing_phase' | 'rating_phase' | 'result_phase' | 'break';
 export type CompetitionStateRecord = {
   competitionStarted: boolean;
-  roundActive: boolean;
+  roundState: RoundState;
   round: number; // 1..5
 };
 
