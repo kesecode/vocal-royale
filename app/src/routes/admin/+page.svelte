@@ -36,7 +36,7 @@
     }
   }
 
-  async function doAction(action: 'start_competition' | 'activate_rating_phase' | 'next_participant' | 'finalize_ratings') {
+  async function doAction(action: 'start_competition' | 'activate_rating_phase' | 'next_participant' | 'finalize_ratings' | 'reset_game') {
     errorMsg = null;
     infoMsg = null;
     try {
@@ -71,6 +71,7 @@
       if (action === 'activate_rating_phase') infoMsg = 'Bewertungsphase aktiviert.';
       if (action === 'next_participant') infoMsg = 'Nächster Teilnehmer gesetzt.';
       if (action === 'finalize_ratings') infoMsg = 'Bewertungen abgeschlossen.';
+      if (action === 'reset_game') infoMsg = 'Spiel zurückgesetzt.';
     } catch (e) {
       errorMsg = 'Netzwerkfehler.';
     }
@@ -118,6 +119,31 @@
       results = null;
       winner = null;
       infoMsg = 'Nächste Runde gestartet.';
+    } catch {
+      errorMsg = 'Netzwerkfehler.';
+    }
+  }
+
+  async function resetGame() {
+    errorMsg = null;
+    infoMsg = null;
+    if (!confirm('Bist du sicher? Das Spiel wird vollständig zurückgesetzt.')) return;
+    try {
+      const res = await fetch('/admin/api', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'reset_game' })
+      });
+      if (!res.ok) {
+        errorMsg = 'Zurücksetzen fehlgeschlagen.';
+        return;
+      }
+      const data = await res.json();
+      state = data?.state ?? state;
+      active = null;
+      results = null;
+      winner = null;
+      infoMsg = 'Spiel zurückgesetzt.';
     } catch {
       errorMsg = 'Netzwerkfehler.';
     }
@@ -176,6 +202,7 @@
         {/if}
 
         <button class="btn-ghost" on:click={refresh}>Aktualisieren</button>
+        <button class="btn-ghost" on:click={resetGame}>Spiel zurücksetzen</button>
       </div>
     </div>
   </div>
