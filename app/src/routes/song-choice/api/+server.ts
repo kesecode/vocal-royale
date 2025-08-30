@@ -6,7 +6,7 @@ import type { ListResult } from 'pocketbase';
 import type { SongChoicesRecord, SongChoicesResponse } from '$lib/pocketbase-types';
 import { logger } from '$lib/server/logger';
 
-const COLLECTION = 'song_choices' as const;
+const COLLECTION = 'songChoices' as const;
 const VALIDATE = (env.SONG_CHOICE_VALIDATE ?? 'true') === 'true';
 
 type SongChoice = { 

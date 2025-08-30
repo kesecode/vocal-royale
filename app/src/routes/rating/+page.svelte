@@ -218,7 +218,7 @@
                 <button
                   type="button"
                   class={`star ${ratings[selected.id]?.rating >= s ? 'on' : ''}`}
-                  on:click={() => setRating(selected.id, s)}
+                  on:click={() => selected && setRating(selected.id, s)}
                   aria-label={`${s} Stern${s>1?'e':''}`}
                 >★</button>
               {/each}

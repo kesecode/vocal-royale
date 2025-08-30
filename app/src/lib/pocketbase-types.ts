@@ -63,7 +63,7 @@ export type RatingsResponse<Texpand = unknown> = RatingsRecord & BaseSystemField
 
 // Typed PocketBase instance
 export interface TypedPocketBase extends PocketBase {
-  collection(idOrName: 'song_choices'): RecordService<SongChoicesResponse>;
+  collection(idOrName: 'songChoices'): RecordService<SongChoicesResponse>;
   collection(idOrName: 'ratings'): RecordService<RatingsResponse>;
   collection(idOrName: 'users'): RecordService<UsersResponse>;
   collection(idOrName: string): RecordService<RecordModel>;
