@@ -16,6 +16,7 @@
             <nav class="flex items-center gap-4 text-sm">
                 <a href="/" class="text-white/90 hover:text-white link-fun">Home</a>
                 <a href="/profile" class="text-white/90 hover:text-white link-fun">Profil</a>
+                <a href="/song-choice" class="text-white/90 hover:text-white link-fun">Songauswahl</a>
             </nav>
         </div>
     </header>
