@@ -4,7 +4,7 @@
   type Song = { artist: string; songTitle: string };
 
   let songs: Song[] = Array.from({ length: 5 }, () => ({ artist: '', songTitle: '' }));
-  let openStates: boolean[] = [true, false, false, false, false];
+  let openStates: boolean[] = [false, false, false, false, false];
   let savedStates: boolean[] = [false, false, false, false, false];
   let errors: (string | null)[] = [null, null, null, null, null];
 
