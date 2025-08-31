@@ -23,6 +23,9 @@ services:
       # App talks to the backend service by its compose name
       PB_URL: http://backend:8080
       NODE_ENV: production
+      # Tell SvelteKit the public origin to avoid CSRF origin mismatch
+      # Adjust to match how you access the app (e.g. localhost vs 127.0.0.1)
+      ORIGIN: http://localhost:3000
       # Apple Music credentials (placeholders)
       APPLE_MUSIC_KEY_ID: <CHANGE_ME_KEY_ID>
       APPLE_TEAM_ID: <CHANGE_ME_TEAM_ID>
