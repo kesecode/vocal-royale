@@ -3,6 +3,7 @@ import type { TypedPocketBase } from '$lib/pocketbase-types'
 import config from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
 import { logger } from '$lib/server/logger'
+import { building } from '$app/environment'
 
 declare global {
   interface ImportMeta {
@@ -93,11 +94,13 @@ export function initBootstrap() {
   if (started) return
   // Skip only in Vitest runs (robust check that won't affect dev/prod)
   if (typeof import.meta !== 'undefined' && import.meta.vitest) return
+  // Skip during SvelteKit build
+  if (building) return
   started = true
   const pb = new PocketBase(BASE_URL) as TypedPocketBase
 
   // Retry up to ~100s while PocketBase may still be starting
-  const maxRetries = 20
+  const maxRetries = 100
   const delayMs = 1000
 
   logger.info('Bootstrap: init start', { baseUrl: BASE_URL, maxRetries, delayMs })

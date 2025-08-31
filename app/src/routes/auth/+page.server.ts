@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit'
+import { logger } from '$lib/server/logger'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -38,7 +39,9 @@ export const actions: Actions = {
 
 			// Auto-Login nach Registrierung
 			await locals.pb.collection('users').authWithPassword(email, password)
+			logger.info('Signup success', { email, userId: locals.pb.authStore.record?.id })
 		} catch {
+			logger.warn('Signup failed', { email })
 			return fail(400, { message: 'Registrierung fehlgeschlagen.' })
 		}
 
@@ -57,7 +60,9 @@ export const actions: Actions = {
 
 		try {
 			await locals.pb.collection('users').authWithPassword(email, password)
+			logger.info('Login success', { email, userId: locals.pb.authStore.record?.id })
 		} catch {
+			logger.warn('Login failed', { email })
 			return fail(400, { message: 'Passwort falsch oder Benutzer existiert nicht.' })
 		}
 
@@ -65,6 +70,7 @@ export const actions: Actions = {
 	},
 
 	logout: async ({ locals }) => {
+		logger.info('Logout', { userId: locals.user?.id ?? null })
 		locals.pb.authStore.clear()
 		throw redirect(303, '/auth')
 	}

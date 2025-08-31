@@ -27,9 +27,12 @@
       }
     },
     {
+      // Runs the full Docker Compose rebuild (no-cache) and starts containers,
+      // then opens the app in the browser.
       "type": "chrome",
       "request": "launch",
-      "name": "App: Browser (http://localhost:3000)",
+      "name": "Docker: rebuild & up + open app",
+      "preLaunchTask": "compose: rebuild & up (no-cache, force-recreate)",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}/app"
     },

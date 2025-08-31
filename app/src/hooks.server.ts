@@ -16,6 +16,7 @@ const config: AppConfig = configData as AppConfig
 const BASE_URL = env.PB_URL || config.PB_URL || 'http://127.0.0.1:8090'
 
 // Kick off one-time bootstrap on server start
+logger.info('Server start - init bootstrap')
 initBootstrap()
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -42,6 +43,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 		pathname.startsWith('/assets/') ||
 		pathname === '/favicon.ico'
 	const nextParam = encodeURIComponent(event.url.pathname + event.url.search)
+
+	// Page-view logging (skip assets)
+	if (!isAsset) {
+		logger.info('HTTP request', {
+			method: event.request.method,
+			pathname,
+			userId: event.locals.user?.id ?? null,
+			role: event.locals.user?.role ?? null
+		})
+	}
 
 	if (!isLoggedIn && !isAuthRoute && !isAsset) {
 		logger.debug('Guard redirect to /auth', { pathname })
@@ -87,6 +98,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 			path: '/'
 		}, APP_COOKIE_KEY)
 	)
+
+	// Basic response logging (skip assets)
+	if (!isAsset) {
+		logger.info('HTTP response', {
+			status: response.status,
+			pathname,
+			userId: event.locals.user?.id ?? null,
+			role: event.locals.user?.role ?? null
+		})
+	}
 
 	return response
 }

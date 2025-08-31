@@ -3,7 +3,7 @@ services:
     image: ${DOCKERHUB_USERNAME:-yourdockerhub}/aja30-backend:latest
     container_name: aja30-backend
     ports:
-      - "8090:8080"
+      - "8080:8080"
     volumes:
       - pb_data:/pb/pb_data
     restart: unless-stopped
