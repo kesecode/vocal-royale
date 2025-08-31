@@ -7,7 +7,7 @@ services:
     container_name: aja30-backend
     ports:
       # Map host 8090 → container 8080 (PocketBase)
-      - "8090:8080"
+      - "8080:8080"
     volumes:
       # Persist PocketBase data on the host
       - pb_data:/pb/pb_data

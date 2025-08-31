@@ -19,7 +19,10 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	// Load auth state from cookie (if present)
 	const cookie = event.request.headers.get('cookie') ?? ''
-	pb.authStore.loadFromCookie(cookie)
+	// Use an app-specific cookie key to avoid collisions with
+	// PocketBase Admin's default `pb_auth` cookie on the same domain.
+	const APP_COOKIE_KEY = 'pb_auth_aja30'
+	pb.authStore.loadFromCookie(cookie, APP_COOKIE_KEY)
 
 	// Expose on locals for load/functions
 	event.locals.pb = pb
@@ -78,7 +81,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 			httpOnly: true,
 			sameSite: 'Lax',
 			path: '/'
-		})
+		}, APP_COOKIE_KEY)
 	)
 
 	return response
