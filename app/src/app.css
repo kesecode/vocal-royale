@@ -64,7 +64,7 @@
 		background-color: var(--color-brand); /* your base color */
 		background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
 		background-size: 12px 12px;
-		background-attachment: fixed; /* sorgt dafür, dass es beim Scrollen nicht verrutscht */
+		background-attachment: fixed; /* keeps background fixed during scroll */
 	}
 	body {
 		min-height: 100dvh; /* modern viewport unit */
