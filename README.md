@@ -75,12 +75,12 @@ services:
       - "${BACKEND_PORT:-8090}:8090"
     volumes:
       - pb_data:/pb/pb_data
-    # WICHTIG: $$ = Compose-Escape → Shell im Container sieht $VAR (aus env_file)
+    # IMPORTANT: $$ = Compose-Escape → Shell im Container sieht $VAR (aus env_file)
     command:
       - sh
       - -lc
       - |
-          /pb/pocketbase --dir /pb/pb_data superuser upsert "$${PB_ADMIN_EMAIL}" "$${PB_ADMIN_PASSWORD}" || true
+          /pb/pocketbase --dir /pb/pb_data superuser upsert "$${PB_ADMIN_EMAIL}" "$${PB_ADMIN_PASSWORD}"
           exec /pb/pocketbase serve --http 0.0.0.0:$${BACKEND_PORT:-8090}
     restart: unless-stopped
 
