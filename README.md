@@ -80,7 +80,7 @@ services:
       - sh
       - -lc
       - |
-          /pb/pocketbase --dir /pb/pb_data superuser upsert "$${PB_ADMIN_EMAIL}" "$${PB_ADMIN_PASSWORD}" || true
+          /pb/pocketbase --dir /pb/pb_data superuser upsert "$${PB_ADMIN_EMAIL}" "$${PB_ADMIN_PASSWORD}"
           exec /pb/pocketbase serve --http 0.0.0.0:$${BACKEND_PORT:-8090}
     restart: unless-stopped
 
