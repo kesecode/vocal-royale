@@ -1,7 +1,7 @@
 # Vocal Royale
 
-[![CI](https://github.com/davidweppler/vocal-royale/actions/workflows/test.yml/badge.svg)](https://github.com/davidweppler/vocal-royale/actions/workflows/test.yml)
-[![Build](https://github.com/davidweppler/vocal-royale/actions/workflows/build.yml/badge.svg)](https://github.com/davidweppler/vocal-royale/actions/workflows/build.yml)
+[![CI](https://github.com/kesecode/vocal-royale/actions/workflows/test.yml/badge.svg)](https://github.com/kesecode/vocal-royale/actions/workflows/test.yml)
+[![Build](https://github.com/kesecode/vocal-royale/actions/workflows/build.yml/badge.svg)](https://github.com/kesecode/vocal-royale/actions/workflows/build.yml)
 
 Quick guide to start the app locally with Docker Compose – including Apple Music key, environment variables, URLs, and default login.
 
