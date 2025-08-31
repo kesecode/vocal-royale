@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+# Use npm install to allow adapter-node to be added without lock mismatch
+RUN npm install
 
 # Copy source code
 COPY . .
@@ -16,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
@@ -24,8 +25,8 @@ WORKDIR /app
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production
+# Install only production dependencies in the app root (Node adapter runs with `node build`)
+RUN npm install --omit=dev
 
 EXPOSE 3000
 
