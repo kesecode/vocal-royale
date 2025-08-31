@@ -58,7 +58,7 @@
 /* Base styling */
 @layer base {
 	body {
-		min-height: 100dvh; /* moderne Viewport-Einheit */
+		min-height: 100dvh; /* modern viewport unit */
 		min-height: -webkit-fill-available; /* iOS fallback */
 		margin: 0;
 	}
