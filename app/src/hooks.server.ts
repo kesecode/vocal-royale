@@ -8,24 +8,35 @@ import type { UsersResponse } from '$lib/pocketbase-types'
 import { initBootstrap } from '$lib/server/bootstrap'
 
 const BASE_URL = env.PB_URL || 'http://127.0.0.1:8090'
+const SESSION_MAX_AGE = Number(env.SESSION_MAX_AGE || 60 * 60 * 48)
 
 // Kick off one-time bootstrap on server start
 logger.info('Server start - init bootstrap')
 initBootstrap()
 
 export const handle: Handle = async ({ event, resolve }) => {
-	const pb = new PocketBase(BASE_URL) as TypedPocketBase
+    const pb = new PocketBase(BASE_URL) as TypedPocketBase
 
-	// Load auth state from cookie (if present)
-	const cookie = event.request.headers.get('cookie') ?? ''
-	// Use an app-specific cookie key to avoid collisions with
-	// PocketBase Admin's default `pb_auth` cookie on the same domain.
-	const APP_COOKIE_KEY = 'pb_auth_aja30'
-	pb.authStore.loadFromCookie(cookie, APP_COOKIE_KEY)
+    // Load auth state from cookie (if present)
+    const cookie = event.request.headers.get('cookie') ?? ''
+    // Use an app-specific cookie key to avoid collisions with
+    // PocketBase Admin's default `pb_auth` cookie on the same domain.
+    const APP_COOKIE_KEY = 'pb_auth_aja30'
+    pb.authStore.loadFromCookie(cookie, APP_COOKIE_KEY)
 
-	// Expose on locals for load/functions
-	event.locals.pb = pb
-	event.locals.user = pb.authStore.record as UsersResponse | null
+    // Validate/refresh auth with PocketBase to avoid trusting stale tokens
+    try {
+        if (pb.authStore.isValid) {
+            await pb.collection('users').authRefresh()
+        }
+    } catch {
+        // Token not valid (e.g., new DB/secret) -> clear auth
+        pb.authStore.clear()
+    }
+
+    // Expose on locals for load/functions
+    event.locals.pb = pb
+    event.locals.user = pb.authStore.record as UsersResponse | null
 
 	// Guard: only '/auth' is public; enforce role-based route access
 	const pathname = event.url.pathname
@@ -80,18 +91,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	}
 
-	const response = await resolve(event)
+    const response = await resolve(event)
 
-	// Sync auth cookie back to client
-	response.headers.append(
-		'set-cookie',
-		pb.authStore.exportToCookie({
-			secure: event.url.protocol === 'https:',
-			httpOnly: true,
-			sameSite: 'Lax',
-			path: '/'
-		}, APP_COOKIE_KEY)
-	)
+    // Sync auth cookie back to client
+    response.headers.append(
+        'set-cookie',
+        pb.authStore.exportToCookie({
+            secure: event.url.protocol === 'https:',
+            httpOnly: true,
+            sameSite: 'Lax',
+            path: '/',
+            // Enforce max 48h validity on client side
+            maxAge: SESSION_MAX_AGE
+        }, APP_COOKIE_KEY)
+    )
 
 	// Basic response logging (skip assets)
 	if (!isAsset) {
