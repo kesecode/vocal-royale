@@ -5,7 +5,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "App: SvelteKit dev (npm run dv)",
+      "name": "npm run dev",
       "cwd": "${workspaceFolder}/app",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
@@ -13,7 +13,7 @@
         "dv"
       ],
       "env": {
-        "NODE_OPTIONS": "--inspect"
+        "PB_URL": "http://127.0.0.1:8080"
       },
       "console": "integratedTerminal",
       "autoAttachChildProcesses": true,
@@ -25,16 +25,6 @@
         "uriFormat": "%s",
         "action": "openExternally"
       }
-    },
-    {
-      // Runs the full Docker Compose rebuild (no-cache) and starts containers,
-      // then opens the app in the browser.
-      "type": "chrome",
-      "request": "launch",
-      "name": "Docker: rebuild & up + open app",
-      "preLaunchTask": "compose: rebuild & up (no-cache, force-recreate)",
-      "url": "http://localhost:3000",
-      "webRoot": "${workspaceFolder}/app"
     },
     {
       "type": "node",

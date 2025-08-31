@@ -14,7 +14,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 		healthy = false
 	}
 
-	const users = (await locals.pb.collection('users').getFullList()) as UsersResponse[]
+	let users: UsersResponse[] = []
+	try {
+		users = (await locals.pb.collection('users').getFullList()) as UsersResponse[]
+	} catch {
+		// PocketBase not reachable or forbidden – keep empty and render gracefully
+	}
 	const mkName = (u: UsersResponse) => u.firstName || u.name || u.username || u.email || u.id
 
 	const participants = users
