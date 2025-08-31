@@ -40,7 +40,7 @@ services:
     environment:
       PB_URL: http://backend:8080
       NODE_ENV: production
-      ORIGIN: ORIGIN:-http://localhost:3000
+      ORIGIN: http://localhost:3000
       APPLE_MUSIC_KEY_ID: ABC123XYZ9
       APPLE_TEAM_ID: 9XYZ123ABC
       APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8:ro
