@@ -3,17 +3,11 @@ import type { TypedPocketBase } from '$lib/pocketbase-types'
 import type { Handle } from '@sveltejs/kit'
 import { redirect } from '@sveltejs/kit'
 import { logger } from '$lib/server/logger'
-import configData from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
 import type { UsersResponse } from '$lib/pocketbase-types'
 import { initBootstrap } from '$lib/server/bootstrap'
 
-type AppConfig = {
-	PB_URL?: string
-}
-const config: AppConfig = configData as AppConfig
-
-const BASE_URL = env.PB_URL || config.PB_URL || 'http://127.0.0.1:8090'
+const BASE_URL = env.PB_URL || 'http://127.0.0.1:8090'
 
 // Kick off one-time bootstrap on server start
 logger.info('Server start - init bootstrap')

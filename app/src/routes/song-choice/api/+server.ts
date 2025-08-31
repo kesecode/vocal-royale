@@ -1,17 +1,13 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
-import configData from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
 import { getAppleMusicToken } from '$lib/server/appleToken'
 import type { ListResult } from 'pocketbase'
 import type { SongChoicesRecord, SongChoicesResponse } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
 
-type AppConfig = { SONG_CHOICE_VALIDATE?: string; APPLE_MUSIC_STOREFRONT?: string }
-const config: AppConfig = configData as AppConfig
-
 const COLLECTION = 'song_choices' as const
-const VALIDATE = ((env.SONG_CHOICE_VALIDATE ?? config.SONG_CHOICE_VALIDATE ?? 'true') === 'true')
+const VALIDATE = ((env.SONG_CHOICE_VALIDATE ?? 'true') === 'true')
 
 type SongChoice = {
 	artist: string
@@ -47,7 +43,7 @@ async function verifyWithApple(
 	fetchImpl: typeof fetch
 ): Promise<VerifyOk | VerifyErr> {
 	const token = getAppleMusicToken()
-    const storefront = env.APPLE_MUSIC_STOREFRONT || config.APPLE_MUSIC_STOREFRONT || 'de'
+    const storefront = env.APPLE_MUSIC_STOREFRONT || 'de'
 	if (!token) {
 		return { ok: false, code: 'apple_token_missing' }
 	}
@@ -170,23 +166,28 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 		)
 	}
 
-	if (VALIDATE) {
-		const verified = await verifyWithApple(artist, songTitle, fetch)
-		if (!verified.ok) {
-			logger.info('Apple verify failed', { code: verified.code })
-			const map: Record<string, { status: number; error: string }> = {
-				apple_token_missing: { status: 503, error: 'apple_token_missing' },
-				apple_request_failed: { status: 502, error: 'apple_request_failed' },
-				song_not_found: { status: 422, error: 'song_not_available' },
-				no_lyrics: { status: 422, error: 'no_lyrics' }
-			} as const
-			const m = map[verified.code] ?? { status: 500, error: 'verification_failed' }
-			return json({ error: m.error }, { status: m.status })
-		}
-		// Attach Apple Song ID from verification
-		;(payload as SongChoicePayload).appleMusicSongId = verified.appleMusicSongId
-		logger.debug('Apple verify ok', { appleMusicSongId: verified.appleMusicSongId })
-	}
+    if (VALIDATE) {
+        const verified = await verifyWithApple(artist, songTitle, fetch)
+        if (!verified.ok) {
+            // If key/token is missing, skip validation gracefully
+            if (verified.code === 'apple_token_missing') {
+                logger.warn('Apple verify skipped: token missing')
+            } else {
+                logger.info('Apple verify failed', { code: verified.code })
+                const map: Record<string, { status: number; error: string }> = {
+                    apple_request_failed: { status: 502, error: 'apple_request_failed' },
+                    song_not_found: { status: 422, error: 'song_not_available' },
+                    no_lyrics: { status: 422, error: 'no_lyrics' }
+                } as const
+                const m = map[verified.code] ?? { status: 500, error: 'verification_failed' }
+                return json({ error: m.error }, { status: m.status })
+            }
+        } else {
+            // Attach Apple Song ID from verification
+            ;(payload as SongChoicePayload).appleMusicSongId = verified.appleMusicSongId
+            logger.debug('Apple verify ok', { appleMusicSongId: verified.appleMusicSongId })
+        }
+    }
 
 	try {
 		// Try to find existing record for this user+round
