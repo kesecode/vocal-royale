@@ -26,14 +26,18 @@ BACKEND_PORT=8090
 ADMIN_EMAIL=admin@vocal.royale
 ADMIN_PASSWORD=ChangeMeNow!
 
+# DB credentials
+PB_ADMIN_EMAIL=admin_db@vocal.royale
+PB_ADMIN_PASSWORD=vocal_royale_2025
+
 # Frontend public URL (set to your deployed domain in prod)
-ORIGIN=http://localhost:3000
+ORIGIN=http://localhost:${APP_PORT}
 
 # Frontend runtime
 NODE_ENV=production
 
 # Service-to-service URL inside the compose network
-PB_URL=http://backend:8080
+PB_URL=http://backend:${BACKEND_PORT}
 
 # Log settings
 LOG_LEVEL=info
@@ -65,21 +69,30 @@ services:
   backend:
     image: kesecode/vocal-royale-backend:latest
     container_name: vocal-royale-backend
+    env_file:
+      - compose.env
     ports:
-      - "${BACKEND_PORT:-8090}:${BACKEND_PORT:-8090}"
+      - "${BACKEND_PORT:-8090}:8090"
     volumes:
       - pb_data:/pb/pb_data
+    # IMPORTANT: $$ = Compose-Escape → Shell im Container sieht $VAR (aus env_file)
+    command:
+      - sh
+      - -lc
+      - |
+          /pb/pocketbase --dir /pb/pb_data superuser upsert "$${PB_ADMIN_EMAIL}" "$${PB_ADMIN_PASSWORD}"
+          exec /pb/pocketbase serve --http 0.0.0.0:$${BACKEND_PORT:-8090}
     restart: unless-stopped
 
   app:
     image: kesecode/vocal-royale-app:latest
     container_name: vocal-royale-app
-    env_file:
-      - compose.env
     depends_on:
       - backend
+    env_file:
+      - compose.env
     ports:
-      - "${APP_PORT:-3000}:${APP_PORT:-3000}"
+      - "${APP_PORT:-3000}:3000"
     restart: unless-stopped
 
 volumes:
