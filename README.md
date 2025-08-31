@@ -22,6 +22,10 @@ Quick guide to start the app locally with Docker Compose – including Apple Mus
 APP_PORT=3000
 BACKEND_PORT=8090
 
+# Initial app admin credentials
+ADMIN_EMAIL=admin@vocal.royale
+ADMIN_PASSWORD=ChangeMeNow!
+
 # Frontend public URL (set to your deployed domain in prod)
 ORIGIN=http://localhost:3000
 
@@ -92,8 +96,8 @@ docker compose up -d --build
 - Backend Admin (PocketBase UI): `http://localhost:8080/_/`
 
 ## Default Credentials
-- PocketBase Admin: `admin@karaoke.championship` / `admin12345`
-- App Admin (created automatically on startup): `admin@karaoke.championship` / `admin12345`
+- PocketBase Admin: `admin_db@vocal.royale` / `vocal_royale_2025`
+- App Admin (created automatically on startup): `admin@vocal.royale` / `ChangeMeNow!`
 
 Change these credentials for real deployments.
 

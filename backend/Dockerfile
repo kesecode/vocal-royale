@@ -15,15 +15,6 @@ WORKDIR /pb
 # (Dein Ordner sollte z. B. 1756629673_collections_snapshot.js enthalten)
 COPY ./pb_migrations /pb/pb_migrations
 
-# Optionale Admin-Creds als Build-ARGs (oder fix via ENV)
-ARG PB_ADMIN_EMAIL=admin@karaoke.championship
-ARG PB_ADMIN_PASSWORD=admin12345
-ENV PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL} \
-    PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD}
-
-# 2) Superuser anlegen/aktualisieren (arbeitet auf derselben DB in /pb/pb_data)
-RUN /pb/pocketbase superuser upsert "$PB_ADMIN_EMAIL" "$PB_ADMIN_PASSWORD"
-
 # Laufzeit: nur noch Server starten
 EXPOSE 8080
 CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]
