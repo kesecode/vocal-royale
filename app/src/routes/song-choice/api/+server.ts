@@ -172,6 +172,10 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
             // If key/token is missing, skip validation gracefully
             if (verified.code === 'apple_token_missing') {
                 logger.warn('Apple verify skipped: token missing')
+                // Ensure required backend field is populated when skipping validation
+                if (!payload.appleMusicSongId) {
+                    ;(payload as SongChoicePayload).appleMusicSongId = 'null'
+                }
             } else {
                 logger.info('Apple verify failed', { code: verified.code })
                 const map: Record<string, { status: number; error: string }> = {
@@ -186,6 +190,11 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
             // Attach Apple Song ID from verification
             ;(payload as SongChoicePayload).appleMusicSongId = verified.appleMusicSongId
             logger.debug('Apple verify ok', { appleMusicSongId: verified.appleMusicSongId })
+        }
+    } else {
+        // Validation disabled by env flag; populate required field with placeholder
+        if (!payload.appleMusicSongId) {
+            ;(payload as SongChoicePayload).appleMusicSongId = 'null'
         }
     }
 
