@@ -84,15 +84,6 @@
 	}
 }
 
-@layer utilities {
-  .bg-halftone-full {
-    background-color: var(--color-brand);
-    background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
-    background-size: 12px 12px;
-    background-attachment: fixed;
-  }
-}
-
 /* Comic utilities */
 @layer utilities {
 	.card {
