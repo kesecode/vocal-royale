@@ -18,8 +18,10 @@ let started = false
 async function ensureInitialData(pb: TypedPocketBase) {
   // 1) Ensure Admin user exists (auth first to avoid listRule restrictions)
   try {
-    const email = 'admin@karaoke.championship'
-    const password = 'admin12345'
+    const email = env.ADMIN_EMAIL || 'admin@vocal.royale'
+    const password = env.ADMIN_PASSWORD || 'ChangeMeNow!'
+    const firstName = 'Admin'
+    const lastName = 'User'
     let exists = false
     try {
       await pb.collection('users').authWithPassword(email, password)
@@ -34,6 +36,8 @@ async function ensureInitialData(pb: TypedPocketBase) {
       try {
         await pb.collection('users').create({
           email,
+          firstName,
+          lastName,
           password,
           passwordConfirm: password,
           role: 'admin'
