@@ -75,7 +75,7 @@ async function ensureInitialData(pb: TypedPocketBase) {
             // auth may already be active from above; if not, attempt
             // (note: we rely on default admin credentials only in fresh setups)
             if (!pb.authStore.isValid) {
-              await pb.collection('users').authWithPassword('admin@karaoke.championship', 'admin12345')
+              await pb.collection('users').authWithPassword(env.ADMIN_PASSWORD || 'admin@vocal.royale', env.ADMIN_PASSWORD || 'ChangeMeNow!')
             }
             await pb.collection('competition_state').create(createBody)
             created = true

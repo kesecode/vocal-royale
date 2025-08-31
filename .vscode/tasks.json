@@ -23,6 +23,16 @@
         "panel": "dedicated",
         "clear": true
       }
+    },
+    {
+      "label": "Start PocketBase",
+      "type": "shell",
+      "command": "nohup ./pocketbase serve > pocketbase.log 2>&1 &",
+      "options": {
+        "cwd": "${env:HOME}/Dev/pocketbase"
+      },
+      "problemMatcher": [],
+      "isBackground": true
     }
   ]
 }

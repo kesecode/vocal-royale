@@ -12,6 +12,7 @@
         "run",
         "dv"
       ],
+      "preLaunchTask": "Start PocketBase",
       "console": "integratedTerminal",
       "autoAttachChildProcesses": true,
       "skipFiles": [

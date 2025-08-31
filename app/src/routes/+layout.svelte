@@ -1,5 +1,6 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </svelte:head>
 
 <div class="bg-halftone min-h-dvh bg-brand pt-3 text-white">
