@@ -1,7 +1,7 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-	<!-- Safari iOS Statusbar Farbe -->
+	<!-- Safari iOS status bar color -->
 	<meta name="theme-color" content="#b82015">
 	<meta name="msapplication-navbutton-color" content="#b82015">
 	<meta name="apple-mobile-web-app-capable" content="yes">
