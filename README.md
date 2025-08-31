@@ -43,14 +43,14 @@ services:
       ORIGIN: http://localhost:3000
       APPLE_MUSIC_KEY_ID: ABC123XYZ9
       APPLE_TEAM_ID: 9XYZ123ABC
-      APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8:ro
+      APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8
       APPLE_MUSIC_STOREFRONT: de
     depends_on:
       - backend
     ports:
       - "3000:3000"
     volumes:
-      - ./.secrets/AppleMusicAuthKey.p8:/run/secrets/AppleMusicAuthKey.p8:ro
+      - ./.secrets/AppleMusicAuthKey.p8:/run/secrets/AppleMusicAuthKey.p8
     restart: unless-stopped
 
 volumes:
