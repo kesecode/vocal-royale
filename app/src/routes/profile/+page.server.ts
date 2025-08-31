@@ -53,5 +53,22 @@ export const actions: Actions = {
 		logger.info('Logout', { userId: locals.user?.id ?? null })
 		locals.pb.authStore.clear()
 		throw redirect(303, '/auth')
+	},
+
+	deleteAccount: async ({ locals }) => {
+		if (!locals.user) {
+			throw redirect(303, '/auth')
+		}
+		const userId = locals.user.id
+		try {
+			await locals.pb.collection('users').delete(userId)
+		} catch {
+			logger.warn('Account deletion failed', { userId })
+			return fail(400, { message: 'Löschen fehlgeschlagen.', variant: 'error' })
+		}
+
+		logger.info('Account deleted', { userId })
+		locals.pb.authStore.clear()
+		throw redirect(303, '/auth?reason=account_deleted')
+		}
 	}
-}
