@@ -1,0 +1,30 @@
+services:
+  backend:
+    image: ${DOCKERHUB_USERNAME:-yourdockerhub}/aja30-backend:latest
+    container_name: aja30-backend
+    ports:
+      - "8080:8080"
+    volumes:
+      - pb_data:/pb/pb_data
+    restart: unless-stopped
+
+  app:
+    image: ${DOCKERHUB_USERNAME:-yourdockerhub}/aja30-app:latest
+    container_name: aja30-app
+    environment:
+      PB_URL: http://backend:8080
+      NODE_ENV: production
+      APPLE_MUSIC_KEY_ID: <CHANGE_ME_KEY_ID>
+      APPLE_TEAM_ID: <CHANGE_ME_TEAM_ID>
+      APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ${APPLE_MUSIC_KEY_FILE:-./.secrets/AppleMusicAuthKey.p8}:/run/secrets/AppleMusicAuthKey.p8:ro
+    restart: unless-stopped
+
+volumes:
+  pb_data:
+

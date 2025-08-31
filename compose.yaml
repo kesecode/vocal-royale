@@ -7,7 +7,7 @@ services:
     container_name: aja30-backend
     ports:
       # Map host 8090 → container 8080 (PocketBase)
-      - "8090:8080"
+      - "8080:8080"
     volumes:
       # Persist PocketBase data on the host
       - pb_data:/pb/pb_data
@@ -23,6 +23,9 @@ services:
       # App talks to the backend service by its compose name
       PB_URL: http://backend:8080
       NODE_ENV: production
+      # Tell SvelteKit the public origin to avoid CSRF origin mismatch
+      # Adjust to match how you access the app (e.g. localhost vs 127.0.0.1)
+      ORIGIN: http://localhost:3000
       # Apple Music credentials (placeholders)
       APPLE_MUSIC_KEY_ID: <CHANGE_ME_KEY_ID>
       APPLE_TEAM_ID: <CHANGE_ME_TEAM_ID>
@@ -30,8 +33,6 @@ services:
       APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8
     ports:
       - "3000:3000"
-    depends_on:
-      - backend
     volumes:
       # Mount a local key file (outside repo) as read-only into the container
       # Adjust APPLE_MUSIC_KEY_FILE in your shell or .env to an absolute/relative path

@@ -6,6 +6,7 @@ import { logger } from '$lib/server/logger'
 import configData from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
 import type { UsersResponse } from '$lib/pocketbase-types'
+import { initBootstrap } from '$lib/server/bootstrap'
 
 type AppConfig = {
 	PB_URL?: string
@@ -14,12 +15,19 @@ const config: AppConfig = configData as AppConfig
 
 const BASE_URL = env.PB_URL || config.PB_URL || 'http://127.0.0.1:8090'
 
+// Kick off one-time bootstrap on server start
+logger.info('Server start - init bootstrap')
+initBootstrap()
+
 export const handle: Handle = async ({ event, resolve }) => {
 	const pb = new PocketBase(BASE_URL) as TypedPocketBase
 
 	// Load auth state from cookie (if present)
 	const cookie = event.request.headers.get('cookie') ?? ''
-	pb.authStore.loadFromCookie(cookie)
+	// Use an app-specific cookie key to avoid collisions with
+	// PocketBase Admin's default `pb_auth` cookie on the same domain.
+	const APP_COOKIE_KEY = 'pb_auth_aja30'
+	pb.authStore.loadFromCookie(cookie, APP_COOKIE_KEY)
 
 	// Expose on locals for load/functions
 	event.locals.pb = pb
@@ -35,6 +43,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 		pathname.startsWith('/assets/') ||
 		pathname === '/favicon.ico'
 	const nextParam = encodeURIComponent(event.url.pathname + event.url.search)
+
+	// Page-view logging (skip assets)
+	if (!isAsset) {
+		logger.info('HTTP request', {
+			method: event.request.method,
+			pathname,
+			userId: event.locals.user?.id ?? null,
+			role: event.locals.user?.role ?? null
+		})
+	}
 
 	if (!isLoggedIn && !isAuthRoute && !isAsset) {
 		logger.debug('Guard redirect to /auth', { pathname })
@@ -78,8 +96,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 			httpOnly: true,
 			sameSite: 'Lax',
 			path: '/'
-		})
+		}, APP_COOKIE_KEY)
 	)
+
+	// Basic response logging (skip assets)
+	if (!isAsset) {
+		logger.info('HTTP response', {
+			status: response.status,
+			pathname,
+			userId: event.locals.user?.id ?? null,
+			role: event.locals.user?.role ?? null
+		})
+	}
 
 	return response
 }

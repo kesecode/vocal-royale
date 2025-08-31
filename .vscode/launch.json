@@ -1,0 +1,37 @@
+{
+  // Run and debug the SvelteKit dev server via `npm run dv` in ./app
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "npm run dev",
+      "cwd": "${workspaceFolder}/app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dv"
+      ],
+      "env": {
+        "PB_URL": "http://127.0.0.1:8080"
+      },
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "serverReadyAction": {
+        "pattern": "(https?://localhost:3000/?).*",
+        "uriFormat": "%s",
+        "action": "openExternally"
+      }
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach: Node (9229)",
+      "port": 9229,
+      "restart": true
+    }
+  ]
+}

@@ -2,9 +2,29 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { logger } from '$lib/server/logger'
 import path from 'path'
-import secrets from '$lib/config/secrets/secrets.json'
 import config from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
+
+// Load secrets.json lazily and only if present to avoid Vite build-time failures
+type Secrets = Partial<{
+    APPLE_MUSIC_KEY_ID: string
+    APPLE_TEAM_ID: string
+}>
+
+function loadSecrets(): Secrets {
+    try {
+        const secretsPath = path.resolve(process.cwd(), 'src/lib/config/secrets/secrets.json')
+        if (fs.existsSync(secretsPath)) {
+            const raw = fs.readFileSync(secretsPath, 'utf8')
+            return JSON.parse(raw)
+        }
+    } catch {
+        // noop – absence or parse error falls back to env-only
+    }
+    return {}
+}
+
+const secrets = loadSecrets()
 
 let cached: { token: string; exp: number } | null = null
 
@@ -16,8 +36,8 @@ function b64url(input: Buffer | string) {
 export function getAppleMusicToken(): string | null {
 	// If a token is provided directly, prefer it
 	logger.debug('getAppleMusicToken called')
-    const KEY_ID = env.APPLE_MUSIC_KEY_ID || (secrets as any).APPLE_MUSIC_KEY_ID
-    const TEAM_ID = env.APPLE_TEAM_ID || (secrets as any).APPLE_TEAM_ID
+    const KEY_ID = env.APPLE_MUSIC_KEY_ID || secrets.APPLE_MUSIC_KEY_ID
+    const TEAM_ID = env.APPLE_TEAM_ID || secrets.APPLE_TEAM_ID
     if (!KEY_ID || !TEAM_ID) {
         logger.warn('Apple Music token: missing key id or team id', {
             hasKeyId: Boolean(KEY_ID),
