@@ -49,7 +49,7 @@
 
 					<div class="flex items-center gap-3">
 						<button type="button" class="btn-brand" on:click={() => save(i)}>Speichern</button>
-						{#if songs[i]?.appleMusicSongId}
+						{#if songs[i]?.appleMusicSongId && songs[i].appleMusicSongId !== 'null'}
 							<button
 								type="button"
 								class="btn-apple"
@@ -192,6 +192,7 @@
 	function openApple(i: number) {
 		const id = songs[i]?.appleMusicSongId?.trim()
 		if (!id) return
+		if (id === 'manual') return
 		const storefront = 'de'
 		const url = `https://music.apple.com/${storefront}/song/${id}`
 		try {

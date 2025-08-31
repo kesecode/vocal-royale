@@ -101,7 +101,7 @@ export function initBootstrap() {
   // Retry up to ~100s while PocketBase may still be starting
   const maxRetries = 100
   const delayMs = 1000
-
+  
   logger.info('Bootstrap: init start', { baseUrl: BASE_URL, maxRetries, delayMs })
 
   const attempt = async (n: number) => {

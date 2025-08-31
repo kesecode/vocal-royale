@@ -37,9 +37,23 @@
 					Künstlername ändern
 				</button>
 			</div>
-			<form method="post" action="?/logout" class="pt-2">
-				<button type="submit" class="btn-danger">Logout</button>
-			</form>
+			<div class="flex gap-3 pt-2">
+				<form method="post" action="?/logout">
+					<button type="submit" class="btn-danger">Logout</button>
+				</form>
+				<form
+					method="post"
+					action="?/deleteAccount"
+					onsubmit={(e) => {
+						e.preventDefault()
+						if (confirm('Bist du sicher? Dieser Vorgang kann nicht rückgängig gemacht werden.')) {
+							(e.currentTarget as HTMLFormElement).submit()
+						}
+					}}
+				>
+					<button type="submit" class="btn-danger">Konto löschen</button>
+				</form>
+			</div>
 		{/if}
 
 		{#if showPwd}

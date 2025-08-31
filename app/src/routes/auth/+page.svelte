@@ -88,8 +88,11 @@
 		}
 		if (typeof window !== 'undefined') {
 			const q = new URLSearchParams(window.location.search)
-			if (q.get('reason') === 'auth_required') {
+			const reason = q.get('reason')
+			if (reason === 'auth_required') {
 				banner = 'Bitte melde dich an, um fortzufahren.'
+			} else if (reason === 'account_deleted') {
+				banner = 'Dein Konto wurde gelöscht. Du kannst dich neu registrieren.'
 			}
 			next = q.get('next') ?? ''
 		}

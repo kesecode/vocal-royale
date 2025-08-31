@@ -36,6 +36,10 @@ LOG_LEVEL=info
 LOG_FORMAT=pretty
 LOG_COLOR=true
 
+# Session / auth
+# Max cookie age in seconds (default 48h)
+SESSION_MAX_AGE=172800
+
 # Apple Music API configuration
 SONG_CHOICE_VALIDATE=true
 APPLE_MUSIC_KEY_ID=
@@ -96,5 +100,6 @@ Change these credentials for real deployments.
 ## Notes on Configuration and Deployment
 - The compose file (`compose.yaml`) builds local images. For ready images use `compose.deploy.yaml` and set `DOCKERHUB_USERNAME` accordingly.
 - The app reads the backend URL via `PB_URL` (already set to `http://backend:8080` in compose).
+- Session cookies are limited by `SESSION_MAX_AGE` (default 48h). The server also validates
+  the auth token on each request and clears it if invalid (e.g. after DB reset).
 - Apple validation uses `APPLE_MUSIC_PRIVATE_KEY`. If unset, song validation is skipped gracefully even when `SONG_CHOICE_VALIDATE` is `true`.
-
