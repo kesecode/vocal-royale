@@ -1,7 +1,11 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<meta name="viewport" content="width=device-width, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<!-- Safari iOS status bar color -->
 	<meta name="theme-color" content="#b82015">
+	<meta name="msapplication-navbutton-color" content="#b82015">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-title" content="Aja, 30!">
 </svelte:head>
 
 <div class="bg-halftone min-h-dvh bg-brand pt-3 text-white">

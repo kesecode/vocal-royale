@@ -57,6 +57,11 @@
 
 /* Base styling */
 @layer base {
+	body {
+		min-height: 100dvh; /* modern viewport unit */
+		min-height: -webkit-fill-available; /* iOS fallback */
+		margin: 0;
+	}
 	html {
 		color-scheme: light;
 	}
@@ -183,9 +188,12 @@
 
 	/* Halftone overlay for comic background */
 	.bg-halftone {
-		background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
-		background-size: 12px 12px;
+		background-color: var(--color-brand);
+    background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
+    background-size: 12px 12px;
+    background-attachment: fixed;
 	}
+  }
 
 	/* Panels: clean borders with elliptical radii (no scribble) */
 	.panel {
