@@ -4,6 +4,12 @@ import config from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
 import { logger } from '$lib/server/logger'
 
+declare global {
+  interface ImportMeta {
+    vitest?: boolean
+  }
+}
+
 
 const BASE_URL = env.PB_URL || config.PB_URL || 'http://127.0.0.1:8090'
 
@@ -65,7 +71,7 @@ async function ensureInitialData(pb: TypedPocketBase) {
             // auth may already be active from above; if not, attempt
             // (note: we rely on default admin credentials only in fresh setups)
             if (!pb.authStore.isValid) {
-              await pb.collection('users').authWithPassword('admin@karaoke.championship', 'admin1234')
+              await pb.collection('users').authWithPassword('admin@karaoke.championship', 'admin12345')
             }
             await pb.collection('competition_state').create(createBody)
             created = true
@@ -85,19 +91,22 @@ async function ensureInitialData(pb: TypedPocketBase) {
 
 export function initBootstrap() {
   if (started) return
-  // Skip in tests
-  if (env?.VITEST) return
+  // Skip only in Vitest runs (robust check that won't affect dev/prod)
+  if (typeof import.meta !== 'undefined' && import.meta.vitest) return
   started = true
   const pb = new PocketBase(BASE_URL) as TypedPocketBase
 
-  // Try a few times to allow backend to come up
+  // Retry up to ~100s while PocketBase may still be starting
   const maxRetries = 20
   const delayMs = 1000
+
+  logger.info('Bootstrap: init start', { baseUrl: BASE_URL, maxRetries, delayMs })
 
   const attempt = async (n: number) => {
     try {
       await pb.health.check()
       await ensureInitialData(pb)
+      logger.info('Bootstrap: init done')
     } catch (e) {
       if (n >= maxRetries) {
         logger.warn('Bootstrap: giving up after retries', { error: String((e as Error)?.message || e) })
