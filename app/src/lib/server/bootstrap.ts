@@ -1,6 +1,5 @@
 import PocketBase from 'pocketbase'
 import type { TypedPocketBase } from '$lib/pocketbase-types'
-import config from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
 import { logger } from '$lib/server/logger'
 import { building } from '$app/environment'
@@ -12,7 +11,7 @@ declare global {
 }
 
 
-const BASE_URL = env.PB_URL || config.PB_URL || 'http://127.0.0.1:8090'
+const BASE_URL = env.PB_URL || 'http://127.0.0.1:8090'
 
 let started = false
 

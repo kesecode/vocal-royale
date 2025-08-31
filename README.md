@@ -9,18 +9,47 @@ Quick guide to start the app locally with Docker Compose – including Apple Mus
 - Prerequisites: Docker Desktop (or Docker + Compose).
 - Ports: Frontend `http://localhost:3000`, Backend (PocketBase) `http://localhost:8080`.
 
-1) Place Apple Music Key
-- Place your private key `.p8` outside version control at `./.secrets/AppleMusicAuthKey.p8` (create folder if needed).
-- Alternative: any path and set via `APPLE_MUSIC_KEY_FILE` (see below).
+1) Apple Music Key
+- Provide the private key via the `APPLE_MUSIC_PRIVATE_KEY` environment variable in `compose.env`.
+- Use a single line with literal \n newlines, e.g. `-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----`.
 
-2) Set environment variables in compose file
-- Required:
-  - `APPLE_MUSIC_KEY_ID`: your Apple Music Key ID
-  - `APPLE_TEAM_ID`: your Apple Team ID
-- Optional (only if different):
-  - `ORIGIN`: public URL of frontend (Default: `http://localhost:3000`)
-  - `NODE_ENV`: node environment (Default: `production`)
-  - `APPLE_MUSIC_STOREFRONT`: Apple-Music region (Default: `de`)
+2) Set environment variables in compose.env file
+
+```
+# Copy this file to `compose.env` and adjust values.
+
+# Ports (host mappings; reference from compose.yaml if needed)
+APP_PORT=3000
+BACKEND_PORT=8090
+
+# Frontend public URL (set to your deployed domain in prod)
+ORIGIN=http://localhost:3000
+
+# Frontend runtime
+NODE_ENV=production
+
+# Service-to-service URL inside the compose network
+PB_URL=http://backend:8080
+
+# Log settings
+LOG_LEVEL=info
+LOG_FORMAT=pretty
+LOG_COLOR=true
+
+# Apple Music API configuration
+SONG_CHOICE_VALIDATE=true
+APPLE_MUSIC_KEY_ID=
+APPLE_TEAM_ID=
+APPLE_MUSIC_STOREFRONT=de
+APPLE_MUSIC_TOKEN_TTL_DAYS=7
+
+# Add key directly as a single-line env var with literal \n for newlines.
+# Mandatory if SONG_CHOICE_VALIDATE is set to true
+# APPLE_MUSIC_PRIVATE_KEY=
+
+# Game options
+PARTICIPANTS_TO_ELIMINATE=1,0,0,0
+```
 
 
 ```
@@ -29,7 +58,7 @@ services:
     image: kesecode/vocal-royale-backend:latest
     container_name: vocal-royale-backend
     ports:
-      - "8080:8080"
+      - "${BACKEND_PORT:-8090}:${BACKEND_PORT:-8090}"
     volumes:
       - pb_data:/pb/pb_data
     restart: unless-stopped
@@ -37,20 +66,12 @@ services:
   app:
     image: kesecode/vocal-royale-app:latest
     container_name: vocal-royale-app
-    environment:
-      PB_URL: http://backend:8080
-      NODE_ENV: production
-      ORIGIN: http://localhost:3000
-      APPLE_MUSIC_KEY_ID: ABC123XYZ9
-      APPLE_TEAM_ID: 9XYZ123ABC
-      APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8
-      APPLE_MUSIC_STOREFRONT: de
+    env_file:
+      - compose.env
     depends_on:
       - backend
     ports:
-      - "3000:3000"
-    volumes:
-      - ./.secrets/AppleMusicAuthKey.p8:/run/secrets/AppleMusicAuthKey.p8
+      - "${APP_PORT:-3000}:${APP_PORT:-3000}"
     restart: unless-stopped
 
 volumes:
@@ -75,6 +96,5 @@ Change these credentials for real deployments.
 ## Notes on Configuration and Deployment
 - The compose file (`compose.yaml`) builds local images. For ready images use `compose.deploy.yaml` and set `DOCKERHUB_USERNAME` accordingly.
 - The app reads the backend URL via `PB_URL` (already set to `http://backend:8080` in compose).
-- The Apple key is expected in the container at `/run/secrets/AppleMusicAuthKey.p8` (volume mount from `APPLE_MUSIC_KEY_FILE`).
-
+- Apple validation uses `APPLE_MUSIC_PRIVATE_KEY`. If unset, song validation is skipped gracefully even when `SONG_CHOICE_VALIDATE` is `true`.
 

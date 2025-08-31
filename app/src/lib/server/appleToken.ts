@@ -1,9 +1,8 @@
-import fs from 'fs'
 import crypto from 'crypto'
 import { logger } from '$lib/server/logger'
-import path from 'path'
-import config from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
+import fs from 'fs'
+import path from 'path'
 
 // Load secrets.json lazily and only if present to avoid Vite build-time failures
 type Secrets = Partial<{
@@ -54,27 +53,17 @@ export function getAppleMusicToken(): string | null {
 		return cached.token
 	}
 
-    const ttlDays = Number(env.APPLE_MUSIC_TOKEN_TTL_DAYS || config.APPLE_MUSIC_TOKEN_TTL_DAYS || '7')
+    const ttlDays = Number(env.APPLE_MUSIC_TOKEN_TTL_DAYS || '7')
     const exp = now + Math.max(1, Math.min(ttlDays, 180)) * 24 * 60 * 60 // cap at 180 days
 
     const header = { alg: 'ES256', kid: KEY_ID, typ: 'JWT' } as const
     const payload = { iss: TEAM_ID, iat: now, exp } as const
 
-    let privateKeyPem = ''
-    const configuredPath = env.APPLE_MUSIC_KEY_PATH || config.APPLE_MUSIC_KEY_PATH
-    const resolvedPath: string | null = configuredPath ? path.resolve(process.cwd(), configuredPath) : null
-    try {
-        if (env.APPLE_MUSIC_PRIVATE_KEY) {
-            privateKeyPem = String(env.APPLE_MUSIC_PRIVATE_KEY).replace(/\\n/g, '\n')
-            logger.debug('Apple Music private key loaded from env', {})
-        } else if (resolvedPath) {
-            privateKeyPem = fs.readFileSync(resolvedPath, 'utf8')
-            logger.debug('Apple Music private key read', { keyPath: resolvedPath })
-        }
-    } catch {
-        logger.warn('Failed to read Apple Music private key from configured path', {
-            path: resolvedPath
-        })
+    const privateKeyPem = env.APPLE_MUSIC_PRIVATE_KEY
+        ? String(env.APPLE_MUSIC_PRIVATE_KEY).replace(/\\n/g, '\n')
+        : ''
+    if (!privateKeyPem) {
+        logger.warn('Apple Music private key missing; validation disabled')
     }
 
 	const unsigned = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`

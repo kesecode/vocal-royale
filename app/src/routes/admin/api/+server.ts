@@ -8,11 +8,7 @@ import type {
 	UsersResponse
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
-import configData from '$lib/config/config.json'
 import { env } from '$env/dynamic/private'
-
-type AppConfig = { PARTICIPANTS_TO_ELIMINATE?: number[] }
-const config: AppConfig = configData as AppConfig 
 
 function readParticipantsToEliminate(): number[] {
   const raw = env.PARTICIPANTS_TO_ELIMINATE
@@ -26,7 +22,8 @@ function readParticipantsToEliminate(): number[] {
       if (csv.length) return csv
     }
   }
-  return (config.PARTICIPANTS_TO_ELIMINATE ?? []).map((n) => Number(n) || 0)
+  // default
+  return [1, 0, 0, 0]
 }
 
 const STATE_COLLECTION = 'competition_state' as const
