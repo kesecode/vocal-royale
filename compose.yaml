@@ -30,8 +30,6 @@ services:
       APPLE_MUSIC_KEY_PATH: /run/secrets/AppleMusicAuthKey.p8
     ports:
       - "3000:3000"
-    depends_on:
-      - backend
     volumes:
       # Mount a local key file (outside repo) as read-only into the container
       # Adjust APPLE_MUSIC_KEY_FILE in your shell or .env to an absolute/relative path

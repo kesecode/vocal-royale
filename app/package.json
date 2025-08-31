@@ -7,6 +7,7 @@
 		"fmt": "prettier . --write",
 		"fmt:check": "prettier . --check",
 		"dev": "vite dev",
+		"dv": "vite dev --port 3000",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

@@ -16,8 +16,8 @@ function b64url(input: Buffer | string) {
 export function getAppleMusicToken(): string | null {
 	// If a token is provided directly, prefer it
 	logger.debug('getAppleMusicToken called')
-    const KEY_ID = env.APPLE_MUSIC_KEY_ID || (secrets as any).APPLE_MUSIC_KEY_ID
-    const TEAM_ID = env.APPLE_TEAM_ID || (secrets as any).APPLE_TEAM_ID
+    const KEY_ID = env.APPLE_MUSIC_KEY_ID || secrets.APPLE_MUSIC_KEY_ID
+    const TEAM_ID = env.APPLE_TEAM_ID || secrets.APPLE_TEAM_ID
     if (!KEY_ID || !TEAM_ID) {
         logger.warn('Apple Music token: missing key id or team id', {
             hasKeyId: Boolean(KEY_ID),

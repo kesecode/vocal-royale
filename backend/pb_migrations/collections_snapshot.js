@@ -851,7 +851,7 @@ migrate((app) => {
       "viewRule": "@request.auth.id != ''"
     },
     {
-      "createRule": null,
+      "createRule": "",
       "deleteRule": null,
       "fields": [
         {

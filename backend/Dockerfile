@@ -17,7 +17,7 @@ COPY ./pb_migrations /pb/pb_migrations
 
 # Optionale Admin-Creds als Build-ARGs (oder fix via ENV)
 ARG PB_ADMIN_EMAIL=admin@karaoke.championship
-ARG PB_ADMIN_PASSWORD=admin1234
+ARG PB_ADMIN_PASSWORD=admin12345
 ENV PB_ADMIN_EMAIL=${PB_ADMIN_EMAIL} \
     PB_ADMIN_PASSWORD=${PB_ADMIN_PASSWORD}
 
