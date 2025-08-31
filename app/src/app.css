@@ -64,15 +64,13 @@
 		background-color: var(--color-brand); /* your base color */
 		background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
 		background-size: 12px 12px;
-		background-attachment: fixed; /* keeps background fixed during scroll */
+		background-attachment: fixed;
+		color-scheme: dark; /* keeps background fixed during scroll */
 	}
 	body {
 		min-height: 100dvh; /* modern viewport unit */
 		min-height: -webkit-fill-available; /* iOS fallback */
 		margin: 0;
-	}
-	html {
-		color-scheme: light;
 	}
 	body {
 		@apply font-sans text-[--color-ink] antialiased;
@@ -236,7 +234,7 @@
 		top: 10px;
 		z-index: 1000;
 	}
-	
+
 	/* Tooltip (compact, reusable) */
 	[data-tooltip] {
 		position: relative;
