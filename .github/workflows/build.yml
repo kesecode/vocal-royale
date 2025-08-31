@@ -1,10 +1,9 @@
 name: Build
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+
 
 env:
   REGISTRY: docker.io
@@ -19,11 +18,11 @@ jobs:
           - name: app
             context: ./app
             file: ./app/Dockerfile
-            repo: aja30-app
+            repo: vocal-royale-app
           - name: backend
             context: ./backend
             file: ./backend/Dockerfile
-            repo: aja30-backend
+            repo: vocal-royale-backend
     steps:
       - name: Checkout
         uses: actions/checkout@v4
