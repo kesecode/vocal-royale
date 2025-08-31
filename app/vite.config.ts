@@ -38,7 +38,9 @@ export default defineConfig(({ mode, command }) => {
       ? {
           alias: {
             $lib: path.resolve(rootDir, 'src/lib'),
-            $src: path.resolve(rootDir, 'src')
+            $src: path.resolve(rootDir, 'src'),
+            // Mock SvelteKit virtual modules used in server code during tests
+            '$app/environment': path.resolve(rootDir, 'src/test/mocks/app-environment.ts')
           }
         }
       : undefined,

@@ -6,7 +6,7 @@ on:
 
 jobs:
   app-tests:
-    name: App (Vitest)
+    name: Run tests
     runs-on: ubuntu-latest
     defaults:
       run:
