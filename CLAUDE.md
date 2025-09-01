@@ -101,7 +101,7 @@ Key environment variables (see compose.env):
 
 ## Testing
 - Tests use Vitest with Svelte testing utilities
-- Mock implementations in `src/test/mocks/`
+- Mock implementations in `tests/utils/mocks/`
 - Run tests before commits (enforced by CI)
 
 ## Deployment
