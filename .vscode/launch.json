@@ -19,7 +19,7 @@
         "<node_internals>/**"
       ],
       "serverReadyAction": {
-        "pattern": "(https?://localhost:3000/?).*",
+        "pattern": "(https?://localhost:5173/?).*",
         "uriFormat": "%s",
         "action": "openExternally"
       }

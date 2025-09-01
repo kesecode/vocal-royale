@@ -7,7 +7,7 @@
 	<!-- Safari iOS status bar color -->
 	<meta name="theme-color" content="#b82015" />
 	<meta name="msapplication-navbutton-color" content="#b82015" />
-	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="mobile-web-app-capable" content="yes" />
 </svelte:head>
 
 <div class="bg-halftone min-h-dvh bg-brand pt-3 text-white">
@@ -83,7 +83,7 @@
 					<svg
 						viewBox="0 0 300 10"
 						xmlns="http://www.w3.org/2000/svg"
-						class="h-2 w-full pl-1 pr-1"
+						class="h-2 w-full pr-1 pl-1"
 						preserveAspectRatio="none"
 						overflow="visible"
 					>
@@ -93,14 +93,14 @@
 							stroke-width="5"
 							stroke-linecap="round"
 							fill="none"
-						/>
+						></path>
 						<path
 							d="M -2 5 C 73 1.5, 227 8.5, 302 5"
 							stroke="white"
 							stroke-width="2.5"
 							stroke-linecap="round"
 							fill="none"
-						/>
+						></path>
 					</svg>
 					<ul class="flex flex-col gap-2">
 						{#each navLinks as link}
@@ -136,7 +136,7 @@
 
 <script lang="ts">
 	import '../app.css'
-	import favicon from '$lib/assets/favicon.svg'
+	import favicon from '$lib/assets/favicon.png'
 	import { slide } from 'svelte/transition'
 
 	let { children, data } = $props()

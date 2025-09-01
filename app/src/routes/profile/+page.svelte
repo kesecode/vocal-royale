@@ -85,6 +85,10 @@
 				class="mt-4 space-y-3"
 			>
 				<label class="block text-sm font-medium">
+					Aktuelles Passwort
+					<input class="input mt-1" name="oldPassword" type="password" required minlength="8" />
+				</label>
+				<label class="block text-sm font-medium">
 					Neues Passwort
 					<input class="input mt-1" name="password" type="password" required minlength="8" />
 				</label>

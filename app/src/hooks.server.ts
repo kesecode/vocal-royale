@@ -46,7 +46,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		pathname.startsWith('/_app/') ||
 		pathname.startsWith('/build/') ||
 		pathname.startsWith('/assets/') ||
-		pathname === '/favicon.ico'
+		pathname === '/favicon.png'
 	const nextParam = encodeURIComponent(event.url.pathname + event.url.search)
 
 	// Page-view logging (skip assets)

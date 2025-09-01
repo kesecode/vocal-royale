@@ -13,6 +13,7 @@ export const actions: Actions = {
 			throw redirect(303, '/auth')
 		}
 		const form = await request.formData()
+		const oldPassword = String(form.get('oldPassword') || '')
 		const password = String(form.get('password') || '')
 		const passwordConfirm = String(form.get('passwordConfirm') || '')
 		if (!password || !passwordConfirm) {
@@ -22,13 +23,20 @@ export const actions: Actions = {
 			return fail(400, { message: 'Passwörter stimmen nicht überein.', variant: 'error' })
 		}
 		try {
-			await locals.pb.collection('users').update(locals.user.id, { password, passwordConfirm })
+			await locals.pb
+				.collection('users')
+				.update(locals.user.id, { oldPassword, password, passwordConfirm })
+
+			// Re-authenticate to prevent the auth token from becoming invalid after password change
+			// Assumes `locals.user.email` is available; if your identifier is `username`, swap accordingly.
+			await locals.pb.collection('users').authWithPassword(locals.user.email, password)
+
+			logger.info('Password changed', { userId: locals.user.id })
+			return { message: 'Passwort erfolgreich aktualisiert.', variant: 'success' }
 		} catch {
 			logger.warn('Password change failed', { userId: locals.user.id })
 			return fail(400, { message: 'Aktualisierung fehlgeschlagen.', variant: 'error' })
 		}
-		logger.info('Password changed', { userId: locals.user.id })
-		return { message: 'Passwort erfolgreich aktualisiert.', variant: 'success' }
 	},
 
 	changeArtist: async ({ request, locals }) => {

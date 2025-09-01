@@ -27,7 +27,9 @@
 					<div class="space-y-4 p-4 sm:p-6">
 						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 							<div>
-								<label class="mb-1 block text-sm text-white/90" for={`artist-${i}`}>Interpret</label>
+								<label class="mb-1 block text-sm text-white/90" for={`artist-${i}`}>
+									Interpret
+								</label>
 								<input
 									id={`artist-${i}`}
 									class="input"
