@@ -57,13 +57,20 @@
 
 /* Base styling */
 @layer base {
+	html,
+	body {
+		height: 100%;
+		margin: 0;
+		background-color: var(--color-brand); /* your base color */
+		background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
+		background-size: 12px 12px;
+		background-attachment: fixed;
+		color-scheme: dark; /* keeps background fixed during scroll */
+	}
 	body {
 		min-height: 100dvh; /* modern viewport unit */
 		min-height: -webkit-fill-available; /* iOS fallback */
 		margin: 0;
-	}
-	html {
-		color-scheme: light;
 	}
 	body {
 		@apply font-sans text-[--color-ink] antialiased;
@@ -189,12 +196,13 @@
 	/* Halftone overlay for comic background */
 	.bg-halftone {
 		background-color: var(--color-brand);
-    background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
-    background-size: 12px 12px;
-    background-attachment: fixed;
+		background-image: radial-gradient(rgba(0, 0, 0, 0.18) 1.2px, transparent 1.2px);
+		background-size: 12px 12px;
+		background-attachment: fixed;
 	}
-  }
+}
 
+@layer components {
 	/* Panels: clean borders with elliptical radii (no scribble) */
 	.panel {
 		position: relative;
@@ -215,10 +223,16 @@
 	/* Floating header with comic border */
 	.header-float {
 		border: 2px solid #333;
-		border-radius: 18px 10px 10px 22px/8px 20px 12px 22px;
+		border-top-left-radius: 18px 8px;
+		border-top-right-radius: 10px 20px;
+		border-bottom-right-radius: 10px 12px;
+		border-bottom-left-radius: 22px 22px;
 		box-shadow: 5px 5px 0 var(--shadow-1);
-		margin: 0 12px;
-		overflow: clip;
+		margin: 0 20px;
+		overflow: hidden;
+		position: sticky;
+		top: 10px;
+		z-index: 1000;
 	}
 
 	/* Tooltip (compact, reusable) */
