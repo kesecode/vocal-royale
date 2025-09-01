@@ -1,32 +1,27 @@
-# Build stage
+# ---- Build stage ------------------------------------------------------------
 FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Install deps with a locked, reproducible install
 COPY package*.json ./
+RUN npm ci
 
-# Install dependencies
-# Use npm install to allow adapter-node to be added without lock mismatch
-RUN npm install
-
-# Copy source code
 COPY . .
-
-# Build the app
 RUN npm run build
 
-# Production stage
 FROM node:22-alpine AS runner
 
 WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=3000
 
-# Copy built app from builder stage
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/package*.json ./
 
-# Install only production dependencies in the app root (Node adapter runs with `node build`)
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
+
+USER node
 
 EXPOSE 3000
 

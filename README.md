@@ -101,7 +101,7 @@ volumes:
 
 3) Start
 ```
-docker compose up -d --build
+docker compose up
 ```
 
 4) Access
