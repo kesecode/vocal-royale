@@ -11,19 +11,19 @@ import { logger } from '$lib/server/logger'
 import { env } from '$env/dynamic/private'
 
 function readParticipantsToEliminate(): number[] {
-  const raw = env.PARTICIPANTS_TO_ELIMINATE
-  if (raw && raw.trim()) {
-    try {
-      const arr = JSON.parse(raw)
-      if (Array.isArray(arr)) return arr.map((n) => Number(n) || 0)
-    } catch {
-      // allow comma-separated fallback like "1,0,0,0"
-      const csv = raw.split(',').map((s) => Number(s.trim()) || 0)
-      if (csv.length) return csv
-    }
-  }
-  // default
-  return [1, 0, 0, 0]
+	const raw = env.PARTICIPANTS_TO_ELIMINATE
+	if (raw && raw.trim()) {
+		try {
+			const arr = JSON.parse(raw)
+			if (Array.isArray(arr)) return arr.map((n) => Number(n) || 0)
+		} catch {
+			// allow comma-separated fallback like "1,0,0,0"
+			const csv = raw.split(',').map((s) => Number(s.trim()) || 0)
+			if (csv.length) return csv
+		}
+	}
+	// default
+	return [1, 0, 0, 0]
 }
 
 const STATE_COLLECTION = 'competition_state' as const
@@ -342,11 +342,11 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			// Sort ascending by average (lowest = worst)
 			rows.sort((a, b) => a.avg - b.avg || a.name?.localeCompare(b.name || '') || 0)
 
-            let eliminateCount = 0
-            if (round >= 1 && round <= 4) {
-                const arr = readParticipantsToEliminate()
-                eliminateCount = Math.max(0, Number(arr?.[round - 1] ?? 0))
-            }
+			let eliminateCount = 0
+			if (round >= 1 && round <= 4) {
+				const arr = readParticipantsToEliminate()
+				eliminateCount = Math.max(0, Number(arr?.[round - 1] ?? 0))
+			}
 			// In round 5 (finale) no elimination, show winner only
 			if (round === 5) eliminateCount = 0
 			// Ensure at least one participant remains

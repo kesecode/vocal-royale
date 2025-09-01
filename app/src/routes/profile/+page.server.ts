@@ -23,12 +23,12 @@ export const actions: Actions = {
 		}
 		try {
 			await locals.pb.collection('users').update(locals.user.id, { password, passwordConfirm })
-			logger.info('Password changed', { userId: locals.user.id })
-			return { message: 'Passwort erfolgreich aktualisiert.', variant: 'success' }
 		} catch {
 			logger.warn('Password change failed', { userId: locals.user.id })
 			return fail(400, { message: 'Aktualisierung fehlgeschlagen.', variant: 'error' })
 		}
+		logger.info('Password changed', { userId: locals.user.id })
+		return { message: 'Passwort erfolgreich aktualisiert.', variant: 'success' }
 	},
 
 	changeArtist: async ({ request, locals }) => {
@@ -70,5 +70,5 @@ export const actions: Actions = {
 		logger.info('Account deleted', { userId })
 		locals.pb.authStore.clear()
 		throw redirect(303, '/auth?reason=account_deleted')
-		}
 	}
+}
