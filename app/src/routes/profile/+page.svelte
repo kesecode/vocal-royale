@@ -47,7 +47,7 @@
 					onsubmit={(e) => {
 						e.preventDefault()
 						if (confirm('Bist du sicher? Dieser Vorgang kann nicht rückgängig gemacht werden.')) {
-							(e.currentTarget as HTMLFormElement).submit()
+							;(e.currentTarget as HTMLFormElement).submit()
 						}
 					}}
 				>

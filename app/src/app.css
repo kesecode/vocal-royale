@@ -202,6 +202,30 @@
 	}
 }
 
+@keyframes wiggle {
+	0%,
+	100% {
+		--wiggle: 0deg;
+	}
+	25% {
+		--wiggle: 3deg;
+	}
+	50% {
+		--wiggle: -3deg;
+	}
+	75% {
+		--wiggle: 2deg;
+	}
+}
+.line {
+	--base-rot: 0deg;
+	--wiggle: 0deg;
+	transform: rotate(calc(var(--base-rot) + var(--wiggle)));
+}
+.animate-wiggle {
+	animation: wiggle 0.45s ease-in-out both;
+}
+
 @layer components {
 	/* Panels: clean borders with elliptical radii (no scribble) */
 	.panel {
@@ -223,16 +247,25 @@
 	/* Floating header with comic border */
 	.header-float {
 		border: 2px solid #333;
-		border-top-left-radius: 18px 8px;
-		border-top-right-radius: 10px 20px;
+		border-top-left-radius: 18px 12px;
+		border-top-right-radius: 12px 20px;
 		border-bottom-right-radius: 10px 12px;
-		border-bottom-left-radius: 22px 22px;
+		border-bottom-left-radius: 12px 18px;
 		box-shadow: 5px 5px 0 var(--shadow-1);
 		margin: 0 20px;
 		overflow: hidden;
 		position: sticky;
 		top: 10px;
 		z-index: 1000;
+	}
+
+	.logo {
+		@apply border-2 border-black bg-gold px-3 py-1 drop-shadow transition active:translate-y-0.5;
+		border-top-left-radius: 18px 12px;
+		border-top-right-radius: 12px 20px;
+		border-bottom-right-radius: 10px 12px;
+		border-bottom-left-radius: 12px 18px;
+		color: black;
 	}
 
 	/* Tooltip (compact, reusable) */

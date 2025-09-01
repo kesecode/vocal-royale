@@ -51,11 +51,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		count: number
 	} | null = null
 	try {
-		const list = (await locals.pb
-			.collection('competition_state')
-			.getList(1, 1, {
-				sort: '-updated'
-			})) as import('pocketbase').ListResult<CompetitionStateResponse>
+		const list = (await locals.pb.collection('competition_state').getList(1, 1, {
+			sort: '-updated'
+		})) as import('pocketbase').ListResult<CompetitionStateResponse>
 		const rec = list.items[0]
 		if (rec) {
 			competitionFinished = Boolean(rec.competitionFinished ?? false)
