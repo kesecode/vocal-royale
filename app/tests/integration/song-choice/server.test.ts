@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { GET, POST } from './+server'
-import { createPBMock, jsonOf, makeUser, makeURL } from '../../../test/mocks'
+import { GET, POST } from '../../../src/routes/song-choice/api/+server'
+import { createPBMock, jsonOf, makeUser, makeURL } from '../../utils/mocks'
 
 // Mock Apple token module to always return a token
 vi.mock('$lib/server/appleToken', () => ({

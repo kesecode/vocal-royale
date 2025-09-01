@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { actions } from './+page.server'
-import { createPBMock, makeUser } from '../../test/mocks'
+import { actions } from '../../../src/routes/profile/+page.server'
+import { createPBMock, makeUser } from '../../utils/mocks'
 import type { TypedPocketBase, UsersResponse } from '$lib/pocketbase-types'
 
 function reqOf(fields: Record<string, unknown>): Request {

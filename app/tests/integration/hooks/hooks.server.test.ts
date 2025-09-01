@@ -35,8 +35,8 @@ vi.mock('pocketbase', () => {
 		}
 	}
 })
-import { handle as hookHandle } from './hooks.server'
-import { createPBMock, makeURL } from './test/mocks'
+import { handle as hookHandle } from '../../../src/hooks.server'
+import { createPBMock, makeURL } from '../../utils/mocks'
 
 type HookArg = Parameters<typeof hookHandle>[0]
 type HookEvent = HookArg['event']

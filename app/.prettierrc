@@ -18,7 +18,6 @@
 				"htmlWhitespaceSensitivity": "ignore",
 				"svelteSortOrder": "markup-options-scripts-styles",
 				"svelteStrictMode": true,
-				"svelteBracketNewLine": true,
 				"svelteAllowShorthand": true,
 				"svelteIndentScriptAndStyle": true
 			}

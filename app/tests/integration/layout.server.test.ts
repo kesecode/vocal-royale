@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { load as layoutLoad } from './+layout.server'
-import { createPBMock, makeURL, makeUser } from '../test/mocks'
+import { load as layoutLoad } from '../../src/routes/+layout.server'
+import { createPBMock, makeURL, makeUser } from '../utils/mocks'
 import type { TypedPocketBase, UsersResponse } from '$lib/pocketbase-types'
 
 describe('+layout.server guard', () => {

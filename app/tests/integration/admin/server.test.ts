@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { GET, POST } from './+server'
-import { createPBMock, jsonOf, makeUser, makeURL } from '../../../test/mocks'
+import { GET, POST } from '../../../src/routes/admin/api/+server'
+import { createPBMock, jsonOf, makeUser, makeURL } from '../../utils/mocks'
 
 interface MakeEventOptions {
 	method?: string
