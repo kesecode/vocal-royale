@@ -1,8 +1,8 @@
 #!/usr/bin/env sh
 set -e
 
-repo_root="$(git rev-parse --show-toplevel)"
-. "$repo_root/.husky/_/husky.sh"
+# Ins app-Verzeichnis wechseln und dort lint-staged laufen lassen
+cd "$(git rev-parse --show-toplevel)/app"
 
-# lint-staged mit Node/Config aus app/ ausführen
-npx --prefix "$repo_root/app" lint-staged
+# Nur gestagte Dateien in app/ formatieren/linten
+npx lint-staged
