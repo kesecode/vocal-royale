@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { GET } from './+server'
-import { createPBMock, jsonOf, makeUser, makeURL } from '../../../test/mocks'
+import { GET } from '../../../src/routes/rating/state/+server'
+import { createPBMock, jsonOf, makeUser, makeURL } from '../../utils/mocks'
 
 function makeEvent(pathname: string, opts?: Partial<{ user: unknown; pb: unknown }>) {
 	const url = makeURL(pathname)
