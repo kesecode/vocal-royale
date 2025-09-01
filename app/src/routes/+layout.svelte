@@ -40,14 +40,14 @@
 						<!-- Linie 2: Basis +1deg -->
 						<span
 							class="line block h-1 w-7 rounded-full border border-black bg-white will-change-transform"
-							style="--base-rot:1deg; animation-delay:40ms"
+							style="--base-rot:1deg; animation-delay:20ms"
 							class:animate-wiggle={wiggle}
 						></span>
 
 						<!-- Linie 3: Basis -1deg -->
 						<span
 							class="line block h-1 w-7 rounded-full border border-black bg-white will-change-transform"
-							style="--base-rot:-1deg; animation-delay:80ms"
+							style="--base-rot:-1deg; animation-delay:50ms"
 							class:animate-wiggle={wiggle}
 						></span>
 					</div>
