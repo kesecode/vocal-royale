@@ -27,7 +27,6 @@
 					aria-controls="main-nav"
 					aria-expanded={menuOpen}
 					onclick={toggleMenu}
-					class:md:inline-flex={forceHamburger}
 				>
 					<span class="sr-only">Menü öffnen</span>
 					<div class="flex flex-col items-center justify-center gap-1.5">
@@ -55,7 +54,7 @@
 				</button>
 
 				<!-- Desktop-Navigation (nur wenn nicht erzwungen) -->
-				{#if isLoggedIn && !forceHamburger}
+				{#if isLoggedIn}
 					<nav id="main-nav" class="hidden items-center gap-4 text-sm md:flex">
 						{#each navLinks as link}
 							<a
@@ -71,13 +70,14 @@
 		</div>
 
 		<!-- Mobile/Erzwungenes Menü: Header wächst nach unten, vertikale Liste -->
-		{#if isLoggedIn && (forceHamburger || menuOpen)}
+		{#if isLoggedIn}
 			<nav
 				id="main-nav"
-				data-open={menuOpen}
-				class="grid grid-rows-[0fr] px-4 transition-[grid-template-rows] duration-300 ease-in-out sm:px-6 md:hidden lg:px-8 data-[open=true]:grid-rows-[1fr]"
+				class="overflow-hidden px-4 transition-all duration-500 ease-in-out sm:px-6 lg:px-8"
+				class:max-h-0={!menuOpen}
+				class:max-h-96={menuOpen}
 			>
-				<div class="overflow-hidden">
+				<div>
 					<!-- Comic-Trennlinie -->
 					<div class="rotate-0.5 mt-2 h-1 w-full rounded-full border border-black bg-white"></div>
 					<ul class="mt-3 flex flex-col gap-2 pb-3">
@@ -142,7 +142,4 @@
 			{ href: '/profile', label: 'Profil' }
 		].filter(Boolean) as { href: string; label: string }[]
 	)
-
-	// Wenn mehr als 2 Menüpunkte -> erzwinge Hamburger auf allen Breakpoints
-	const forceHamburger = $derived(navLinks.length > 2)
 </script>
