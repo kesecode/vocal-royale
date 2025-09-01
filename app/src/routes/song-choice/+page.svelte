@@ -81,7 +81,6 @@
 <!-- styles removed; centralized in app.css -->
 
 <script lang="ts">
-	import { logger } from '$lib/server/logger'
 	import { onMount } from 'svelte'
 	import { slide } from 'svelte/transition'
 
@@ -116,7 +115,7 @@
 				}
 			}
 		} catch {
-			logger.error('Error fetching existing song choices')
+			console.error('Error fetching existing song choices')
 		}
 	})
 
@@ -150,7 +149,7 @@
 					try {
 						localStorage.setItem(STORAGE_KEY, JSON.stringify(songs))
 					} catch {
-						logger.error('Error saving song choices to localStorage')
+						console.error('Error saving song choices to localStorage')
 					}
 					errors[i] = 'Nicht eingeloggt. Lokal gespeichert.'
 					return
@@ -193,7 +192,7 @@
 					}
 				}
 			} catch {
-				logger.error('Error fetching existing song choices after save')
+				console.error('Error fetching existing song choices after save')
 			}
 			return
 		} catch {
