@@ -1,23 +1,12 @@
 #!/usr/bin/env sh
 
-# keine stillen Abbrüche – wir handeln Fehler selbst
+# Fehler manuell behandeln, damit wir saubere Meldungen ausgeben können
 set -u
 
 # Ins app-Verzeichnis wechseln
 cd "$(git rev-parse --show-toplevel)/app"
 
-# Farben (falls Terminal unterstützt)
-if [ -t 1 ]; then
-  RED="$(printf '\033[31m')"
-  GREEN="$(printf '\033[32m')"
-  YELLOW="$(printf '\033[33m')"
-  BOLD="$(printf '\033[1m')"
-  RESET="$(printf '\033[0m')"
-else
-  RED=""; GREEN=""; YELLOW=""; BOLD=""; RESET=""
-fi
-
-echo "${BOLD}🔎 Pre-commit: app/${RESET}"
+echo "🔎 Pre-commit: app/"
 
 # 1) Nur laufen lassen, wenn in app/ relevante Dateien gestaged sind
 STAGED_MATCHING_FILES="$(git diff --name-only --cached -- \
@@ -31,21 +20,16 @@ if [ -z "$STAGED_MATCHING_FILES" ]; then
 else
   echo "🧹 lint-staged läuft…"
   if ! npx lint-staged --quiet; then
-    echo "${RED}❌ lint-staged hat Fehler gemeldet. Commit abgebrochen.${RESET}"
+    echo "❌ lint-staged hat Fehler gemeldet. Commit abgebrochen."
     exit 1
   fi
 fi
 
-# 2) Vollständiger Lint-Check (wie in CI) – immer ausführen
+# 2) Vollständiger Check über die App (wie in CI) – Output LIVE anzeigen
 echo "🧪 npm run lint (vollständiger Check)…"
-LINT_OUTPUT="$(npm run -s lint 2>&1)"
-LINT_STATUS=$?
-
-if [ $LINT_STATUS -ne 0 ]; then
-  echo "${RED}❌ Lint-Check fehlgeschlagen. Commit abgebrochen.${RESET}"
-  echo "— Ausgabe —"
-  echo "$LINT_OUTPUT"
+if ! npm run lint; then
+  echo "❌ Lint-Check fehlgeschlagen. Commit abgebrochen."
   exit 1
 fi
 
-echo "${GREEN}✅ Alles sauber. Commit kann erstellt werden.${RESET}"
+echo "✅ Alles sauber. Commit kann erstellt werden."

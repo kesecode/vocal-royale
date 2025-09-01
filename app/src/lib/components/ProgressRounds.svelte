@@ -1,5 +1,5 @@
 <div class="progress">
-	{#each items as r}
+	{#each items as r (r)}
 		<button
 			type="button"
 			class={`progress-btn ${r < activeRound ? 'is-past' : r === activeRound ? 'is-current' : 'is-future'} ${currentRound === r ? 'is-selected' : ''}`}

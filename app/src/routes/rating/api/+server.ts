@@ -46,7 +46,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		const participants: Participant[] = users
 			.filter((u) => u.id !== locals.user!.id)
 			.filter((u) => u.role === 'participant')
-			.filter((u) => !Boolean(u.eliminated ?? false))
+			.filter((u) => !u.eliminated)
 			.map((u) => {
 				const name =
 					u.name ||

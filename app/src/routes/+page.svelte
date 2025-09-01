@@ -46,7 +46,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.participants as u}
+						{#each data.participants as u (u.id || u.name)}
 							<tr class="border-t border-[#333]/40 align-middle">
 								<td class="p-2 sm:p-3">{u.name}</td>
 								<td class="p-2 sm:p-3">{u.artistName || '—'}</td>
@@ -70,7 +70,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.spectators as u}
+						{#each data.spectators as u (u.id || u.name)}
 							<tr class="border-t border-[#333]/40 align-middle">
 								<td class="p-2 sm:p-3">{u.name}</td>
 							</tr>
@@ -92,7 +92,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each data.jurors as u}
+						{#each data.jurors as u (u.id || u.name)}
 							<tr class="border-t border-[#333]/40 align-middle">
 								<td class="p-2 sm:p-3">{u.name}</td>
 							</tr>

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 const rootDir = fileURLToPath(new URL('./', import.meta.url))
 
-export default defineConfig(({ mode, command }) => {
+export default defineConfig(({ command }) => {
 	const isVitest = !!process.env.VITEST
 	const isServe = command === 'serve' && !isVitest
 	return {

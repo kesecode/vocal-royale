@@ -1,5 +1,5 @@
 <div class="stars" aria-label={editable ? 'Sterne vergeben' : 'Sterne'}>
-	{#each items as s}
+	{#each items as s (s)}
 		{#if editable}
 			<button
 				type="button"

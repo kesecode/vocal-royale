@@ -159,7 +159,6 @@
 
 <script lang="ts">
 	import type { PageProps } from './$types'
-	import type { UsersResponse } from '$lib/pocketbase-types'
 	import { enhance } from '$app/forms'
 
 	const props = $props()

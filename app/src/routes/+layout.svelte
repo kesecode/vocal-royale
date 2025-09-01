@@ -56,7 +56,7 @@
 				<!-- Desktop-Navigation (nur wenn nicht erzwungen) -->
 				{#if isLoggedIn}
 					<nav id="main-nav" class="hidden items-center gap-4 text-sm md:flex">
-						{#each navLinks as link}
+						{#each navLinks as link (link.href)}
 							<a
 								href={link.href}
 								class="font-display text-xl tracking-tight drop-shadow hover:underline sm:text-2xl"
@@ -103,7 +103,7 @@
 						></path>
 					</svg>
 					<ul class="flex flex-col gap-2">
-						{#each navLinks as link}
+						{#each navLinks as link (link.href)}
 							<li>
 								<a
 									href={link.href}

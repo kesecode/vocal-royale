@@ -106,7 +106,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								{#each participants as p}
+								{#each participants as p (p.id)}
 									<tr class="border-t border-[#333]/40 align-middle hover:bg-white/5">
 										<td class="p-2 sm:p-3">
 											<div class="font-medium">{p.firstName || p.name}</div>
@@ -146,40 +146,38 @@
 		title={selected ? selected.firstName || selected.name : ''}
 		onclose={closeOverlay}
 	>
-		{#snippet children()}
-			{#if selected}
-				<div class="space-y-3">
-					<div>
-						<div class="text-sm text-white/60">Runde {currentRound}</div>
-						<div class="text-lg font-semibold">{selected.firstName || selected.name}</div>
-						{#if selected.artistName}
-							<div class="text-xs text-white/70">a.k.a. {selected.artistName}</div>
-						{/if}
-					</div>
-					<div>
-						<div class="mb-1 text-sm text-white/80">Sterne</div>
-						<StarRating
-							editable={canRate}
-							value={ratings[selected.id]?.rating ?? 0}
-							onchange={(e: CustomEvent<number>) => selected && setRating(selected.id, e.detail)}
-						/>
-						{#if ratings[selected.id]?.error}
-							<div class="mt-1 text-xs text-rose-200">{ratings[selected.id].error}</div>
-						{/if}
-					</div>
-					<div>
-						<div class="mb-1 text-sm text-white/80">Kommentar (optional)</div>
-						<input
-							class="input w-full"
-							type="text"
-							bind:value={ratings[selected.id].comment}
-							maxlength="100"
-							placeholder="(max. 100 Zeichen)"
-						/>
-					</div>
+		{#if selected}
+			<div class="space-y-3">
+				<div>
+					<div class="text-sm text-white/60">Runde {currentRound}</div>
+					<div class="text-lg font-semibold">{selected.firstName || selected.name}</div>
+					{#if selected.artistName}
+						<div class="text-xs text-white/70">a.k.a. {selected.artistName}</div>
+					{/if}
 				</div>
-			{/if}
-		{/snippet}
+				<div>
+					<div class="mb-1 text-sm text-white/80">Sterne</div>
+					<StarRating
+						editable={canRate}
+						value={ratings[selected.id]?.rating ?? 0}
+						onchange={(e: CustomEvent<number>) => selected && setRating(selected.id, e.detail)}
+					/>
+					{#if ratings[selected.id]?.error}
+						<div class="mt-1 text-xs text-rose-200">{ratings[selected.id].error}</div>
+					{/if}
+				</div>
+				<div>
+					<div class="mb-1 text-sm text-white/80">Kommentar (optional)</div>
+					<input
+						class="input w-full"
+						type="text"
+						bind:value={ratings[selected.id].comment}
+						maxlength="100"
+						placeholder="(max. 100 Zeichen)"
+					/>
+				</div>
+			</div>
+		{/if}
 
 		{#snippet footer()}
 			{#if selected}
