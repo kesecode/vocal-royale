@@ -6,7 +6,7 @@
 </p>
 
 <div class="space-y-4">
-	{#each songs as song, i}
+	{#each songs as song, i (i)}
 		<section class={`panel ${i % 2 === 0 ? 'panel-accent' : 'panel-brand'} overflow-hidden p-0`}>
 			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="font-semibold">Runde {i + 1}</div>
@@ -34,7 +34,7 @@
 									id={`artist-${i}`}
 									class="input"
 									type="text"
-									bind:value={songs[i].artist}
+									bind:value={song.artist}
 									placeholder="z. B. Queen"
 								/>
 							</div>
@@ -44,7 +44,7 @@
 									id={`songTitle-${i}`}
 									class="input"
 									type="text"
-									bind:value={songs[i].songTitle}
+									bind:value={song.songTitle}
 									placeholder="z. B. Bohemian Rhapsody"
 								/>
 							</div>
@@ -52,7 +52,7 @@
 
 						<div class="flex items-center gap-3">
 							<button type="button" class="btn-brand" on:click={() => save(i)}>Speichern</button>
-							{#if songs[i]?.appleMusicSongId && songs[i].appleMusicSongId !== 'null'}
+							{#if song?.appleMusicSongId && song.appleMusicSongId !== 'null'}
 								<button
 									type="button"
 									class="btn-apple"
@@ -114,7 +114,9 @@
 					}))
 				}
 			}
-		} catch {}
+		} catch {
+			console.error('Error fetching existing song choices')
+		}
 	})
 
 	function toggle(i: number) {
@@ -146,7 +148,9 @@
 					// Not logged in → fallback local so der Nutzer nicht alles verliert
 					try {
 						localStorage.setItem(STORAGE_KEY, JSON.stringify(songs))
-					} catch {}
+					} catch {
+						console.error('Error saving song choices to localStorage')
+					}
 					errors[i] = 'Nicht eingeloggt. Lokal gespeichert.'
 					return
 				}
@@ -187,7 +191,9 @@
 						}))
 					}
 				}
-			} catch {}
+			} catch {
+				console.error('Error fetching existing song choices after save')
+			}
 			return
 		} catch {
 			errors[i] = 'Netzwerkfehler beim Speichern.'

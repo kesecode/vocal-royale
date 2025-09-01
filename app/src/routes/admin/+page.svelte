@@ -99,7 +99,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								{#each results.slice().sort((a, b) => b.avg - a.avg) as r}
+								{#each results.slice().sort((a, b) => b.avg - a.avg) as r (r.id)}
 									<tr
 										class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''}`}
 									>

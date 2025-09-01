@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+
+# Fehler manuell behandeln, damit wir saubere Meldungen ausgeben können
+set -u
+
+# Ins app-Verzeichnis wechseln
+cd "$(git rev-parse --show-toplevel)/app"
+
+echo "🔎 Pre-commit: app/"
+
+# 1) Nur laufen lassen, wenn in app/ relevante Dateien gestaged sind
+STAGED_MATCHING_FILES="$(git diff --name-only --cached -- \
+  'src/**' \
+  '**/*.svelte' '**/*.ts' '**/*.js' '**/*.tsx' '**/*.jsx' \
+  '**/*.json' '**/*.css' '**/*.md' \
+  | tr -d '\r')"
+
+if [ -z "$STAGED_MATCHING_FILES" ]; then
+  echo "✅ Keine relevanten Dateien in app/ gestaged – überspringe lint-staged."
+else
+  echo "🧹 lint-staged läuft…"
+  if ! npx lint-staged --quiet; then
+    echo "❌ lint-staged hat Fehler gemeldet. Commit abgebrochen."
+    exit 1
+  fi
+fi
+
+# 2) Vollständiger Check über die App (wie in CI) – Output LIVE anzeigen
+echo "🧪 npm run lint (vollständiger Check)…"
+if ! npm run lint; then
+  echo "❌ Lint-Check fehlgeschlagen. Commit abgebrochen."
+  exit 1
+fi
+
+echo "✅ Alles sauber. Commit kann erstellt werden."
