@@ -70,17 +70,39 @@
 		</div>
 
 		<!-- Mobile/Erzwungenes Menü: Header wächst nach unten, vertikale Liste -->
-		{#if isLoggedIn}
+		{#if isLoggedIn && menuOpen}
 			<nav
 				id="main-nav"
-				class="overflow-hidden px-4 transition-all duration-500 ease-in-out sm:px-6 lg:px-8"
-				class:max-h-0={!menuOpen}
-				class:max-h-96={menuOpen}
+				in:slide={{ duration: 250 }}
+				out:slide={{ duration: 200 }}
+				class="px-4 pt-2 pb-3 sm:px-6 lg:px-8"
+				style="overflow-anchor: none;"
 			>
-				<div>
+				<div class="space-y-3">
 					<!-- Comic-Trennlinie -->
-					<div class="rotate-0.5 mt-2 h-1 w-full rounded-full border border-black bg-white"></div>
-					<ul class="mt-3 flex flex-col gap-2 pb-3">
+					<svg
+						viewBox="0 0 300 10"
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-2 w-full pl-1 pr-1"
+						preserveAspectRatio="none"
+						overflow="visible"
+					>
+						<path
+							d="M -2 5 C 73 1.5, 227 8.5, 302 5"
+							stroke="black"
+							stroke-width="5"
+							stroke-linecap="round"
+							fill="none"
+						/>
+						<path
+							d="M -2 5 C 73 1.5, 227 8.5, 302 5"
+							stroke="white"
+							stroke-width="2.5"
+							stroke-linecap="round"
+							fill="none"
+						/>
+					</svg>
+					<ul class="flex flex-col gap-2">
 						{#each navLinks as link}
 							<li>
 								<a
@@ -115,6 +137,7 @@
 <script lang="ts">
 	import '../app.css'
 	import favicon from '$lib/assets/favicon.svg'
+	import { slide } from 'svelte/transition'
 
 	let { children, data } = $props()
 	const isLoggedIn = $derived(!!data?.user)
