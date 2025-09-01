@@ -6,6 +6,7 @@ on:
 
 jobs:
   lint-and-format-check:
+    name: Run linter and format check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
