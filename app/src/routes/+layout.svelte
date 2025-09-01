@@ -74,24 +74,26 @@
 		{#if isLoggedIn && (forceHamburger || menuOpen)}
 			<nav
 				id="main-nav"
-				class="overflow-hidden px-4 transition-all duration-300 ease-in-out sm:px-6 md:hidden lg:px-8"
-				style={`max-height: ${menuOpen ? '500px' : '0px'}; opacity: ${menuOpen ? '1' : '0'};`}
+				data-open={menuOpen}
+				class="grid grid-rows-[0fr] px-4 transition-[grid-template-rows] duration-300 ease-in-out sm:px-6 md:hidden lg:px-8 data-[open=true]:grid-rows-[1fr]"
 			>
-				<!-- Comic-Trennlinie -->
-				<div class="rotate-0.5 mt-2 h-1 w-full rounded-full border border-black bg-white"></div>
-				<ul class="mt-3 flex flex-col gap-2 pb-3">
-					{#each navLinks as link}
-						<li>
-							<a
-								href={link.href}
-								class="block rounded-md px-2 py-2 text-base hover:underline"
-								onclick={closeMenu}
-							>
-								{link.label}
-							</a>
-						</li>
-					{/each}
-				</ul>
+				<div class="overflow-hidden">
+					<!-- Comic-Trennlinie -->
+					<div class="rotate-0.5 mt-2 h-1 w-full rounded-full border border-black bg-white"></div>
+					<ul class="mt-3 flex flex-col gap-2 pb-3">
+						{#each navLinks as link}
+							<li>
+								<a
+									href={link.href}
+									class="block rounded-md px-2 py-2 text-base hover:underline"
+									onclick={closeMenu}
+								>
+									{link.label}
+								</a>
+							</li>
+						{/each}
+					</ul>
+				</div>
 			</nav>
 		{/if}
 	</header>
