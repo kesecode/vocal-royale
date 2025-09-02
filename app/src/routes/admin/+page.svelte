@@ -67,6 +67,10 @@
 
 				<button class="btn-danger" onclick={resetGame}>Spiel zurücksetzen</button>
 			</div>
+
+			<div class="pt-3 border-t border-white/10">
+				<a href="/admin/settings" class="btn-secondary">Einstellungen</a>
+			</div>
 		</div>
 	</div>
 

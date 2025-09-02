@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { makeSettings, mockSettings } from '../../utils/mocks'
+import { makeSettings, makeSettingsRecord, mockSettings } from '../../utils/mocks'
 
 describe('Settings Utilities', () => {
 	describe('makeSettings factory', () => {
@@ -155,6 +155,54 @@ describe('Settings Utilities', () => {
 			const remaining = Math.max(0, maxParticipants - currentParticipants)
 
 			expect(remaining).toBe(0) // Should never go negative
+		})
+	})
+
+	describe('makeSettingsRecord factory', () => {
+		it('should create settings record with default values', () => {
+			const record = makeSettingsRecord()
+
+			expect(record).toMatchObject({
+				id: 'settings_record_1',
+				collectionName: 'settings',
+				maxParticipantCount: 15,
+				maxJurorCount: 3,
+				totalRounds: 5,
+				numberOfFinalSongs: 2,
+				songChoiceDeadline: null,
+				roundEliminationPattern: '5,3,3,2'
+			})
+		})
+
+		it('should override default values with partial data', () => {
+			const record = makeSettingsRecord({
+				maxParticipantCount: 20,
+				maxJurorCount: 5
+			})
+
+			expect(record.maxParticipantCount).toBe(20)
+			expect(record.maxJurorCount).toBe(5)
+			expect(record.totalRounds).toBe(5) // default
+		})
+
+		it('should handle all field overrides', () => {
+			const record = makeSettingsRecord({
+				maxParticipantCount: 12,
+				maxJurorCount: 4,
+				totalRounds: 3,
+				numberOfFinalSongs: 1,
+				songChoiceDeadline: '2024-12-31T23:59:59.000Z',
+				roundEliminationPattern: '6,5'
+			})
+
+			expect(record).toMatchObject({
+				maxParticipantCount: 12,
+				maxJurorCount: 4,
+				totalRounds: 3,
+				numberOfFinalSongs: 1,
+				songChoiceDeadline: '2024-12-31T23:59:59.000Z',
+				roundEliminationPattern: '6,5'
+			})
 		})
 	})
 })

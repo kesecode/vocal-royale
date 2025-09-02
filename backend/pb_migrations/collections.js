@@ -1088,7 +1088,7 @@ migrate((app) => {
       "viewRule": "@request.auth.id != ''"
     },
     {
-      "createRule": null,
+      "createRule": "@request.auth.role = 'admin'",
       "deleteRule": null,
       "fields": [
         {

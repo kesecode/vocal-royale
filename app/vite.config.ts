@@ -23,7 +23,7 @@ export default defineConfig(({ command }) => {
 							if (!isServe) return
 							;(async () => {
 								try {
-									const mod = await server.ssrLoadModule('/src/lib/server/ts')
+									const mod = await server.ssrLoadModule('/src/lib/server/bootstrap.ts')
 									if (typeof mod?.initBootstrap === 'function') {
 										mod.initBootstrap()
 									}

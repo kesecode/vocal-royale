@@ -101,6 +101,33 @@ export function makeSettings(key: string, value: string | number | boolean, desc
 	}
 }
 
+// Create a settings record with direct field properties (new schema)
+export function makeSettingsRecord(
+	partial: Partial<{
+		maxParticipantCount?: number
+		maxJurorCount?: number
+		totalRounds?: number
+		numberOfFinalSongs?: number
+		songChoiceDeadline?: string
+		roundEliminationPattern?: string
+	}> = {}
+) {
+	return {
+		id: 'settings_record_1',
+		created: new Date().toISOString(),
+		updated: new Date().toISOString(),
+		collectionId: 'settings_collection_id',
+		collectionName: 'settings',
+		maxParticipantCount: 15,
+		maxJurorCount: 3,
+		totalRounds: 5,
+		numberOfFinalSongs: 2,
+		songChoiceDeadline: null,
+		roundEliminationPattern: '5,3,3,2',
+		...partial
+	}
+}
+
 // Default settings for testing
 export const mockSettings = {
 	maxParticipantCount: makeSettings('maxParticipantCount', 8, 'Maximale Anzahl Teilnehmer'),

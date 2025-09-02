@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { POST } from '../../../src/routes/api/role/+server'
-import { createPBMock, makeUser, makeSettings } from '../../utils/mocks'
+import { createPBMock, makeUser, makeSettingsRecord } from '../../utils/mocks'
 
 type TestLocals = {
 	pb: ReturnType<typeof createPBMock>
@@ -142,8 +142,10 @@ describe('/api/role endpoint', () => {
 				settings: {
 					getFullList: () =>
 						Promise.resolve([
-							makeSettings('maxParticipantCount', 5),
-							makeSettings('maxJurorCount', 3)
+							makeSettingsRecord({
+								maxParticipantCount: 5,
+								maxJurorCount: 3
+							})
 						])
 				}
 			})
@@ -176,8 +178,10 @@ describe('/api/role endpoint', () => {
 				settings: {
 					getFullList: () =>
 						Promise.resolve([
-							makeSettings('maxParticipantCount', 5),
-							makeSettings('maxJurorCount', 3)
+							makeSettingsRecord({
+								maxParticipantCount: 5,
+								maxJurorCount: 3
+							})
 						])
 				}
 			})

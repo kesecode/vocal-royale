@@ -73,7 +73,7 @@ export type SettingsRecord = {
 	totalRounds?: number
 	numberOfFinalSongs?: number
 	songChoiceDeadline?: string // datetime
-	roundEliminationPattern?: string // e.g. "3,2,1,0,0" (number of eliminations per round)
+	roundEliminationPattern?: string // e.g. "5,3,3,2" (number of eliminations per round)
 }
 
 // Competition State
