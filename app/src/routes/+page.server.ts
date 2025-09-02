@@ -2,7 +2,8 @@ import type { PageServerLoad } from './$types'
 import type {
 	UsersResponse,
 	CompetitionStateResponse,
-	RatingsResponse
+	RatingsResponse,
+	SettingsResponse
 } from '$lib/pocketbase-types'
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -39,6 +40,24 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.filter((u) => u.role === 'juror')
 		.map((u) => ({ id: u.id, name: mkName(u) }))
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'))
+
+	// Load role selection settings
+	let maxParticipants = 8 // default fallback
+	let maxJurors = 5 // default fallback
+	try {
+		const settings = (await locals.pb.collection('settings').getFullList()) as SettingsResponse[]
+		const maxParticipantSetting = settings.find((s) => s.key === 'maxParticipantCount')
+		const maxJurorSetting = settings.find((s) => s.key === 'maxJurorCount')
+
+		if (maxParticipantSetting && typeof maxParticipantSetting.value === 'number') {
+			maxParticipants = maxParticipantSetting.value
+		}
+		if (maxJurorSetting && typeof maxJurorSetting.value === 'number') {
+			maxJurors = maxJurorSetting.value
+		}
+	} catch {
+		// Use defaults if settings collection doesn't exist yet
+	}
 
 	// Check if competition finished and compute winner
 	let competitionFinished = false as boolean
@@ -100,6 +119,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		spectators,
 		jurors,
 		competitionFinished,
-		winner
+		winner,
+		// Role selection data
+		maxParticipants,
+		maxJurors,
+		currentParticipants: participants.length,
+		currentJurors: jurors.length,
+		// User needs to select role if they have default role
+		needsRoleSelection: locals.user?.role === 'default'
 	}
 }

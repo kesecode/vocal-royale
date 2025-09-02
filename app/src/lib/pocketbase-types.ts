@@ -26,6 +26,7 @@ export type Collections = {
 	ratings: RatingsResponse
 	users: UsersResponse
 	competitionState: CompetitionStateResponse
+	settings: SettingsResponse
 }
 
 // Records
@@ -38,7 +39,7 @@ export type SongChoicesRecord = {
 	appleMusicSongId?: string
 }
 
-export type UserRole = 'participant' | 'spectator' | 'juror' | 'admin'
+export type UserRole = 'default' | 'participant' | 'spectator' | 'juror' | 'admin'
 
 export type UsersRecord = {
 	email: string
@@ -60,6 +61,13 @@ export type RatingsRecord = {
 	round: number // 1..5
 	rating: number // 1..5
 	comment?: string // max 100 chars
+}
+
+// Settings
+export type SettingsRecord = {
+	key: string // unique setting key
+	value: string | number | boolean // setting value
+	description?: string // optional description
 }
 
 // Competition State
@@ -84,6 +92,7 @@ export type UsersResponse<Texpand = unknown> = UsersRecord & AuthSystemFields<Te
 export type RatingsResponse<Texpand = unknown> = RatingsRecord & BaseSystemFields<Texpand>
 export type CompetitionStateResponse<Texpand = unknown> = CompetitionStateRecord &
 	BaseSystemFields<Texpand>
+export type SettingsResponse<Texpand = unknown> = SettingsRecord & BaseSystemFields<Texpand>
 
 // Typed PocketBase instance
 export interface TypedPocketBase extends PocketBase {
@@ -91,5 +100,6 @@ export interface TypedPocketBase extends PocketBase {
 	collection(idOrName: 'ratings'): RecordService<RatingsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 	collection(idOrName: 'competition_state'): RecordService<CompetitionStateResponse>
+	collection(idOrName: 'settings'): RecordService<SettingsResponse>
 	collection(idOrName: string): RecordService<RecordModel>
 }

@@ -104,10 +104,76 @@
 	{/if}
 </section>
 
+<!-- Role Selection Modal -->
+<Modal open={showRoleSelection} title="Rolle auswählen" onclose={closeRoleSelection}>
+	<RoleSelection
+		maxParticipants={data.maxParticipants}
+		maxJurors={data.maxJurors}
+		currentParticipants={data.currentParticipants}
+		currentJurors={data.currentJurors}
+		isLoading={roleSelectionLoading}
+		onCancel={closeRoleSelection}
+		onSubmit={handleRoleSubmit}
+	/>
+</Modal>
+
 <script lang="ts">
+	import { onMount } from 'svelte'
+	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
+	import type { UserRole } from '$lib/pocketbase-types'
+	import Modal from '$lib/components/Modal.svelte'
+	import RoleSelection from '$lib/components/RoleSelection.svelte'
+
 	let { data }: PageProps = $props()
+
 	const displayName =
 		data.user?.firstName || data.user?.name || data.user?.username || data.user?.id
 	const competitionFinished = $derived(Boolean(data?.competitionFinished ?? false))
+
+	let showRoleSelection = $state(false)
+	let roleSelectionLoading = $state(false)
+
+	onMount(() => {
+		// Show role selection modal if user needs to select a role
+		if (data.needsRoleSelection) {
+			showRoleSelection = true
+		}
+	})
+
+	function closeRoleSelection() {
+		if (!data.needsRoleSelection) {
+			showRoleSelection = false
+		}
+		// If user needs role selection, don't allow closing without selection
+	}
+
+	async function handleRoleSubmit(role: UserRole) {
+		if (roleSelectionLoading) return
+
+		roleSelectionLoading = true
+		try {
+			const response = await fetch('/api/role', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ role })
+			})
+
+			if (!response.ok) {
+				const errorData = await response.json().catch(() => ({ error: 'Unbekannter Fehler' }))
+				alert(`Fehler: ${errorData.error || 'Konnte Rolle nicht speichern'}`)
+				return
+			}
+
+			// Success - reload page to reflect new role
+			goto('/', { invalidateAll: true })
+		} catch (error) {
+			console.error('Error saving role:', error)
+			alert('Netzwerkfehler beim Speichern der Rolle')
+		} finally {
+			roleSelectionLoading = false
+		}
+	}
 </script>
