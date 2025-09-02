@@ -742,10 +742,11 @@ migrate((app) => {
           "maxSelect": 1,
           "name": "role",
           "presentable": false,
-          "required": true,
+          "required": false,
           "system": false,
           "type": "select",
           "values": [
+            "default",
             "participant",
             "spectator",
             "juror",
@@ -840,7 +841,7 @@ migrate((app) => {
       },
       "system": false,
       "type": "auth",
-      "updateRule": "",
+      "updateRule": "id = @request.auth.id",
       "verificationTemplate": {
         "body": "<p>Hello,</p>\n<p>Thank you for joining us at {APP_NAME}.</p>\n<p>Click on the button below to verify your email address.</p>\n<p>\n  <a class=\"btn\" href=\"{APP_URL}/_/#/auth/confirm-verification/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Verify</a>\n</p>\n<p>\n  Thanks,<br/>\n  {APP_NAME} team\n</p>",
         "subject": "Verify your {APP_NAME} email"
@@ -851,7 +852,7 @@ migrate((app) => {
       "viewRule": "@request.auth.id != ''"
     },
     {
-      "createRule": "",
+      "createRule": "@request.auth.role = 'admin'",
       "deleteRule": null,
       "fields": [
         {
@@ -951,16 +952,16 @@ migrate((app) => {
       ],
       "id": "pbc_3454597180",
       "indexes": [],
-      "listRule": "",
+      "listRule": "@request.auth.role = 'admin'",
       "name": "competition_state",
       "system": false,
       "type": "base",
-      "updateRule": "",
-      "viewRule": ""
+      "updateRule": "@request.auth.role = 'admin'",
+      "viewRule": "@request.auth.role != 'default'"
     },
     {
-      "createRule": "",
-      "deleteRule": "",
+      "createRule": "@request.auth.role = 'spectator' || @request.auth.role = 'juror'",
+      "deleteRule": "id = @request.auth.id",
       "fields": [
         {
           "autogeneratePattern": "[a-z0-9]{15}",
@@ -1005,7 +1006,7 @@ migrate((app) => {
         {
           "hidden": false,
           "id": "number3632866850",
-          "max": 5,
+          "max": 10,
           "min": 1,
           "name": "rating",
           "onlyInt": false,
@@ -1039,19 +1040,172 @@ migrate((app) => {
           "required": false,
           "system": false,
           "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "number230520855",
+          "max": 10,
+          "min": 1,
+          "name": "performanceRating",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number111333315",
+          "max": 10,
+          "min": 1,
+          "name": "vocalRating",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number108596012",
+          "max": 10,
+          "min": 1,
+          "name": "difficultyRating",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
         }
       ],
       "id": "pbc_1608874019",
       "indexes": [],
-      "listRule": "",
+      "listRule": "@request.auth.id != ''",
       "name": "ratings",
       "system": false,
       "type": "base",
-      "updateRule": "",
-      "viewRule": ""
+      "updateRule": "id = @request.auth.id",
+      "viewRule": "@request.auth.id != ''"
     },
     {
-      "createRule": "user = @request.auth.id",
+      "createRule": "@request.auth.role = 'admin'",
+      "deleteRule": null,
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "number983500123",
+          "max": null,
+          "min": null,
+          "name": "maxParticipantCount",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number3578455248",
+          "max": null,
+          "min": null,
+          "name": "maxJurorCount",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "json1172367516",
+          "maxSize": 0,
+          "name": "roundEliminationPattern",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "json"
+        },
+        {
+          "hidden": false,
+          "id": "number1956227788",
+          "max": null,
+          "min": null,
+          "name": "totalRounds",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "number3001631701",
+          "max": null,
+          "min": null,
+          "name": "numberOfFinalSongs",
+          "onlyInt": false,
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number"
+        },
+        {
+          "hidden": false,
+          "id": "date774824417",
+          "max": "",
+          "min": "",
+          "name": "songChoiceDeadline",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "date"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        }
+      ],
+      "id": "pbc_2769025244",
+      "indexes": [],
+      "listRule": "@request.auth.role = 'admin'",
+      "name": "settings",
+      "system": false,
+      "type": "base",
+      "updateRule": "@request.auth.role = 'admin'",
+      "viewRule": "@request.auth.role = 'admin'"
+    },
+    {
+      "createRule": "@request.auth.role = 'participant'",
       "deleteRule": "user = @request.auth.id",
       "fields": [
         {
@@ -1173,7 +1327,7 @@ migrate((app) => {
       "name": "song_choices",
       "system": false,
       "type": "base",
-      "updateRule": "user = @request.auth.id",
+      "updateRule": "user = @request.auth.id || @request.auth.role = 'admin'",
       "viewRule": "user = @request.auth.id"
     }
   ];

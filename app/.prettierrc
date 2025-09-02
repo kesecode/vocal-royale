@@ -8,7 +8,7 @@
 	"arrowParens": "always",
 	"endOfLine": "lf",
 
-	"plugins": ["prettier-plugin-svelte", "prettier-plugin-tailwindcss"],
+	"plugins": ["prettier-plugin-svelte"],
 
 	"overrides": [
 		{
@@ -22,9 +22,5 @@
 				"svelteIndentScriptAndStyle": true
 			}
 		}
-	],
-
-	"tailwindStylesheet": "./src/app.css",
-	"tailwindConfig": "./tailwind.config.cjs",
-	"tailwindFunctions": ["clsx", "cn"]
+	]
 }

@@ -74,13 +74,16 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const allowCommon =
 			pathname === '/' || pathname === '/profile' || pathname.startsWith('/profile')
 		const allowForbidden = pathname === '/forbidden'
+		const allowRoleSelection = pathname === '/api/role' // Allow role selection API for default users
 
 		const allowParticipant = pathname.startsWith('/song-choice')
 		const allowSpectatorJuror = pathname.startsWith('/rating')
 		const allowAdmin = pathname.startsWith('/admin')
 
 		let allowed = allowCommon || allowForbidden
-		if (role === 'participant') allowed ||= allowParticipant
+		if (role === 'default')
+			allowed ||= allowCommon || allowRoleSelection // default role can access common areas + role selection
+		else if (role === 'participant') allowed ||= allowParticipant
 		else if (role === 'spectator' || role === 'juror') allowed ||= allowSpectatorJuror
 		else if (role === 'admin') allowed ||= allowAdmin
 

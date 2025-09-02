@@ -63,7 +63,22 @@ async function ensureInitialData(pb: TypedPocketBase) {
 
 	// 2) Ensure competition_state exists (round: 1)
 	try {
+		// Auth as admin first to check competition_state (collection might have auth rules)
+		if (!pb.authStore.isValid) {
+			try {
+				await pb
+					.collection('users')
+					.authWithPassword(
+						env.ADMIN_EMAIL || 'admin@vocal.royale',
+						env.ADMIN_PASSWORD || 'ChangeMeNow!'
+					)
+			} catch {
+				// If admin auth fails, continue without auth (for fresh setups)
+			}
+		}
+
 		const list = await pb.collection('competition_state').getList(1, 1)
+		logger.info('Bootstrap: competition_state check', { totalItems: list?.totalItems })
 		if (!list || list.totalItems === 0) {
 			const createBody = { round: 1, competitionStarted: false }
 			let created = false
@@ -103,6 +118,75 @@ async function ensureInitialData(pb: TypedPocketBase) {
 		logger.warn('Bootstrap: competition_state ensure failed', {
 			error: String((e as Error)?.message || e)
 		})
+	} finally {
+		pb.authStore.clear()
+	}
+
+	// 3) Ensure settings exists with default values
+	try {
+		// Auth as admin first to check settings (collection might have auth rules)
+		if (!pb.authStore.isValid) {
+			try {
+				await pb
+					.collection('users')
+					.authWithPassword(
+						env.ADMIN_EMAIL || 'admin@vocal.royale',
+						env.ADMIN_PASSWORD || 'ChangeMeNow!'
+					)
+			} catch {
+				// If admin auth fails, continue without auth (for fresh setups)
+			}
+		}
+
+		const list = await pb.collection('settings').getList(1, 1)
+		logger.info('Bootstrap: settings check', { totalItems: list?.totalItems })
+		if (!list || list.totalItems === 0) {
+			const createBody = {
+				maxParticipantCount: 15,
+				maxJurorCount: 3,
+				totalRounds: 5,
+				numberOfFinalSongs: 2,
+				songChoiceDeadline: null,
+				roundEliminationPattern: '5,3,3,2'
+			}
+			let created = false
+			try {
+				await pb.collection('settings').create(createBody)
+				created = true
+			} catch (e) {
+				// If forbidden, try as admin (if we can auth)
+				const msg = String((e as Error)?.message || e)
+				if (!created) {
+					try {
+						// auth may already be active from above; if not, attempt
+						if (!pb.authStore.isValid) {
+							await pb
+								.collection('users')
+								.authWithPassword(
+									env.ADMIN_EMAIL || 'admin@vocal.royale',
+									env.ADMIN_PASSWORD || 'ChangeMeNow!'
+								)
+						}
+						await pb.collection('settings').create(createBody)
+						created = true
+					} catch (e2) {
+						logger.warn('Bootstrap: failed to create settings', {
+							error: String((e2 as Error)?.message || e2),
+							firstError: msg
+						})
+					} finally {
+						pb.authStore.clear()
+					}
+				}
+			}
+			if (created) logger.info('Bootstrap: created initial settings')
+		}
+	} catch (e) {
+		logger.warn('Bootstrap: settings ensure failed', {
+			error: String((e as Error)?.message || e)
+		})
+	} finally {
+		pb.authStore.clear()
 	}
 }
 

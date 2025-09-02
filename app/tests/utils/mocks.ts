@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import type { UserRole } from '$lib/pocketbase-types'
 
 type CollectionMock = {
 	getFullList?: (opts?: Record<string, unknown>) => Promise<Record<string, unknown>[]>
@@ -58,7 +59,7 @@ export function createPBMock(collections: Record<string, CollectionMock> = {}) {
 
 export function makeUser(
 	partial: Partial<Record<string, unknown>> & {
-		role: 'participant' | 'spectator' | 'juror' | 'admin'
+		role: UserRole
 	}
 ) {
 	return {
@@ -86,3 +87,35 @@ export function makeURL(pathname: string, search = '') {
 	const base = 'http://localhost'
 	return new URL(pathname + (search ? (search.startsWith('?') ? search : '?' + search) : ''), base)
 }
+
+export function makeSettings(
+	partial: Partial<{
+		maxParticipantCount?: number
+		maxJurorCount?: number
+		totalRounds?: number
+		numberOfFinalSongs?: number
+		songChoiceDeadline?: string
+		roundEliminationPattern?: string
+	}> = {}
+) {
+	return {
+		id: 'settings_record_1',
+		created: new Date().toISOString(),
+		updated: new Date().toISOString(),
+		collectionId: 'settings_collection_id',
+		collectionName: 'settings',
+		maxParticipantCount: 15,
+		maxJurorCount: 3,
+		totalRounds: 5,
+		numberOfFinalSongs: 2,
+		songChoiceDeadline: null,
+		roundEliminationPattern: '5,3,3,2',
+		...partial
+	}
+}
+
+// Default settings for testing
+export const mockSettings = makeSettings({
+	maxParticipantCount: 8,
+	maxJurorCount: 5
+})

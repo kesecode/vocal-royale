@@ -2,8 +2,10 @@ import type { PageServerLoad } from './$types'
 import type {
 	UsersResponse,
 	CompetitionStateResponse,
-	RatingsResponse
+	RatingsResponse,
+	SettingsResponse
 } from '$lib/pocketbase-types'
+import { logger } from '$lib/server/logger'
 
 export const load: PageServerLoad = async ({ locals }) => {
 	let healthy = false
@@ -39,6 +41,22 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.filter((u) => u.role === 'juror')
 		.map((u) => ({ id: u.id, name: mkName(u) }))
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'))
+
+	// Load role selection settings
+	let maxParticipants = 10 // default fallback
+	let maxJurors = 3 // default fallback
+	try {
+		const settings = (await locals.pb.collection('settings').getFullList()) as SettingsResponse[]
+
+		if (settings[0].maxParticipantCount) {
+			maxParticipants = settings[0].maxParticipantCount
+		}
+		if (settings[0].maxJurorCount) {
+			maxJurors = settings[0].maxJurorCount
+		}
+	} catch {
+		logger.warn('Could not load settings, using default role limits')
+	}
 
 	// Check if competition finished and compute winner
 	let competitionFinished = false as boolean
@@ -100,6 +118,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		spectators,
 		jurors,
 		competitionFinished,
-		winner
+		winner,
+		// Role selection data
+		maxParticipants,
+		maxJurors,
+		currentParticipants: participants.length,
+		currentJurors: jurors.length,
+		// User needs to select role if they have default role
+		needsRoleSelection: locals.user?.role === 'default'
 	}
 }

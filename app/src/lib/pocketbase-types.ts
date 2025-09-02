@@ -26,6 +26,7 @@ export type Collections = {
 	ratings: RatingsResponse
 	users: UsersResponse
 	competitionState: CompetitionStateResponse
+	settings: SettingsResponse
 }
 
 // Records
@@ -38,7 +39,7 @@ export type SongChoicesRecord = {
 	appleMusicSongId?: string
 }
 
-export type UserRole = 'participant' | 'spectator' | 'juror' | 'admin'
+export type UserRole = 'default' | 'participant' | 'spectator' | 'juror' | 'admin'
 
 export type UsersRecord = {
 	email: string
@@ -57,9 +58,22 @@ export type UsersRecord = {
 export type RatingsRecord = {
 	author: string // relation to users.id (who rated)
 	ratedUser: string // relation to users.id (who was rated)
-	round: number // 1..5
-	rating: number // 1..5
+	round: number
+	rating: number
 	comment?: string // max 100 chars
+	performanceRating?: number
+	vocalRating?: number
+	difficultyRating?: number
+}
+
+// Settings
+export type SettingsRecord = {
+	maxParticipantCount?: number
+	maxJurorCount?: number
+	totalRounds?: number
+	numberOfFinalSongs?: number
+	songChoiceDeadline?: string // datetime
+	roundEliminationPattern?: string // e.g. "5,3,3,2" (number of eliminations per round)
 }
 
 // Competition State
@@ -84,6 +98,7 @@ export type UsersResponse<Texpand = unknown> = UsersRecord & AuthSystemFields<Te
 export type RatingsResponse<Texpand = unknown> = RatingsRecord & BaseSystemFields<Texpand>
 export type CompetitionStateResponse<Texpand = unknown> = CompetitionStateRecord &
 	BaseSystemFields<Texpand>
+export type SettingsResponse<Texpand = unknown> = SettingsRecord & BaseSystemFields<Texpand>
 
 // Typed PocketBase instance
 export interface TypedPocketBase extends PocketBase {
@@ -91,5 +106,6 @@ export interface TypedPocketBase extends PocketBase {
 	collection(idOrName: 'ratings'): RecordService<RatingsResponse>
 	collection(idOrName: 'users'): RecordService<UsersResponse>
 	collection(idOrName: 'competition_state'): RecordService<CompetitionStateResponse>
+	collection(idOrName: 'settings'): RecordService<SettingsResponse>
 	collection(idOrName: string): RecordService<RecordModel>
 }
