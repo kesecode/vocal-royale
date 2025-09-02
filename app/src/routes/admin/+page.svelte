@@ -32,41 +32,40 @@
 
 			<div class="flex flex-wrap gap-2 pt-1">
 				{#if !state.competitionStarted}
-					<button class="btn-brand" on:click={() => doAction('start_competition')}>
+					<button class="btn-brand" onclick={() => doAction('start_competition')}>
 						Starte Wettbewerb
 					</button>
 				{/if}
 
 				{#if state.competitionStarted && state.roundState === 'singing_phase' && state.activeParticipant}
-					<button class="btn-brand" on:click={() => doAction('activate_rating_phase')}>
+					<button class="btn-brand" onclick={() => doAction('activate_rating_phase')}>
 						Aktiviere Bewertungsphase
 					</button>
 				{/if}
 
 				{#if state.competitionStarted && state.roundState === 'rating_phase'}
-					<button class="btn-brand" on:click={() => doAction('next_participant')}>
+					<button class="btn-brand" onclick={() => doAction('next_participant')}>
 						Nächster Teilnehmer
 					</button>
 				{/if}
 
 				{#if state.competitionStarted && state.roundState === 'break'}
-					<button class="btn-brand" on:click={() => doAction('finalize_ratings')}>
+					<button class="btn-brand" onclick={() => doAction('finalize_ratings')}>
 						Bewertung abschließen
 					</button>
 				{/if}
 
 				{#if state.competitionStarted && state.roundState === 'result_locked'}
-					<button class="btn-brand" on:click={showResults}>
+					<button class="btn-brand" onclick={showResults}>
 						{state.round === 5 ? 'Sieger anzeigen' : 'Ergebnis anzeigen'}
 					</button>
 				{/if}
 
 				{#if state.roundState === 'result_phase' && state.round < 5}
-					<button class="btn-brand" on:click={startNextRound}>Nächste Runde starten</button>
+					<button class="btn-brand" onclick={startNextRound}>Nächste Runde starten</button>
 				{/if}
 
-				<button class="btn-ghost" on:click={refresh}>Aktualisieren</button>
-				<button class="btn-ghost" on:click={resetGame}>Spiel zurücksetzen</button>
+				<button class="btn-danger" onclick={resetGame}>Spiel zurücksetzen</button>
 			</div>
 		</div>
 	</div>
@@ -168,22 +167,6 @@
 	}
 	let results: ResultRow[] | null = null
 	let winner: ResultRow | null = null
-
-	async function refresh() {
-		loading = true
-		errorMsg = null
-		try {
-			const res = await fetch('/admin/api')
-			if (!res.ok) throw new Error('Laden fehlgeschlagen')
-			const data = await res.json()
-			state = data?.state ?? state
-			active = data?.activeParticipant ?? null
-		} catch {
-			errorMsg = 'Fehler beim Laden.'
-		} finally {
-			loading = false
-		}
-	}
 
 	async function doAction(
 		action:
@@ -304,6 +287,4 @@
 			errorMsg = 'Netzwerkfehler.'
 		}
 	}
-
-	onMount(refresh)
 </script>

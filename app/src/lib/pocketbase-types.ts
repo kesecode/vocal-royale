@@ -58,15 +58,22 @@ export type UsersRecord = {
 export type RatingsRecord = {
 	author: string // relation to users.id (who rated)
 	ratedUser: string // relation to users.id (who was rated)
-	round: number // 1..5
-	rating: number // 1..5
+	round: number 
+	rating: number 
 	comment?: string // max 100 chars
+	performanceRating?: number
+	vocalRating?: number 
+	difficultyRating?: number 
 }
 
 // Settings
 export type SettingsRecord = {
 	maxParticipantCount?: number
 	maxJurorCount?: number
+	totalRounds?: number
+	numberOfFinalSongs?: number
+	songChoiceDeadline?: string // datetime
+	roundEliminationPattern?: string // e.g. "3,2,1,0,0" (number of eliminations per round)
 }
 
 // Competition State
