@@ -52,7 +52,7 @@
 						<div class="choice-title">
 							<span class="font-semibold">Zuschauer*in</span>
 							<Tooltip
-								content="Du schaust dem Wettbewerb zu und erlebst alle Auftritte mit. Du kannst nicht bewerten, aber alle Inhalte sehen."
+								content="Du schaust dem Wettbewerb zu und erlebst alle Auftritte live. Du gibst deine Stimme in Form einer Bewertung ab und bestimmst so mit, wer weiterkommt."
 								ariaLabel="Info zu Zuschauer*in Rolle"
 							/>
 						</div>
@@ -78,7 +78,7 @@
 						<div class="choice-title">
 							<span class="font-semibold">Juror*in</span>
 							<Tooltip
-								content="Du bewertest die Auftritte der Teilnehmer*innen mit Sternen und Kommentaren. Du hilfst dabei, den Sieger zu küren."
+								content="Du bewertest die Auftritte der Teilnehmer*innen ausführlich – mit Sternen, Kommentaren und professioneller Einschätzung. Deine Bewertung hat mehr Gewicht und trägt maßgeblich dazu bei, den Sieger zu küren."
 								ariaLabel="Info zu Juror*in Rolle"
 							/>
 						</div>
