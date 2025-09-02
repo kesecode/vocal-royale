@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
 import type { UserRole, SettingsResponse } from '$lib/pocketbase-types'
+import { logger } from '$lib/server/logger'
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	// Check if user is authenticated
@@ -35,25 +36,22 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 	try {
 		// Check role limits for participant and juror
 		if (role === 'participant' || role === 'juror') {
-			// Load settings
-			let maxParticipants = 8 // default fallback
-			let maxJurors = 5 // default fallback
-
+			// Load role selection settings
+			let maxParticipants = 10 // default fallback
+			let maxJurors = 3 // default fallback
 			try {
-				const settings = await locals.pb.collection('settings').getFullList()
-				const maxParticipantSetting = settings.find(
-					(s: SettingsResponse) => s.key === 'maxParticipantCount'
-				)
-				const maxJurorSetting = settings.find((s: SettingsResponse) => s.key === 'maxJurorCount')
+				const settings = (await locals.pb
+					.collection('settings')
+					.getFullList()) as SettingsResponse[]
 
-				if (maxParticipantSetting && typeof maxParticipantSetting.value === 'number') {
-					maxParticipants = maxParticipantSetting.value
+				if (settings[0].maxParticipantCount) {
+					maxParticipants = settings[0].maxParticipantCount
 				}
-				if (maxJurorSetting && typeof maxJurorSetting.value === 'number') {
-					maxJurors = maxJurorSetting.value
+				if (settings[0].maxJurorCount) {
+					maxJurors = settings[0].maxJurorCount
 				}
 			} catch {
-				// Use defaults if settings collection doesn't exist yet
+				logger.warn('Could not load settings, using default role limits')
 			}
 
 			// Count current users with this role

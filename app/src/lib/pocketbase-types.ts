@@ -65,9 +65,8 @@ export type RatingsRecord = {
 
 // Settings
 export type SettingsRecord = {
-	key: string // unique setting key
-	value: string | number | boolean // setting value
-	description?: string // optional description
+	maxParticipantCount?: number
+	maxJurorCount?: number
 }
 
 // Competition State

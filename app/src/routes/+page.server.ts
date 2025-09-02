@@ -5,6 +5,7 @@ import type {
 	RatingsResponse,
 	SettingsResponse
 } from '$lib/pocketbase-types'
+import { logger } from '$lib/server/logger'
 
 export const load: PageServerLoad = async ({ locals }) => {
 	let healthy = false
@@ -42,21 +43,19 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.sort((a, b) => a.name.localeCompare(b.name, 'de'))
 
 	// Load role selection settings
-	let maxParticipants = 8 // default fallback
-	let maxJurors = 5 // default fallback
+	let maxParticipants = 10 // default fallback
+	let maxJurors = 3 // default fallback
 	try {
 		const settings = (await locals.pb.collection('settings').getFullList()) as SettingsResponse[]
-		const maxParticipantSetting = settings.find((s) => s.key === 'maxParticipantCount')
-		const maxJurorSetting = settings.find((s) => s.key === 'maxJurorCount')
 
-		if (maxParticipantSetting && typeof maxParticipantSetting.value === 'number') {
-			maxParticipants = maxParticipantSetting.value
+		if (settings[0].maxParticipantCount) {
+			maxParticipants = settings[0].maxParticipantCount
 		}
-		if (maxJurorSetting && typeof maxJurorSetting.value === 'number') {
-			maxJurors = maxJurorSetting.value
+		if (settings[0].maxJurorCount) {
+			maxJurors = settings[0].maxJurorCount
 		}
 	} catch {
-		// Use defaults if settings collection doesn't exist yet
+		logger.warn('Could not load settings, using default role limits')
 	}
 
 	// Check if competition finished and compute winner

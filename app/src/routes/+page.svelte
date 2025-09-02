@@ -165,7 +165,8 @@
 				return
 			}
 
-			// Success - reload page to reflect new role
+			// Success - close modal and reload page to reflect new role
+			showRoleSelection = false
 			goto('/', { invalidateAll: true })
 		} catch (error) {
 			console.error('Error saving role:', error)
