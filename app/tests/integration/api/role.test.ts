@@ -34,7 +34,7 @@ describe('/api/role endpoint', () => {
 
 		locals = {
 			pb: mockPB,
-			user: makeUser({ id: 'testuser', role: '' }) // User without role
+			user: makeUser({ id: 'testuser', role: 'default' }) // User with default role
 		}
 	})
 

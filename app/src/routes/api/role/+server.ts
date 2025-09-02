@@ -74,6 +74,11 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			role: role as UserRole
 		})
 
+		// Update the auth store to reflect the new role immediately
+		if (locals.pb.authStore.record) {
+			locals.pb.authStore.record.role = role
+		}
+
 		return json({ success: true, role })
 	} catch (error) {
 		// Only log in production, not during tests

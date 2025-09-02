@@ -105,24 +105,22 @@
 </section>
 
 <!-- Role Selection Modal -->
-<Modal open={showRoleSelection} title="Rolle auswählen" onclose={closeRoleSelection}>
-	<RoleSelection
-		maxParticipants={data.maxParticipants}
-		maxJurors={data.maxJurors}
-		currentParticipants={data.currentParticipants}
-		currentJurors={data.currentJurors}
-		isLoading={roleSelectionLoading}
-		onCancel={closeRoleSelection}
-		onSubmit={handleRoleSubmit}
-	/>
-</Modal>
+<RoleSelection
+	visible={showRoleSelection}
+	maxParticipants={data.maxParticipants}
+	maxJurors={data.maxJurors}
+	currentParticipants={data.currentParticipants}
+	currentJurors={data.currentJurors}
+	isLoading={roleSelectionLoading}
+	onCancel={closeRoleSelection}
+	onSubmit={handleRoleSubmit}
+/>
 
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
 	import type { UserRole } from '$lib/pocketbase-types'
-	import Modal from '$lib/components/Modal.svelte'
 	import RoleSelection from '$lib/components/RoleSelection.svelte'
 
 	let { data }: PageProps = $props()

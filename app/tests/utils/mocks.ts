@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import type { UserRole } from '$lib/pocketbase-types'
 
 type CollectionMock = {
 	getFullList?: (opts?: Record<string, unknown>) => Promise<Record<string, unknown>[]>
@@ -58,7 +59,7 @@ export function createPBMock(collections: Record<string, CollectionMock> = {}) {
 
 export function makeUser(
 	partial: Partial<Record<string, unknown>> & {
-		role: 'participant' | 'spectator' | 'juror' | 'admin'
+		role: UserRole
 	}
 ) {
 	return {
