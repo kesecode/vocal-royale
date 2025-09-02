@@ -159,7 +159,7 @@ export const actions: Actions = {
 
 				// Count current users with this role (excluding current user)
 				const users = (await locals.pb.collection('users').getFullList()) as UsersResponse[]
-				const currentCount = users.filter((u) => u.role === role && u.id !== locals.user.id).length
+				const currentCount = users.filter((u) => u.role === role && u.id !== locals.user?.id).length
 
 				if (role === 'participant' && currentCount >= maxParticipants) {
 					return fail(400, { message: 'Maximale Anzahl Teilnehmer erreicht.', variant: 'error' })

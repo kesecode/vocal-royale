@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { POST } from '../../../src/routes/api/role/+server'
-import { createPBMock, makeUser, makeSettings } from '../../utils/mocks'
-
+import { createPBMock, makeUser, makeSettings, createRequestEvent } from '../../utils/mocks'
 type TestLocals = {
 	pb: ReturnType<typeof createPBMock>
 	user: ReturnType<typeof makeUser> | null
@@ -26,8 +25,8 @@ describe('/api/role endpoint', () => {
 			settings: {
 				getFullList: () =>
 					Promise.resolve([
-						makeSettings('maxParticipantCount', 5),
-						makeSettings('maxJurorCount', 3)
+						makeSettings({ maxParticipantCount: 5 }),
+						makeSettings({ maxJurorCount: 3 })
 					])
 			}
 		})
@@ -46,7 +45,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'participant' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(401)
 		})
 	})
@@ -59,7 +60,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'participant' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(200)
 		})
 
@@ -70,7 +73,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'spectator' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(200)
 		})
 
@@ -81,7 +86,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'juror' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(200)
 		})
 
@@ -92,7 +99,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'admin' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(403)
 
 			const data = await response.json()
@@ -106,7 +115,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'invalid' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(400)
 
 			const data = await response.json()
@@ -120,7 +131,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({})
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(400)
 		})
 	})
@@ -157,7 +170,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'participant' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(400)
 
 			const data = await response.json()
@@ -193,7 +208,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'juror' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(400)
 
 			const data = await response.json()
@@ -207,7 +224,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'spectator' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(200)
 		})
 	})
@@ -222,7 +241,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'spectator' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(400)
 
 			const data = await response.json()
@@ -248,7 +269,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'participant' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(200)
 		})
 	})
@@ -261,7 +284,9 @@ describe('/api/role endpoint', () => {
 				body: 'invalid json'
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(400)
 
 			const data = await response.json()
@@ -286,7 +311,9 @@ describe('/api/role endpoint', () => {
 				body: JSON.stringify({ role: 'spectator' })
 			})
 
-			const response = await POST({ locals, request } as { locals: TestLocals; request: Request })
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
 			expect(response.status).toBe(500)
 
 			const data = await response.json()

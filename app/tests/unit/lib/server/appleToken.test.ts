@@ -15,11 +15,58 @@ vi.mock('$lib/server/logger', () => ({
 
 describe('Apple Music Token', () => {
 	const mockSign = vi.fn()
-	const mockCreateSign = vi.fn(() => ({
-		update: vi.fn(),
-		end: vi.fn(),
-		sign: mockSign
-	}))
+	const mockCreateSign = vi.fn(() => {
+		const mockSignInstance = {
+			update: vi.fn(),
+			end: vi.fn(),
+			sign: mockSign,
+			// Add required stream properties
+			writable: true,
+			writableEnded: false,
+			writableFinished: false,
+			writableHighWaterMark: 16384,
+			writableLength: 0,
+			writableObjectMode: false,
+			writableCorked: 0,
+			writableAborted: false,
+			writableNeedDrain: false,
+			destroyed: false,
+			closed: false,
+			errored: null,
+			// Add stream methods as mocks
+			write: vi.fn(),
+			cork: vi.fn(),
+			uncork: vi.fn(),
+			setDefaultEncoding: vi.fn(),
+			destroy: vi.fn(),
+			_write: vi.fn(),
+			_writev: vi.fn(),
+			_destroy: vi.fn(),
+			_final: vi.fn(),
+			pipe: vi.fn(),
+			unpipe: vi.fn(),
+			on: vi.fn(),
+			off: vi.fn(),
+			emit: vi.fn(),
+			once: vi.fn(),
+			removeListener: vi.fn(),
+			removeAllListeners: vi.fn(),
+			setMaxListeners: vi.fn(),
+			getMaxListeners: vi.fn(),
+			listeners: vi.fn(),
+			rawListeners: vi.fn(),
+			listenerCount: vi.fn(),
+			prependListener: vi.fn(),
+			prependOnceListener: vi.fn(),
+			eventNames: vi.fn(),
+			addListener: vi.fn(),
+			[Symbol.asyncIterator]: vi.fn(),
+			[Symbol.iterator]: vi.fn(),
+			[Symbol.asyncDispose]: vi.fn(),
+			compose: vi.fn()
+		}
+		return mockSignInstance
+	})
 
 	beforeEach(() => {
 		vi.clearAllMocks()

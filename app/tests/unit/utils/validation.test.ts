@@ -204,7 +204,12 @@ describe('Validation Utils', () => {
 				errors.push('Invalid user ID')
 			}
 
-			if (!Number.isInteger(data.round) || data.round < 1 || data.round > 5) {
+			if (
+				typeof data.round !== 'number' ||
+				!Number.isInteger(data.round) ||
+				data.round < 1 ||
+				data.round > 5
+			) {
 				errors.push('Invalid round number')
 			}
 
