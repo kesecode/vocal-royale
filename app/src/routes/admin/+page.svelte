@@ -1,11 +1,11 @@
-<section class="space-y-5">
-	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Admin</h1>
+<section class="section-spacing">
+	<h1 class="font-display heading-responsive">Admin</h1>
 
-	<div class="panel panel-brand overflow-hidden p-0">
-		<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
+	<div class="panel-table">
+		<div class="flex-between table-header-border padding-responsive py-3">
 			<div class="font-semibold">Competition Control</div>
 			{#if loading}
-				<div class="text-xs text-white/80">Laden…</div>
+				<div class="text-xs text-muted">Laden…</div>
 			{/if}
 		</div>
 		<div class="space-y-3 p-3 sm:p-4">
@@ -73,7 +73,7 @@
 
 	{#if state.roundState === 'result_phase'}
 		<div class="panel panel-accent overflow-hidden p-0">
-			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
+			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">{state.round === 5 ? 'Finale' : 'Ergebnis'}</div>
 			</div>
 			<div class="p-3 sm:p-4">

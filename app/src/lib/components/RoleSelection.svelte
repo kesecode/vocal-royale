@@ -1,13 +1,13 @@
 <Modal open={visible} title="Rolle auswählen" onclose={onCancel}>
-	<div class="space-y-4">
-		<div class="space-y-1">
-			<h2 class="font-display text-xl tracking-tight sm:text-2xl">Rolle auswählen</h2>
-			<p class="text-sm text-white/80">
+	<div class="form-spacing">
+		<div class="content-spacing">
+			<h2 class="font-display text-responsive">Rolle auswählen</h2>
+			<p class="text-sm text-muted">
 				Wähle deine Rolle im Wettbewerb. Diese Entscheidung bestimmt deine Teilnahmemöglichkeiten.
 			</p>
 		</div>
 
-		<div class="space-y-3">
+		<div class="content-spacing">
 			<!-- Teilnehmer*in -->
 			<div class="choice-option">
 				<label class="choice-label" class:disabled={!canSelectParticipant}>
@@ -57,7 +57,7 @@
 							/>
 						</div>
 						<div class="choice-description">
-							<span class="text-white/70">Immer verfügbar</span>
+							<span class="text-subtle">Immer verfügbar</span>
 						</div>
 					</div>
 				</label>
@@ -94,7 +94,7 @@
 			</div>
 		</div>
 
-		<div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+		<div class="flex-responsive-actions">
 			<button type="button" class="btn-ghost" onclick={onCancel}>Abbrechen</button>
 			<button
 				type="button"

@@ -1,20 +1,20 @@
-<section class="space-y-5 sm:space-y-8">
-	<div class="space-y-2">
+<section class="section-spacing">
+	<div class="content-spacing">
 		<h1 class="font-display text-3xl tracking-tight sm:text-4xl">Ai Gude {displayName} wie!?</h1>
-		<p class="text-white/90">Der Bre wird 30, singt für mich!</p>
+		<p class="text-secondary">Der Bre wird 30, singt für mich!</p>
 	</div>
 
-	<div class="panel panel-accent p-4 sm:p-6">
-		<p class="text-white/80">Hallo {displayName}!</p>
-		<p class="mt-1 text-sm text-white/70">Schön, dass du da bist.</p>
+	<div class="panel-content">
+		<p class="text-muted">Hallo {displayName}!</p>
+		<p class="mt-1 text-sm text-subtle">Schön, dass du da bist.</p>
 		<div class="mt-4 flex flex-wrap gap-3">
 			<a href="/profile" class="btn-brand">Profil</a>
 		</div>
 	</div>
 
 	{#if competitionFinished}
-		<div class="panel panel-brand overflow-hidden p-0">
-			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
+		<div class="panel-table">
+			<div class="table-header-border padding-responsive py-3">
 				<div class="font-semibold">Wettbewerb beendet</div>
 			</div>
 			<div class="p-3 sm:p-4">
@@ -32,25 +32,25 @@
 			</div>
 		</div>
 	{:else}
-		<div class="panel panel-brand overflow-hidden p-0">
-			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
+		<div class="panel-table">
+			<div class="table-header-border padding-responsive py-3">
 				<div class="font-semibold">Alle Teilnehmer</div>
 			</div>
-			<div class="overflow-x-auto p-3 sm:p-4">
+			<div class="table-container">
 				<table class="w-full text-sm">
 					<thead>
-						<tr class="text-left text-white/90">
-							<th class="p-2 sm:p-3">Name</th>
-							<th class="p-2 sm:p-3">Künstlername</th>
-							<th class="p-2 sm:p-3">Status</th>
+						<tr class="table-header">
+							<th class="table-cell">Name</th>
+							<th class="table-cell">Künstlername</th>
+							<th class="table-cell">Status</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each data.participants as u (u.id || u.name)}
-							<tr class="border-t border-[#333]/40 align-middle">
-								<td class="p-2 sm:p-3">{u.name}</td>
-								<td class="p-2 sm:p-3">{u.artistName || '—'}</td>
-								<td class="p-2 sm:p-3">{u.eliminated ? 'ausgeschieden' : 'aktiv'}</td>
+							<tr class="table-row-border">
+								<td class="table-cell">{u.name}</td>
+								<td class="table-cell">{u.artistName || '—'}</td>
+								<td class="table-cell">{u.eliminated ? 'ausgeschieden' : 'aktiv'}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -59,20 +59,20 @@
 		</div>
 
 		<div class="panel panel-accent overflow-hidden p-0">
-			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
+			<div class="table-header-border padding-responsive py-3">
 				<div class="font-semibold">Alle Spectators</div>
 			</div>
-			<div class="overflow-x-auto p-3 sm:p-4">
+			<div class="table-container">
 				<table class="w-full text-sm">
 					<thead>
-						<tr class="text-left text-white/90">
-							<th class="p-2 sm:p-3">Name</th>
+						<tr class="table-header">
+							<th class="table-cell">Name</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each data.spectators as u (u.id || u.name)}
-							<tr class="border-t border-[#333]/40 align-middle">
-								<td class="p-2 sm:p-3">{u.name}</td>
+							<tr class="table-row-border">
+								<td class="table-cell">{u.name}</td>
 							</tr>
 						{/each}
 					</tbody>
@@ -81,20 +81,20 @@
 		</div>
 
 		<div class="panel panel-accent overflow-hidden p-0">
-			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
+			<div class="table-header-border padding-responsive py-3">
 				<div class="font-semibold">Alle Juroren</div>
 			</div>
-			<div class="overflow-x-auto p-3 sm:p-4">
+			<div class="table-container">
 				<table class="w-full text-sm">
 					<thead>
-						<tr class="text-left text-white/90">
-							<th class="p-2 sm:p-3">Name</th>
+						<tr class="table-header">
+							<th class="table-cell">Name</th>
 						</tr>
 					</thead>
 					<tbody>
 						{#each data.jurors as u (u.id || u.name)}
-							<tr class="border-t border-[#333]/40 align-middle">
-								<td class="p-2 sm:p-3">{u.name}</td>
+							<tr class="table-row-border">
+								<td class="table-cell">{u.name}</td>
 							</tr>
 						{/each}
 					</tbody>

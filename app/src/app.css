@@ -531,6 +531,91 @@
 		font-size: 0.875rem;
 		line-height: 1.25rem;
 	}
+
+	/* Extracted Tailwind Utility Classes */
+
+	/* Spacing Utilities */
+	.section-spacing {
+		@apply space-y-5 sm:space-y-8;
+	}
+	.content-spacing {
+		@apply space-y-3;
+	}
+	.form-spacing {
+		@apply space-y-4;
+	}
+
+	/* Layout Utilities */
+	.flex-responsive-actions {
+		@apply flex flex-col gap-3 sm:flex-row sm:justify-end;
+	}
+	.flex-between {
+		@apply flex items-center justify-between;
+	}
+	.flex-buttons {
+		@apply flex gap-2;
+	}
+
+	/* Typography Utilities */
+	.heading-responsive {
+		@apply text-2xl tracking-tight sm:text-3xl;
+	}
+	.text-responsive {
+		@apply text-xl tracking-tight sm:text-2xl;
+	}
+	.text-muted {
+		@apply text-white/80;
+	}
+	.text-subtle {
+		@apply text-white/70;
+	}
+	.text-secondary {
+		@apply text-white/90;
+	}
+
+	/* Table Utilities */
+	.table-container {
+		@apply overflow-x-auto p-3 sm:p-4;
+	}
+	.table-row-border {
+		@apply border-t border-[#333]/40 align-middle;
+	}
+	.table-header-border {
+		@apply border-b border-[#333]/60;
+	}
+	.table-cell {
+		@apply p-2 sm:p-3;
+	}
+	.table-header {
+		@apply text-left text-white/90;
+	}
+
+	/* Panel Utilities */
+	.panel-content {
+		@apply p-4 sm:p-6;
+		position: relative;
+		color: white;
+		border: 2px solid #333;
+		border-radius: 10px 10px 10px 14px/12px 14px 12px 10px;
+		background-clip: padding-box;
+		background-color: var(--surface-1);
+		box-shadow: 4px 4px 0 var(--shadow-1);
+	}
+	.panel-table {
+		@apply overflow-hidden p-0;
+		position: relative;
+		color: white;
+		border: 2px solid #333;
+		border-radius: 10px 10px 10px 14px/12px 14px 12px 10px;
+		background-clip: padding-box;
+		background-color: var(--surface-2);
+		box-shadow: 4px 4px 0 var(--shadow-2);
+	}
+
+	/* Responsive Utilities */
+	.padding-responsive {
+		@apply px-4 sm:px-6;
+	}
 }
 
 /* Animations removed per request */

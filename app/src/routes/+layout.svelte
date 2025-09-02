@@ -12,10 +12,10 @@
 
 <div class="bg-halftone min-h-dvh bg-brand pt-3 text-white">
 	<header class="header-float bg-accent text-white">
-		<div class="flex items-center justify-between px-4 sm:px-6 lg:px-8">
+		<div class="flex-between px-4 sm:px-6 lg:px-8">
 			<!-- Logo ganz links -->
 			<div class="logo mt-1.5 mb-1.5 flex items-center">
-				<a href="/" class="font-display text-xl tracking-tight drop-shadow sm:text-2xl">Aja, 30!</a>
+				<a href="/" class="font-display text-responsive drop-shadow">Aja, 30!</a>
 			</div>
 
 			<!-- Right-Container (zentriert begrenzt) -->
