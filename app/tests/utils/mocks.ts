@@ -88,21 +88,7 @@ export function makeURL(pathname: string, search = '') {
 	return new URL(pathname + (search ? (search.startsWith('?') ? search : '?' + search) : ''), base)
 }
 
-export function makeSettings(key: string, value: string | number | boolean, description?: string) {
-	return {
-		id: 's_' + key.toLowerCase().replace(/[^a-z0-9]/g, '_'),
-		key,
-		value,
-		description: description || '',
-		created: new Date().toISOString(),
-		updated: new Date().toISOString(),
-		collectionId: 'settings_collection_id',
-		collectionName: 'settings'
-	}
-}
-
-// Create a settings record with direct field properties (new schema)
-export function makeSettingsRecord(
+export function makeSettings(
 	partial: Partial<{
 		maxParticipantCount?: number
 		maxJurorCount?: number
@@ -129,7 +115,7 @@ export function makeSettingsRecord(
 }
 
 // Default settings for testing
-export const mockSettings = {
-	maxParticipantCount: makeSettings('maxParticipantCount', 8, 'Maximale Anzahl Teilnehmer'),
-	maxJurorCount: makeSettings('maxJurorCount', 5, 'Maximale Anzahl Juroren')
-}
+export const mockSettings = makeSettings({
+	maxParticipantCount: 8,
+	maxJurorCount: 5
+})
