@@ -87,6 +87,9 @@ web_modules/
 .cache
 .parcel-cache
 
+.claude/
+CLAUDE.md
+
 # Next.js build output
 .next
 out
@@ -133,3 +136,5 @@ dist
 .yarn/install-state.gz
 .pnp.*
 .DS_Store
+
+
