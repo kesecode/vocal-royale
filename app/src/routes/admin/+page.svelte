@@ -128,7 +128,6 @@
 <!-- styles removed; centralized in app.css -->
 
 <script lang="ts">
-	import { onMount } from 'svelte'
 	import type { RoundState } from '$lib/pocketbase-types'
 
 	type AdminState = {

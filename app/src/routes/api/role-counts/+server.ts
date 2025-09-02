@@ -27,8 +27,8 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 		// Count current users by role
 		const users = (await locals.pb.collection('users').getFullList()) as UsersResponse[]
-		const currentParticipants = users.filter(u => u.role === 'participant').length
-		const currentJurors = users.filter(u => u.role === 'juror').length
+		const currentParticipants = users.filter((u) => u.role === 'participant').length
+		const currentJurors = users.filter((u) => u.role === 'juror').length
 
 		return json({
 			maxParticipants,

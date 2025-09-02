@@ -183,7 +183,7 @@
 							if (user && newRole) {
 								user.role = newRole
 							}
-							
+
 							// Update local counters optimistically
 							if (oldRole && newRole && oldRole !== newRole) {
 								// Decrease counter for old role
@@ -192,7 +192,7 @@
 								} else if (oldRole === 'juror') {
 									localCurrentJurors = Math.max(0, localCurrentJurors - 1)
 								}
-								
+
 								// Increase counter for new role
 								if (newRole === 'participant') {
 									localCurrentParticipants = localCurrentParticipants + 1
@@ -203,7 +203,7 @@
 
 							// Erfolg: Standard-Update um formData zu erhalten
 							await update({ reset: true })
-							
+
 							// Erst nach UI-Update verstecken
 							showRole = false
 							showPwd = false
@@ -301,9 +301,7 @@
 					>
 						Abbrechen
 					</button>
-					<button type="submit" class="btn-brand" disabled={!selectedRole}>
-						Rolle ändern
-					</button>
+					<button type="submit" class="btn-brand" disabled={!selectedRole}>Rolle ändern</button>
 				</div>
 			</form>
 		{/if}
@@ -314,7 +312,6 @@
 	import type { PageProps } from './$types'
 	import { enhance } from '$app/forms'
 	import type { UserRole } from '$lib/pocketbase-types'
-	import { onMount, onDestroy } from 'svelte'
 
 	const props = $props()
 	let { data } = props as PageProps
@@ -327,17 +324,17 @@
 
 	// Role selection state - pre-select current role
 	let selectedRole: UserRole | null = $state(user?.role || null)
-	
+
 	// Local reactive counters that won't be overwritten by server updates
 	let localCurrentParticipants = $state(data.currentParticipants || 0)
 	let localCurrentJurors = $state(data.currentJurors || 0)
-	
+
 	// Update local counters when data changes (from polling or initial load)
 	$effect(() => {
 		localCurrentParticipants = data.currentParticipants || 0
 		localCurrentJurors = data.currentJurors || 0
 	})
-	
+
 	// Update selectedRole when user role changes or when form is shown
 	$effect(() => {
 		if (showRole) {
@@ -345,63 +342,13 @@
 		}
 	})
 
-	// Polling state
-	let pollingInterval: any = $state(null)
-
 	// Computed values for role selection using local counters
-	const remainingParticipants = $derived(Math.max(0, (data.maxParticipants || 0) - localCurrentParticipants))
+	const remainingParticipants = $derived(
+		Math.max(0, (data.maxParticipants || 0) - localCurrentParticipants)
+	)
 	const remainingJurors = $derived(Math.max(0, (data.maxJurors || 0) - localCurrentJurors))
 	const canSelectParticipant = $derived(remainingParticipants > 0 || user?.role === 'participant')
 	const canSelectJuror = $derived(remainingJurors > 0 || user?.role === 'juror')
-
-	function roleDisplayName(role: string): string {
-		switch (role) {
-			case 'participant': return 'Teilnehmer*in'
-			case 'spectator': return 'Zuschauer*in'
-			case 'juror': return 'Juror*in'
-			case 'admin': return 'Administrator*in'
-			default: return 'Keine Rolle'
-		}
-	}
-
-	async function updateRoleCounts() {
-		try {
-			const response = await fetch('/api/role-counts')
-			if (response.ok) {
-				const counts = await response.json()
-				// Update data object so $effect can sync to local counters
-				data.currentParticipants = counts.currentParticipants
-				data.currentJurors = counts.currentJurors
-			}
-		} catch (error) {
-			console.error('Error updating role counts:', error)
-		}
-	}
-
-	function startPolling() {
-		if (pollingInterval) return
-		pollingInterval = setInterval(updateRoleCounts, 5000) // Poll every 5 seconds
-	}
-
-	function stopPolling() {
-		if (pollingInterval) {
-			clearInterval(pollingInterval)
-			pollingInterval = null
-		}
-	}
-
-	// Start polling when role selection is shown, stop when hidden
-	$effect(() => {
-		if (showRole) {
-			startPolling()
-		} else {
-			stopPolling()
-		}
-	})
-
-	onDestroy(() => {
-		stopPolling()
-	})
 
 	let formData = (props as { form?: { message?: string; variant?: 'success' | 'error' } }).form
 </script>

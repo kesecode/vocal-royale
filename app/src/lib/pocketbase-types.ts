@@ -58,12 +58,12 @@ export type UsersRecord = {
 export type RatingsRecord = {
 	author: string // relation to users.id (who rated)
 	ratedUser: string // relation to users.id (who was rated)
-	round: number 
-	rating: number 
+	round: number
+	rating: number
 	comment?: string // max 100 chars
 	performanceRating?: number
-	vocalRating?: number 
-	difficultyRating?: number 
+	vocalRating?: number
+	difficultyRating?: number
 }
 
 // Settings

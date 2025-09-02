@@ -27,8 +27,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 		// Count current users by role
 		const users = (await locals.pb.collection('users').getFullList()) as UsersResponse[]
-		const currentParticipants = users.filter(u => u.role === 'participant').length
-		const currentJurors = users.filter(u => u.role === 'juror').length
+		const currentParticipants = users.filter((u) => u.role === 'participant').length
+		const currentJurors = users.filter((u) => u.role === 'juror').length
 
 		return {
 			user: locals.user,
@@ -131,7 +131,10 @@ export const actions: Actions = {
 
 		// Security: Ensure admin role cannot be assigned via profile
 		if (role === 'admin') {
-			return fail(403, { message: 'Admin Rolle kann nicht über das Profil vergeben werden.', variant: 'error' })
+			return fail(403, {
+				message: 'Admin Rolle kann nicht über das Profil vergeben werden.',
+				variant: 'error'
+			})
 		}
 
 		try {
@@ -141,7 +144,9 @@ export const actions: Actions = {
 				let maxParticipants = 10 // default fallback
 				let maxJurors = 3 // default fallback
 				try {
-					const settings = (await locals.pb.collection('settings').getFullList()) as SettingsResponse[]
+					const settings = (await locals.pb
+						.collection('settings')
+						.getFullList()) as SettingsResponse[]
 					if (settings[0]?.maxParticipantCount) {
 						maxParticipants = settings[0].maxParticipantCount
 					}
