@@ -133,7 +133,7 @@
 
 <script lang="ts">
 	import type { CompetitionStateResponse, UsersResponse } from '$lib/pocketbase-types'
-	let { data } = $props();
+	let { data } = $props()
 
 	let competitionState: CompetitionStateResponse | null = $state(data?.competitionState)
 	let active: UsersResponse | null = $state(data?.activeUser)

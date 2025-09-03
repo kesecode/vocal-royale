@@ -15,7 +15,9 @@ export const GET: RequestHandler = async ({ locals }) => {
 	}
 
 	try {
-		const list = (await locals.pb.collection(COLLECTION).getList(1, 1)) as import('pocketbase').ListResult<CompetitionStateResponse>
+		const list = (await locals.pb
+			.collection(COLLECTION)
+			.getList(1, 1)) as import('pocketbase').ListResult<CompetitionStateResponse>
 		const rec = list.items[0]
 		if (!rec) {
 			logger.warn('CompetitionState not found, returning defaults')
