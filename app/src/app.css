@@ -403,9 +403,9 @@
 	.overlay-backdrop {
 		position: absolute;
 		inset: 0;
-		background: var(--color-red-900);
+		background: rgba(184, 32, 21, 0.8);
 		opacity: 0.82;
-		backdrop-filter: blur(2px);
+		backdrop-filter: blur(1px);
 	}
 	.overlay-card {
 		position: absolute;

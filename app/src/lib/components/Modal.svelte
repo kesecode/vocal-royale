@@ -5,7 +5,7 @@
 			<div class="overlay-body">
 				{@render children?.()}
 			</div>
-			<div class="overlay-foot">
+			<div>
 				{@render footer?.()}
 			</div>
 		</div>

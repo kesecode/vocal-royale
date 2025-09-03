@@ -18,50 +18,50 @@
 
 			<div class="text-sm text-white/80">
 				<div>
-					Runde: <span class="font-semibold">{state.round}</span>
+					Runde: <span class="font-semibold">{competitionState?.round ?? '—'}</span>
 				</div>
 				<div>
-					Phase: <span class="font-semibold">{state.roundState}</span>
+					Phase: <span class="font-semibold">{competitionState?.roundState ?? '—'}</span>
 				</div>
 				<div>
 					Aktiver Teilnehmer: <span class="font-semibold">
-						{active?.name ?? state.activeParticipant ?? '—'}
+						{active?.name ?? competitionState?.activeParticipant ?? '—'}
 					</span>
 				</div>
 			</div>
 
 			<div class="flex flex-wrap gap-2 pt-1">
-				{#if !state.competitionStarted}
+				{#if !competitionState?.competitionStarted}
 					<button class="btn-brand" onclick={() => doAction('start_competition')}>
 						Starte Wettbewerb
 					</button>
 				{/if}
 
-				{#if state.competitionStarted && state.roundState === 'singing_phase' && state.activeParticipant}
+				{#if competitionState?.competitionStarted && competitionState?.roundState === 'singing_phase' && competitionState?.activeParticipant}
 					<button class="btn-brand" onclick={() => doAction('activate_rating_phase')}>
 						Aktiviere Bewertungsphase
 					</button>
 				{/if}
 
-				{#if state.competitionStarted && state.roundState === 'rating_phase'}
+				{#if competitionState?.competitionStarted && competitionState?.roundState === 'rating_phase'}
 					<button class="btn-brand" onclick={() => doAction('next_participant')}>
 						Nächster Teilnehmer
 					</button>
 				{/if}
 
-				{#if state.competitionStarted && state.roundState === 'break'}
+				{#if competitionState?.competitionStarted && competitionState?.roundState === 'break'}
 					<button class="btn-brand" onclick={() => doAction('finalize_ratings')}>
 						Bewertung abschließen
 					</button>
 				{/if}
 
-				{#if state.competitionStarted && state.roundState === 'result_locked'}
+				{#if competitionState?.competitionStarted && competitionState?.roundState === 'result_locked'}
 					<button class="btn-brand" onclick={showResults}>
-						{state.round === 5 ? 'Sieger anzeigen' : 'Ergebnis anzeigen'}
+						{competitionState?.round === 5 ? 'Sieger anzeigen' : 'Ergebnis anzeigen'}
 					</button>
 				{/if}
 
-				{#if state.roundState === 'result_phase' && state.round < 5}
+				{#if competitionState?.roundState === 'result_phase' && competitionState?.round < 5}
 					<button class="btn-brand" onclick={startNextRound}>Nächste Runde starten</button>
 				{/if}
 
@@ -74,13 +74,13 @@
 		</div>
 	</div>
 
-	{#if state.roundState === 'result_phase'}
+	{#if competitionState?.roundState === 'result_phase'}
 		<div class="panel panel-accent overflow-hidden p-0">
 			<div class="flex-between table-header-border padding-responsive py-3">
-				<div class="font-semibold">{state.round === 5 ? 'Finale' : 'Ergebnis'}</div>
+				<div class="font-semibold">{competitionState?.round === 5 ? 'Finale' : 'Ergebnis'}</div>
 			</div>
 			<div class="p-3 sm:p-4">
-				{#if state.round === 5}
+				{#if competitionState?.round === 5}
 					{#if winner}
 						<div class="text-lg font-semibold">Sieger: {winner.name}</div>
 						<div class="text-sm text-white/80">
@@ -132,33 +132,14 @@
 <!-- styles removed; centralized in app.css -->
 
 <script lang="ts">
-	import type { RoundState } from '$lib/pocketbase-types'
+	import type { CompetitionStateResponse, UsersResponse } from '$lib/pocketbase-types'
+	let { data } = $props();
 
-	type AdminState = {
-		competitionStarted: boolean
-		roundState: RoundState
-		round: number
-		competitionFinished: boolean
-		activeParticipant: string | null
-	}
-	type ActiveInfo = {
-		id: string
-		name: string | null
-		artistName?: string
-		sangThisRound?: boolean
-	} | null
-
-	let state: AdminState = {
-		competitionStarted: false,
-		roundState: 'result_locked',
-		round: 1,
-		competitionFinished: false,
-		activeParticipant: null
-	}
-	let active: ActiveInfo = null
-	let loading = false
-	let errorMsg: string | null = null
-	let infoMsg: string | null = null
+	let competitionState: CompetitionStateResponse | null = $state(data?.competitionState)
+	let active: UsersResponse | null = $state(data?.activeUser)
+	let loading: boolean = $state(false)
+	let errorMsg: string | null = $state(null)
+	let infoMsg: string | null = $state(null)
 	type ResultRow = {
 		id: string
 		name: string | null
@@ -168,8 +149,8 @@
 		count: number
 		eliminated: boolean
 	}
-	let results: ResultRow[] | null = null
-	let winner: ResultRow | null = null
+	let results: ResultRow[] | null = $state(null)
+	let winner: ResultRow | null = $state(null)
 
 	async function doAction(
 		action:
@@ -202,10 +183,10 @@
 				return
 			}
 			const data = await res.json()
-			if (data?.state) state = data.state
+			if (data?.state) competitionState = data.state
 			if ('activeParticipant' in data) active = data.activeParticipant
 			// Reset visible results when leaving results phase
-			if (state.roundState !== 'result_phase') {
+			if (competitionState?.roundState !== 'result_phase') {
 				results = null
 				winner = null
 			}
@@ -233,7 +214,7 @@
 				return
 			}
 			const data = await res.json()
-			state = data?.state ?? state
+			competitionState = data?.state ?? competitionState
 			results = Array.isArray(data?.results) ? data.results : null
 			winner = data?.winner ?? null
 		} catch {
@@ -256,7 +237,7 @@
 				return
 			}
 			const data = await res.json()
-			state = data?.state ?? state
+			competitionState = data?.state ?? competitionState
 			active = data?.activeParticipant ?? null
 			results = null
 			winner = null
@@ -281,7 +262,7 @@
 				return
 			}
 			const data = await res.json()
-			state = data?.state ?? state
+			competitionState = data?.state ?? competitionState
 			active = null
 			results = null
 			winner = null
