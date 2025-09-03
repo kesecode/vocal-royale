@@ -119,3 +119,32 @@ export const mockSettings = makeSettings({
 	maxParticipantCount: 8,
 	maxJurorCount: 5
 })
+
+export function createRequestEvent<T = Record<string, unknown>>(
+	locals: T,
+	request: Request,
+	params: Record<string, string> = {}
+) {
+	return {
+		locals,
+		request,
+		params,
+		cookies: {
+			get: vi.fn(),
+			getAll: vi.fn(),
+			set: vi.fn(),
+			delete: vi.fn(),
+			serialize: vi.fn()
+		},
+		fetch: vi.fn(fetch),
+		getClientAddress: vi.fn(() => '127.0.0.1'),
+		platform: undefined,
+		route: { id: null },
+		setHeaders: vi.fn(),
+		url: new URL(request.url),
+		isDataRequest: false,
+		isSubRequest: false,
+		tracing: undefined,
+		isRemoteRequest: false
+	}
+}

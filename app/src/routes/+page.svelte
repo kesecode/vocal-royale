@@ -57,50 +57,51 @@
 				</table>
 			</div>
 		</div>
-
-		<div class="panel panel-accent overflow-hidden p-0">
-			<div class="table-header-border padding-responsive py-3">
-				<div class="font-semibold">Alle Spectators</div>
-			</div>
-			<div class="table-container">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="table-header">
-							<th class="table-cell">Name</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each data.spectators as u (u.id || u.name)}
-							<tr class="table-row-border">
-								<td class="table-cell">{u.name}</td>
+		{#if showRoleSelection === false}
+			<div class="panel panel-accent overflow-hidden p-0">
+				<div class="table-header-border padding-responsive py-3">
+					<div class="font-semibold">Alle Spectators</div>
+				</div>
+				<div class="table-container">
+					<table class="w-full text-sm">
+						<thead>
+							<tr class="table-header">
+								<th class="table-cell">Name</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
+						</thead>
+						<tbody>
+							{#each data.spectators as u (u.id || u.name)}
+								<tr class="table-row-border">
+									<td class="table-cell">{u.name}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			</div>
-		</div>
 
-		<div class="panel panel-accent overflow-hidden p-0">
-			<div class="table-header-border padding-responsive py-3">
-				<div class="font-semibold">Alle Juroren</div>
-			</div>
-			<div class="table-container">
-				<table class="w-full text-sm">
-					<thead>
-						<tr class="table-header">
-							<th class="table-cell">Name</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each data.jurors as u (u.id || u.name)}
-							<tr class="table-row-border">
-								<td class="table-cell">{u.name}</td>
+			<div class="panel panel-accent overflow-hidden p-0">
+				<div class="table-header-border padding-responsive py-3">
+					<div class="font-semibold">Alle Juroren</div>
+				</div>
+				<div class="table-container">
+					<table class="w-full text-sm">
+						<thead>
+							<tr class="table-header">
+								<th class="table-cell">Name</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
+						</thead>
+						<tbody>
+							{#each data.jurors as u (u.id || u.name)}
+								<tr class="table-row-border">
+									<td class="table-cell">{u.name}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
 			</div>
-		</div>
+		{/if}
 	{/if}
 </section>
 
@@ -112,7 +113,6 @@
 	currentParticipants={data.currentParticipants}
 	currentJurors={data.currentJurors}
 	isLoading={roleSelectionLoading}
-	onCancel={closeRoleSelection}
 	onSubmit={handleRoleSubmit}
 />
 
@@ -138,13 +138,6 @@
 			showRoleSelection = true
 		}
 	})
-
-	function closeRoleSelection() {
-		if (!data.needsRoleSelection) {
-			showRoleSelection = false
-		}
-		// If user needs role selection, don't allow closing without selection
-	}
 
 	async function handleRoleSubmit(role: UserRole) {
 		if (roleSelectionLoading) return

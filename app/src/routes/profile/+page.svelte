@@ -66,7 +66,9 @@
 						}
 					}}
 				>
-					<button type="submit" class="btn-danger">Konto löschen</button>
+					{#if user?.role !== 'admin'}
+						<button type="submit" class="btn-danger">Konto löschen</button>
+					{/if}
 				</form>
 			</div>
 		{/if}

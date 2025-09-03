@@ -10,7 +10,9 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "run",
-        "dv"
+        "dv",
+        "--",
+        "--host"
       ],
       "preLaunchTask": "Start PocketBase",
       "console": "integratedTerminal",

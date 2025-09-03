@@ -226,7 +226,25 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				return json({ error: 'no_active_participant' }, { status: 400 })
 			}
 			// Mark participant as sangThisRound and switch to rating phase
-			await locals.pb.collection(USERS_COLLECTION).update(active.id, { sangThisRound: true })
+			try {
+				await locals.pb.collection(USERS_COLLECTION).update(active.id, { sangThisRound: true })
+			} catch (err) {
+				const e = err as Error & { status?: number; message?: string }
+				logger.error('failed to mark sangThisRound', {
+					activeId: active.id,
+					status: e?.status,
+					message: e?.message
+				})
+				// If the record vanished or is inaccessible, clear the pointer to avoid stale state
+				if (
+					(e?.status === 404 || e?.status === 403) &&
+					(await getLatestState(locals))?.activeParticipant
+				) {
+					await upsertState(locals, { activeParticipant: undefined })
+					return json({ error: 'active_participant_not_updatable', id: active.id }, { status: 400 })
+				}
+				throw err
+			}
 			const updated = await upsertState(locals, { roundState: 'rating_phase' })
 			logger.info('Admin API: activate_rating_phase', { activeParticipant: active.id })
 			return json({

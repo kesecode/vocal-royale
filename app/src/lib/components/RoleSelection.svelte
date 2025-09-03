@@ -1,4 +1,4 @@
-<Modal open={visible} title="Rolle auswählen" onclose={onCancel}>
+<Modal open={visible} title="Rolle auswählen" onclose={() => {}}>
 	<div class="form-spacing">
 		<div class="content-spacing">
 			<h2 class="font-display text-responsive">Rolle auswählen</h2>
@@ -95,7 +95,6 @@
 		</div>
 
 		<div class="flex-responsive-actions">
-			<button type="button" class="btn-ghost" onclick={onCancel}>Abbrechen</button>
 			<button
 				type="button"
 				class="btn-brand"
@@ -120,7 +119,6 @@
 		currentParticipants?: number
 		currentJurors?: number
 		isLoading?: boolean
-		onCancel?: () => void
 		onSubmit?: (role: UserRole) => void
 	}
 
@@ -131,7 +129,6 @@
 		currentParticipants = 0,
 		currentJurors = 0,
 		isLoading = false,
-		onCancel,
 		onSubmit
 	}: Props = $props()
 
