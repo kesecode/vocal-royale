@@ -67,7 +67,9 @@ export class BackendSetup {
 						await pb.admins.authWithPassword('admin_db@vocal.royale', 'vocal_royale_2025')
 						console.log('⚠️  Admin created by parallel test, logged in successfully')
 					} catch (finalError) {
-						throw new Error(`Failed to create or login admin: ${finalError instanceof Error ? finalError.message : 'Unknown error'}`)
+						throw new Error(
+							`Failed to create or login admin: ${finalError instanceof Error ? finalError.message : 'Unknown error'}`
+						)
 					}
 				}
 			}
