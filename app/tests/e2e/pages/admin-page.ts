@@ -80,6 +80,8 @@ export class AdminPage extends BasePage {
 	}
 
 	async activateRatingPhase(): Promise<void> {
+		// Wait for button to be available (in singing_phase with active participant)
+		await this.activateRatingBtn.waitFor({ state: 'visible' })
 		await this.activateRatingBtn.click()
 		await this.waitForInfoMessage()
 	}
@@ -95,6 +97,8 @@ export class AdminPage extends BasePage {
 	}
 
 	async showResults(): Promise<void> {
+		// Wait for results button to be available (in result_locked phase)
+		await this.showResultsBtn.waitFor({ state: 'visible' })
 		await this.showResultsBtn.click()
 		await this.waitForInfoMessage()
 	}
@@ -110,15 +114,10 @@ export class AdminPage extends BasePage {
 	}
 
 	async activateBreakPhase(): Promise<void> {
-		// Look for break phase button (might be different text)
-		const breakBtn = this.page.locator('button:has-text("Pause")')
+		// In break phase, we need to finalize ratings
 		const finalizeBtn = this.page.locator('button:has-text("Bewertung abschließen")')
-
-		if (await finalizeBtn.isVisible()) {
-			await finalizeBtn.click()
-		} else if (await breakBtn.isVisible()) {
-			await breakBtn.click()
-		}
+		await finalizeBtn.waitFor({ state: 'visible' })
+		await finalizeBtn.click()
 		await this.waitForInfoMessage()
 	}
 

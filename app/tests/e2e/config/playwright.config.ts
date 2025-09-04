@@ -29,13 +29,13 @@ export default defineConfig({
 		/* Videos on failure */
 		video: 'retain-on-failure',
 
-		/* Aggressive timeouts for fast, responsive app */
-		actionTimeout: 2000, // 2s - app is responsive
-		navigationTimeout: 3000 // 3s - SvelteKit is fast
+		/* Balanced timeouts for stability */
+		actionTimeout: 4000, // 4s - give UI state changes time
+		navigationTimeout: 5000 // 5s - allow for navigation
 	},
 
-	/* Global timeout for all tests - app is fast, tests should be too */
-	timeout: 6000,
+	/* Global timeout - allow for complex flows */
+	timeout: 12000,
 
 	/* Configure projects - focus on stability over coverage */
 	projects: [

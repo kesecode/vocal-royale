@@ -211,7 +211,7 @@ export class BackendSetup {
 			const stateData = startCompetition
 				? {
 						competitionStarted: true,
-						roundState: 'rating_phase', // Set to rating phase for juror tests
+						roundState: 'singing_phase', // Start in singing_phase so admin can activate rating
 						round: 1,
 						competitionFinished: false,
 						...(activeParticipantId && { activeParticipant: activeParticipantId })
