@@ -399,7 +399,7 @@
 		color: var(--color-gold-500);
 		filter: drop-shadow(2px 2px 0 var(--shadow-gold));
 	}
-	
+
 	/* Only editable stars get hover and cursor pointer */
 	button.star {
 		cursor: pointer;

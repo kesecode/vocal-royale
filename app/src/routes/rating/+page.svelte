@@ -107,7 +107,7 @@
 							</thead>
 							<tbody>
 								{#each participants as p (p.id)}
-									<tr 
+									<tr
 										class="border-t border-[#333]/40 align-middle hover:bg-white/5 sm:cursor-default cursor-pointer"
 										on:click={() => canRate && openOverlay(p)}
 										class:cursor-not-allowed={!canRate}
