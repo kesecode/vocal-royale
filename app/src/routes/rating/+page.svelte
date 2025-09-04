@@ -52,19 +52,54 @@
 									<div class="text-xs text-white/70">a.k.a. {activeParticipant.artistName}</div>
 								{/if}
 							</div>
-							<div>
-								<div class="mb-1 text-sm text-white/80">Sterne</div>
-								<StarRating
-									editable
-									value={ratings[activeParticipant.id]?.rating ?? 0}
-									onchange={(val: number) => setRating(activeParticipant.id, val)}
-								/>
+							{#if userRole === 'juror'}
+								<div>
+									<div class="mb-1 text-sm text-white/80">Performance</div>
+									<StarRating
+										editable
+										value={ratings[activeParticipant.id]?.performanceRating ?? 0}
+										onchange={(val: number) =>
+											setJurorRating(activeParticipant.id, 'performanceRating', val)}
+									/>
+								</div>
+								<div>
+									<div class="mb-1 text-sm text-white/80">Gesang</div>
+									<StarRating
+										editable
+										value={ratings[activeParticipant.id]?.vocalRating ?? 0}
+										onchange={(val: number) =>
+											setJurorRating(activeParticipant.id, 'vocalRating', val)}
+									/>
+								</div>
+								<div>
+									<div class="mb-1 text-sm text-white/80">Schwierigkeit</div>
+									<StarRating
+										editable
+										value={ratings[activeParticipant.id]?.difficultyRating ?? 0}
+										onchange={(val: number) =>
+											setJurorRating(activeParticipant.id, 'difficultyRating', val)}
+									/>
+								</div>
 								{#if ratings[activeParticipant.id]?.error}
 									<div class="mt-1 text-xs text-rose-200">
 										{ratings[activeParticipant.id].error}
 									</div>
 								{/if}
-							</div>
+							{:else}
+								<div>
+									<div class="mb-1 text-sm text-white/80">Sterne</div>
+									<StarRating
+										editable
+										value={ratings[activeParticipant.id]?.rating ?? 0}
+										onchange={(val: number) => setRating(activeParticipant.id, val)}
+									/>
+									{#if ratings[activeParticipant.id]?.error}
+										<div class="mt-1 text-xs text-rose-200">
+											{ratings[activeParticipant.id].error}
+										</div>
+									{/if}
+								</div>
+							{/if}
 							<div>
 								<div class="mb-1 text-sm text-white/80">Kommentar (optional)</div>
 								<input
@@ -101,13 +136,17 @@
 									<th class="p-2 sm:p-3">Teilnehmer</th>
 									<th class="p-2 sm:p-3">Bewertung</th>
 									{#if showActions}
-										<th class="p-2 sm:p-3">Aktion</th>
+										<th class="hidden sm:table-cell p-2 sm:p-3">Aktion</th>
 									{/if}
 								</tr>
 							</thead>
 							<tbody>
 								{#each participants as p (p.id)}
-									<tr class="border-t border-[#333]/40 align-middle hover:bg-white/5">
+									<tr
+										class="border-t border-[#333]/40 align-middle hover:bg-white/5 sm:cursor-default cursor-pointer"
+										on:click={() => canRate && openOverlay(p)}
+										class:cursor-not-allowed={!canRate}
+									>
 										<td class="p-2 sm:p-3">
 											<div class="font-medium">{p.firstName || p.name}</div>
 											{#if p.artistName}
@@ -115,14 +154,14 @@
 											{/if}
 										</td>
 										<td class="p-2 sm:p-3">
-											<StarRating editable={false} value={ratings[p.id]?.rating ?? 0} />
+											<StarRating editable={false} value={getDisplayRating(p.id)} />
 										</td>
 										{#if showActions}
-											<td class="p-2 sm:p-3">
+											<td class="hidden sm:table-cell p-2 sm:p-3">
 												<button
 													type="button"
-													class="btn-ghost"
-													on:click={() => openOverlay(p)}
+													class="btn-brand"
+													on:click|stopPropagation={() => openOverlay(p)}
 													aria-label={`Bewerten: ${p.name}`}
 													disabled={!canRate}
 													aria-disabled={!canRate}
@@ -155,17 +194,50 @@
 						<div class="text-xs text-white/70">a.k.a. {selected.artistName}</div>
 					{/if}
 				</div>
-				<div>
-					<div class="mb-1 text-sm text-white/80">Sterne</div>
-					<StarRating
-						editable={canRate}
-						value={ratings[selected.id]?.rating ?? 0}
-						onchange={(e: CustomEvent<number>) => selected && setRating(selected.id, e.detail)}
-					/>
+				{#if userRole === 'juror'}
+					<div>
+						<div class="mb-1 text-sm text-white/80">Performance</div>
+						<StarRating
+							editable={canRate}
+							value={ratings[selected.id]?.performanceRating ?? 0}
+							onchange={(val: number) =>
+								selected && setJurorRating(selected.id, 'performanceRating', val)}
+						/>
+					</div>
+					<div>
+						<div class="mb-1 text-sm text-white/80">Gesang</div>
+						<StarRating
+							editable={canRate}
+							value={ratings[selected.id]?.vocalRating ?? 0}
+							onchange={(val: number) =>
+								selected && setJurorRating(selected.id, 'vocalRating', val)}
+						/>
+					</div>
+					<div>
+						<div class="mb-1 text-sm text-white/80">Schwierigkeit</div>
+						<StarRating
+							editable={canRate}
+							value={ratings[selected.id]?.difficultyRating ?? 0}
+							onchange={(val: number) =>
+								selected && setJurorRating(selected.id, 'difficultyRating', val)}
+						/>
+					</div>
 					{#if ratings[selected.id]?.error}
 						<div class="mt-1 text-xs text-rose-200">{ratings[selected.id].error}</div>
 					{/if}
-				</div>
+				{:else}
+					<div>
+						<div class="mb-1 text-sm text-white/80">Sterne</div>
+						<StarRating
+							editable={canRate}
+							value={ratings[selected.id]?.rating ?? 0}
+							onchange={(val: number) => selected && setRating(selected.id, val)}
+						/>
+						{#if ratings[selected.id]?.error}
+							<div class="mt-1 text-xs text-rose-200">{ratings[selected.id].error}</div>
+						{/if}
+					</div>
+				{/if}
 				<div>
 					<div class="mb-1 text-sm text-white/80">Kommentar (optional)</div>
 					<input
@@ -181,7 +253,7 @@
 
 		{#snippet footer()}
 			{#if selected}
-				<button class="btn-ghost" on:click={closeOverlay}>Abbrechen</button>
+				<button class="btn-danger" on:click={closeOverlay}>Abbrechen</button>
 				<button
 					class="btn-brand"
 					disabled={!canRate || ratings[selected.id]?.saving}
@@ -223,6 +295,9 @@
 		saving?: boolean
 		saved?: boolean
 		error?: string
+		performanceRating?: number
+		vocalRating?: number
+		difficultyRating?: number
 	}
 
 	// activeRound controls progressbar state from global competition state
@@ -247,12 +322,19 @@
 		count?: number
 	} | null
 	let winner: Winner = null
+	let userRole: string = 'spectator'
 	$: canRate = roundState === 'rating_phase' || roundState === 'break'
 	$: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null
 	let showActions = false
 	$: showActions = canRate && roundState !== 'rating_phase'
 	$: if (activeParticipant && !ratings[activeParticipant.id]) {
-		ratings[activeParticipant.id] = { rating: 0, comment: '' }
+		ratings[activeParticipant.id] = {
+			rating: 0,
+			comment: '',
+			performanceRating: userRole === 'juror' ? 0 : undefined,
+			vocalRating: userRole === 'juror' ? 0 : undefined,
+			difficultyRating: userRole === 'juror' ? 0 : undefined
+		}
 	}
 
 	async function fetchRound(round: number) {
@@ -267,10 +349,17 @@
 			}
 			const data = await res.json()
 			participants = Array.isArray(data?.participants) ? data.participants : []
+			userRole = data?.userRole || 'spectator'
 			// prime rating map with existing values
 			ratings = {}
 			for (const p of participants) {
-				ratings[p.id] = { rating: 0, comment: '' }
+				ratings[p.id] = {
+					rating: 0,
+					comment: '',
+					performanceRating: userRole === 'juror' ? 0 : undefined,
+					vocalRating: userRole === 'juror' ? 0 : undefined,
+					difficultyRating: userRole === 'juror' ? 0 : undefined
+				}
 			}
 			type ServerRating = {
 				ratedUser?: string
@@ -278,6 +367,9 @@
 				rating?: number | string
 				stars?: number | string
 				comment?: string
+				performanceRating?: number | string
+				vocalRating?: number | string
+				difficultyRating?: number | string
 			}
 			const existing = Array.isArray(data?.ratings) ? (data.ratings as ServerRating[]) : []
 			for (const r of existing) {
@@ -288,6 +380,13 @@
 					if (ratings[id]) {
 						ratings[id].rating = value
 						ratings[id].comment = String(r.comment ?? '')
+						ratings[id].performanceRating = r.performanceRating
+							? Number(r.performanceRating)
+							: undefined
+						ratings[id].vocalRating = r.vocalRating ? Number(r.vocalRating) : undefined
+						ratings[id].difficultyRating = r.difficultyRating
+							? Number(r.difficultyRating)
+							: undefined
 					}
 				}
 			}
@@ -340,8 +439,67 @@
 	}
 
 	function setRating(userId: string, value: number) {
-		if (!ratings[userId]) ratings[userId] = { rating: 0, comment: '' }
+		if (!ratings[userId]) {
+			ratings[userId] = {
+				rating: 0,
+				comment: '',
+				performanceRating: userRole === 'juror' ? 0 : undefined,
+				vocalRating: userRole === 'juror' ? 0 : undefined,
+				difficultyRating: userRole === 'juror' ? 0 : undefined
+			}
+		}
 		ratings[userId].rating = value
+		// Reaktive Aktualisierung
+		ratings = { ...ratings }
+	}
+
+	function setJurorRating(
+		userId: string,
+		category: 'performanceRating' | 'vocalRating' | 'difficultyRating',
+		value: number
+	) {
+		if (!ratings[userId]) {
+			ratings[userId] = {
+				rating: 0,
+				comment: '',
+				performanceRating: 0,
+				vocalRating: 0,
+				difficultyRating: 0
+			}
+		}
+		ratings[userId][category] = value
+		// Berechne automatisch das Gesamt-Rating als Durchschnitt
+		const avg = calculateJurorAverage(userId)
+		ratings[userId].rating = avg
+		// Reaktive Aktualisierung
+		ratings = { ...ratings }
+	}
+
+	function calculateJurorAverage(userId: string): number {
+		const entry = ratings[userId]
+		if (!entry || !entry.performanceRating || !entry.vocalRating || !entry.difficultyRating) {
+			return 0
+		}
+		const avg = (entry.performanceRating + entry.vocalRating + entry.difficultyRating) / 3
+		return Math.round(avg * 2) / 2 // Runde auf halbe Sterne
+	}
+
+	function getDisplayRating(userId: string): number {
+		const entry = ratings[userId]
+		if (!entry) return 0
+
+		// Für Juroren: Zeige Durchschnitt aus den 3 Ratings, falls verfügbar
+		if (
+			userRole === 'juror' &&
+			entry.performanceRating &&
+			entry.vocalRating &&
+			entry.difficultyRating
+		) {
+			return calculateJurorAverage(userId)
+		}
+
+		// Für Spectators oder wenn kein Juroren-Rating: Zeige normales Rating
+		return entry.rating || 0
 	}
 
 	async function save(ratedUserId: string) {
@@ -353,18 +511,61 @@
 			entry.error = 'Bewertungen sind derzeit geschlossen.'
 			return
 		}
-		if (entry.rating < 1 || entry.rating > 5) {
-			entry.error = 'Bitte 1-5 Sterne wählen.'
-			return
+
+		// Validierung abhängig von der Benutzerrolle
+		if (userRole === 'juror') {
+			if (
+				!entry.performanceRating ||
+				entry.performanceRating === 0 ||
+				entry.performanceRating < 1 ||
+				entry.performanceRating > 5
+			) {
+				entry.error = 'Bitte Performance-Bewertung von 1-5 Sternen wählen.'
+				return
+			}
+			if (
+				!entry.vocalRating ||
+				entry.vocalRating === 0 ||
+				entry.vocalRating < 1 ||
+				entry.vocalRating > 5
+			) {
+				entry.error = 'Bitte Gesangs-Bewertung von 1-5 Sternen wählen.'
+				return
+			}
+			if (
+				!entry.difficultyRating ||
+				entry.difficultyRating === 0 ||
+				entry.difficultyRating < 1 ||
+				entry.difficultyRating > 5
+			) {
+				entry.error = 'Bitte Schwierigkeits-Bewertung von 1-5 Sternen wählen.'
+				return
+			}
+		} else {
+			if (!entry.rating || entry.rating === 0 || entry.rating < 1 || entry.rating > 5) {
+				entry.error = 'Bitte 1-5 Sterne wählen.'
+				return
+			}
 		}
 		try {
 			entry.saving = true
-			const payload = {
-				round: currentRound,
-				ratedUser: ratedUserId,
-				rating: entry.rating,
-				comment: (entry.comment ?? '').slice(0, 100)
-			}
+			const payload =
+				userRole === 'juror'
+					? {
+							round: currentRound,
+							ratedUser: ratedUserId,
+							rating: entry.rating,
+							comment: (entry.comment ?? '').slice(0, 100),
+							performanceRating: entry.performanceRating,
+							vocalRating: entry.vocalRating,
+							difficultyRating: entry.difficultyRating
+						}
+					: {
+							round: currentRound,
+							ratedUser: ratedUserId,
+							rating: entry.rating,
+							comment: (entry.comment ?? '').slice(0, 100)
+						}
 			const res = await fetch('/rating/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
@@ -384,6 +585,17 @@
 				return
 			}
 			entry.saved = true
+
+			// Tabelle aktualisieren durch reaktive Zustandsänderung
+			ratings = { ...ratings }
+
+			// Modal schließen bei erfolgreichem Speichern
+			if (selected && selected.id === ratedUserId) {
+				setTimeout(() => {
+					closeOverlay()
+				}, 500) // Kurz warten damit der User das "Gespeichert!" sieht
+			}
+
 			setTimeout(() => (entry.saved = false), 1500)
 		} catch {
 			entry.error = 'Netzwerkfehler beim Speichern.'
@@ -395,7 +607,13 @@
 	function openOverlay(p: Participant) {
 		if (!canRate) return
 		if (!ratings[p.id]) {
-			ratings[p.id] = { rating: 0, comment: '' }
+			ratings[p.id] = {
+				rating: 0,
+				comment: '',
+				performanceRating: userRole === 'juror' ? 0 : undefined,
+				vocalRating: userRole === 'juror' ? 0 : undefined,
+				difficultyRating: userRole === 'juror' ? 0 : undefined
+			}
 		}
 		selected = p
 	}

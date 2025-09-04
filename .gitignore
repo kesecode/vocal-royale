@@ -137,4 +137,7 @@ dist
 .pnp.*
 .DS_Store
 
-
+test-results/
+app/test-results/
+playwright-report/
+app/test-results.json

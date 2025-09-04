@@ -93,18 +93,18 @@
 				</label>
 			</div>
 		</div>
-
-		<div class="flex-responsive-actions">
-			<button
-				type="button"
-				class="btn-brand"
-				disabled={!selectedRole || isLoading}
-				onclick={handleSubmit}
-			>
-				{isLoading ? 'Speichern...' : 'Rolle bestätigen'}
-			</button>
-		</div>
 	</div>
+
+	{#snippet footer()}
+		<button
+			type="button"
+			class="btn-brand"
+			disabled={!selectedRole || isLoading}
+			onclick={handleSubmit}
+		>
+			{isLoading ? 'Speichern...' : 'Rolle bestätigen'}
+		</button>
+	{/snippet}
 </Modal>
 
 <script lang="ts">

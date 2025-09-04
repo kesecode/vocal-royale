@@ -1,0 +1,18 @@
+FROM alpine:latest
+
+ARG PB_VERSION=0.29.3
+
+RUN apk add --no-cache unzip ca-certificates
+
+ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
+RUN unzip /tmp/pb.zip -d /pb/ && chmod +x /pb/pocketbase
+
+WORKDIR /pb
+COPY backend/pb_migrations/ /pb/pb_migrations/
+COPY app/tests/e2e/config/init-admin.sh /pb/init-admin.sh
+RUN chmod +x /pb/init-admin.sh
+
+EXPOSE 8090
+
+# Use init script that creates admin before starting PocketBase
+CMD ["/pb/init-admin.sh"]

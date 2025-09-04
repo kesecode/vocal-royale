@@ -2,15 +2,15 @@
 	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Songauswahl</h1>
 
 	<p class="text-white/80">
-		Trage bis zu 5 Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf-
-		und zuklappen.
+		Trage deine Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf- und
+		zuklappen.
 	</p>
 
 	<div class="space-y-4">
 		{#each songs as song, i (i)}
 			<section class={`panel ${i % 2 === 0 ? 'panel-accent' : 'panel-brand'} overflow-hidden p-0`}>
 				<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
-					<div class="font-semibold">Runde {i + 1}</div>
+					<div class="font-semibold">{songLabels[i] || `Runde ${i + 1}`}</div>
 					<button
 						type="button"
 						class="btn arrow-btn"
@@ -87,15 +87,42 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { slide } from 'svelte/transition'
+	import {
+		calculateTotalSongs,
+		getSongLabels,
+		DEFAULT_SETTINGS,
+		parseSettings,
+		type CompetitionSettings
+	} from '$lib/utils/competition-settings'
+
+	export let data
 
 	type Song = { artist: string; songTitle: string; appleMusicSongId?: string }
 
-	let songs: Song[] = Array.from({ length: 5 }, () => ({ artist: '', songTitle: '' }))
-	let openStates: boolean[] = [false, false, false, false, false]
-	let savedStates: boolean[] = [false, false, false, false, false]
-	let errors: (string | null)[] = [null, null, null, null, null]
+	let settings: CompetitionSettings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
+	let totalSongs = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
+	let songLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
+
+	let songs: Song[] = []
+	let openStates: boolean[] = []
+	let savedStates: boolean[] = []
+	let errors: (string | null)[] = []
 
 	const STORAGE_KEY = 'song-choice.songs.v1'
+
+	// Initialize arrays when totalSongs changes
+	$: if (totalSongs > 0) {
+		// Only resize if array length doesn't match
+		if (songs.length !== totalSongs) {
+			songs = Array.from(
+				{ length: totalSongs },
+				(_, i) => songs[i] || { artist: '', songTitle: '' }
+			)
+			openStates = Array.from({ length: totalSongs }, (_, i) => openStates[i] || false)
+			savedStates = Array.from({ length: totalSongs }, (_, i) => savedStates[i] || false)
+			errors = Array.from({ length: totalSongs }, (_, i) => errors[i] || null)
+		}
+	}
 
 	onMount(async () => {
 		// Load existing choices from server (guard ensures auth)
@@ -103,7 +130,7 @@
 			const res = await fetch('/song-choice/api')
 			if (res.ok) {
 				const data = await res.json()
-				if (Array.isArray(data?.songs) && data.songs.length === 5) {
+				if (Array.isArray(data?.songs) && data.songs.length > 0) {
 					type ServerSongChoice = {
 						artist?: string
 						songTitle?: string
@@ -111,11 +138,18 @@
 						appleMusicSongId?: string
 						apple_music_song_id?: string
 					}
-					songs = (data.songs as ServerSongChoice[]).map((s) => ({
-						artist: s?.artist ?? '',
-						songTitle: s?.songTitle ?? s?.song_title ?? '',
-						appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
-					}))
+					// Map server response to our structure, respecting totalSongs
+					const serverSongs = data.songs as ServerSongChoice[]
+					for (let i = 0; i < totalSongs && i < serverSongs.length; i++) {
+						const s = serverSongs[i]
+						if (s && (s.artist || s.songTitle || s.song_title)) {
+							songs[i] = {
+								artist: s?.artist ?? '',
+								songTitle: s?.songTitle ?? s?.song_title ?? '',
+								appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
+							}
+						}
+					}
 				}
 			}
 		} catch {

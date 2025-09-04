@@ -5,10 +5,12 @@ import type {
 	CompetitionStateRecord,
 	CompetitionStateResponse,
 	RatingsResponse,
-	UsersResponse
+	UsersResponse,
+	SettingsResponse
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
 import { env } from '$env/dynamic/private'
+import { parseSettings } from '$lib/utils/competition-settings'
 
 function readParticipantsToEliminate(): number[] {
 	const raw = env.PARTICIPANTS_TO_ELIMINATE
@@ -41,6 +43,20 @@ async function getLatestState(locals: App.Locals): Promise<CompetitionStateRespo
 		if (err?.status === 404) return null
 		throw e
 	}
+}
+
+async function getCompetitionSettings(locals: App.Locals) {
+	try {
+		const settingsList = (await locals.pb
+			.collection('settings')
+			.getFullList()) as SettingsResponse[]
+		if (settingsList.length > 0) {
+			return parseSettings(settingsList[0])
+		}
+	} catch (error) {
+		logger.warn('Failed to load competition settings, using defaults', { error })
+	}
+	return parseSettings(null) // Returns defaults
 }
 
 async function upsertState(
@@ -365,8 +381,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				const arr = readParticipantsToEliminate()
 				eliminateCount = Math.max(0, Number(arr?.[round - 1] ?? 0))
 			}
-			// In round 5 (finale) no elimination, show winner only
-			if (round === 5) eliminateCount = 0
+			// In finale round no elimination, show winner only
+			const settings = await getCompetitionSettings(locals)
+			if (round === settings.totalRounds) eliminateCount = 0
 			// Ensure at least one participant remains
 			eliminateCount = Math.min(eliminateCount, Math.max(rows.length - 1, 0))
 
@@ -381,10 +398,10 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				for (const r of toEliminate) r.eliminated = true
 			}
 
-			// Switch to result_phase; finalize competition on finale (round 5)
+			// Switch to result_phase; finalize competition on finale round
 			const updated = await upsertState(locals, {
 				roundState: 'result_phase',
-				...(round === 5 ? { competitionFinished: true } : {})
+				...(round === settings.totalRounds ? { competitionFinished: true } : {})
 			})
 
 			// Winner convenience
@@ -399,15 +416,16 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				round,
 				eliminateCount,
 				participants: rows.length,
-				competitionFinished: round === 5
+				competitionFinished: round === settings.totalRounds
 			})
 			return json({ ok: true, state: updated, results: rows, winner })
 		}
 
 		if (action === 'start_next_round') {
 			const state = await getLatestState(locals)
+			const settings = await getCompetitionSettings(locals)
 			const currentRound = Number(state?.round ?? 1) || 1
-			if (currentRound >= 5) {
+			if (currentRound >= settings.totalRounds) {
 				return json({ error: 'no_next_round' }, { status: 400 })
 			}
 			const nextRound = currentRound + 1

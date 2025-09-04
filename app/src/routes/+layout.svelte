@@ -1,4 +1,5 @@
 <svelte:head>
+	<title>Vocal Royale</title>
 	<link rel="icon" href={favicon} />
 	<meta
 		name="viewport"

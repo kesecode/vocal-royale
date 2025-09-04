@@ -24,6 +24,9 @@ type RatingDTO = {
 	ratedUser: string
 	rating: number
 	comment?: string
+	performanceRating?: number
+	vocalRating?: number
+	difficultyRating?: number
 }
 
 export const GET: RequestHandler = async ({ locals, url }) => {
@@ -73,14 +76,17 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		const ratings: RatingDTO[] = list.map((r) => ({
 			ratedUser: r.ratedUser,
 			rating: Number(r.rating) || 0,
-			comment: (r.comment ?? '').slice(0, 100)
+			comment: (r.comment ?? '').slice(0, 100),
+			performanceRating: r.performanceRating ? Number(r.performanceRating) : undefined,
+			vocalRating: r.vocalRating ? Number(r.vocalRating) : undefined,
+			difficultyRating: r.difficultyRating ? Number(r.difficultyRating) : undefined
 		}))
 
 		logger.info('Ratings GET success', {
 			participants: participants.length,
 			ratings: ratings.length
 		})
-		return json({ round, participants, ratings })
+		return json({ round, participants, ratings, userRole: locals.user.role })
 	} catch (e: unknown) {
 		const err = e as Error & { status?: number; url?: string; data?: unknown }
 		logger.error('Ratings GET failed', {
@@ -97,12 +103,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
 		return json({ error: 'not_authenticated' }, { status: 401 })
 	}
-	// Nur Zuschauer (spectator) dürfen Bewertungen schreiben
-	if (locals.user.role !== 'spectator') {
+	// Nur Zuschauer (spectator) und Juroren (juror) dürfen Bewertungen schreiben
+	if (locals.user.role !== 'spectator' && locals.user.role !== 'juror') {
 		return json({ error: 'forbidden' }, { status: 403 })
 	}
 
-	type Payload = { round?: number; ratedUser?: string; rating?: number; comment?: string }
+	type Payload = {
+		round?: number
+		ratedUser?: string
+		rating?: number
+		comment?: string
+		performanceRating?: number
+		vocalRating?: number
+		difficultyRating?: number
+	}
 	let payload: Payload
 	try {
 		payload = await request.json()
@@ -114,6 +128,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const ratedUser = String(payload?.ratedUser ?? '').trim()
 	const rating = Number(payload?.rating)
 	const comment = String(payload?.comment ?? '').slice(0, 100)
+	const performanceRating = payload?.performanceRating
+		? Number(payload.performanceRating)
+		: undefined
+	const vocalRating = payload?.vocalRating ? Number(payload.vocalRating) : undefined
+	const difficultyRating = payload?.difficultyRating ? Number(payload.difficultyRating) : undefined
 
 	logger.info('Ratings POST', { userId: locals.user.id, round, ratedUser })
 
@@ -126,8 +145,29 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (ratedUser === locals.user.id) {
 		return json({ error: 'self_rating_not_allowed' }, { status: 400 })
 	}
-	if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-		return json({ error: 'invalid_rating' }, { status: 400 })
+	// Für Juroren: Validiere die 3 separaten Ratings
+	if (locals.user.role === 'juror') {
+		if (
+			performanceRating === undefined ||
+			vocalRating === undefined ||
+			difficultyRating === undefined
+		) {
+			return json({ error: 'missing_juror_ratings' }, { status: 400 })
+		}
+		if (!Number.isFinite(performanceRating) || performanceRating < 1 || performanceRating > 5) {
+			return json({ error: 'invalid_performance_rating' }, { status: 400 })
+		}
+		if (!Number.isFinite(vocalRating) || vocalRating < 1 || vocalRating > 5) {
+			return json({ error: 'invalid_vocal_rating' }, { status: 400 })
+		}
+		if (!Number.isFinite(difficultyRating) || difficultyRating < 1 || difficultyRating > 5) {
+			return json({ error: 'invalid_difficulty_rating' }, { status: 400 })
+		}
+	} else {
+		// Für Spectators: Validiere das normale Rating
+		if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+			return json({ error: 'invalid_rating' }, { status: 400 })
+		}
 	}
 
 	// Guard: block saving outside of rating_phase
@@ -168,19 +208,42 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
 		if (list.items.length) {
 			const rec = list.items[0]
-			const updateData: Partial<RatingsRecord> = { rating, comment }
+			const updateData: Partial<RatingsRecord> =
+				locals.user.role === 'juror'
+					? {
+							rating:
+								Math.round(((performanceRating! + vocalRating! + difficultyRating!) / 3) * 2) / 2,
+							performanceRating,
+							vocalRating,
+							difficultyRating,
+							comment
+						}
+					: { rating, comment }
 			const updated = await locals.pb.collection(COLLECTION).update(rec.id, updateData)
 			logger.info('Ratings update', { id: rec.id, round, ratedUser })
 			return json({ ok: true, id: updated.id })
 		}
 
-		const createData: RatingsRecord = {
-			author: locals.user.id,
-			ratedUser,
-			round,
-			rating,
-			comment
-		}
+		const createData: RatingsRecord =
+			locals.user.role === 'juror'
+				? {
+						author: locals.user.id,
+						ratedUser,
+						round,
+						rating:
+							Math.round(((performanceRating! + vocalRating! + difficultyRating!) / 3) * 2) / 2,
+						performanceRating,
+						vocalRating,
+						difficultyRating,
+						comment
+					}
+				: {
+						author: locals.user.id,
+						ratedUser,
+						round,
+						rating,
+						comment
+					}
 		const created = await locals.pb.collection(COLLECTION).create(createData)
 		logger.info('Ratings create', { id: created.id, round, ratedUser })
 		return json({ ok: true, id: created.id })

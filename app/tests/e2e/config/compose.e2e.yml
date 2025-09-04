@@ -1,0 +1,13 @@
+services:
+  backend:
+    build:
+      context: ../../../..
+      dockerfile: app/tests/e2e/config/Dockerfile.e2e
+    image: vocal-royale-backend-e2e
+    container_name: vocal-royale-backend-e2e
+    ports:
+      # E2E tests use port 7090 instead of 8090
+      - '7090:8090'
+    # No volumes for E2E tests - ensures clean state
+    restart: 'no'
+# No volumes defined - ensures fresh database for each test run

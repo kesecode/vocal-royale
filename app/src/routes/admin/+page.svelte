@@ -57,11 +57,11 @@
 
 				{#if competitionState?.competitionStarted && competitionState?.roundState === 'result_locked'}
 					<button class="btn-brand" onclick={showResults}>
-						{competitionState?.round === 5 ? 'Sieger anzeigen' : 'Ergebnis anzeigen'}
+						{isFinaleRound ? 'Sieger anzeigen' : 'Ergebnis anzeigen'}
 					</button>
 				{/if}
 
-				{#if competitionState?.roundState === 'result_phase' && competitionState?.round < 5}
+				{#if competitionState?.roundState === 'result_phase' && !isFinaleRound}
 					<button class="btn-brand" onclick={startNextRound}>Nächste Runde starten</button>
 				{/if}
 
@@ -77,10 +77,10 @@
 	{#if competitionState?.roundState === 'result_phase'}
 		<div class="panel panel-accent overflow-hidden p-0">
 			<div class="flex-between table-header-border padding-responsive py-3">
-				<div class="font-semibold">{competitionState?.round === 5 ? 'Finale' : 'Ergebnis'}</div>
+				<div class="font-semibold">{isFinaleRound ? 'Finale' : 'Ergebnis'}</div>
 			</div>
 			<div class="p-3 sm:p-4">
-				{#if competitionState?.round === 5}
+				{#if isFinaleRound}
 					{#if winner}
 						<div class="text-lg font-semibold">Sieger: {winner.name}</div>
 						<div class="text-sm text-white/80">
@@ -133,6 +133,13 @@
 
 <script lang="ts">
 	import type { CompetitionStateResponse, UsersResponse } from '$lib/pocketbase-types'
+	import {
+		parseSettings,
+		DEFAULT_SETTINGS,
+		type CompetitionSettings
+	} from '$lib/utils/competition-settings'
+	import { onMount } from 'svelte'
+
 	let { data } = $props()
 
 	let competitionState: CompetitionStateResponse | null = $state(data?.competitionState)
@@ -140,6 +147,11 @@
 	let loading: boolean = $state(false)
 	let errorMsg: string | null = $state(null)
 	let infoMsg: string | null = $state(null)
+
+	let settings: CompetitionSettings = $state(DEFAULT_SETTINGS)
+
+	// Computed value for finale round
+	const isFinaleRound = $derived(competitionState?.round === settings.totalRounds)
 	type ResultRow = {
 		id: string
 		name: string | null
@@ -151,6 +163,21 @@
 	}
 	let results: ResultRow[] | null = $state(null)
 	let winner: ResultRow | null = $state(null)
+
+	// Load settings on mount
+	onMount(async () => {
+		try {
+			const settingsRes = await fetch('/admin/settings/api')
+			if (settingsRes.ok) {
+				const settingsData = await settingsRes.json()
+				if (settingsData.settings) {
+					settings = parseSettings(settingsData.settings)
+				}
+			}
+		} catch (error) {
+			console.error('Error loading competition settings:', error)
+		}
+	})
 
 	async function doAction(
 		action:
