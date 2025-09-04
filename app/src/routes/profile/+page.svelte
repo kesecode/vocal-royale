@@ -326,6 +326,8 @@
 	import type { PageProps } from './$types'
 	import { enhance } from '$app/forms'
 	import type { UserRole } from '$lib/pocketbase-types'
+	import { onMount } from 'svelte'
+	import { browser } from '$app/environment'
 
 	const props = $props()
 	let { data } = props as PageProps
@@ -343,17 +345,31 @@
 	let localCurrentParticipants = $state(data.currentParticipants || 0)
 	let localCurrentJurors = $state(data.currentJurors || 0)
 
-	// Update local counters when data changes (from polling or initial load)
-	$effect(() => {
-		localCurrentParticipants = data.currentParticipants || 0
-		localCurrentJurors = data.currentJurors || 0
-	})
+	// Function to fetch current role counts
+	async function fetchRoleCounts() {
+		try {
+			const response = await fetch('/api/role-counts')
+			if (response.ok) {
+				const counts = await response.json()
+				localCurrentParticipants = counts.currentParticipants || 0
+				localCurrentJurors = counts.currentJurors || 0
+			}
+		} catch (error) {
+			console.error('Failed to fetch role counts:', error)
+		}
+	}
 
 	// Update selectedRole when user role changes or when form is shown
 	$effect(() => {
 		if (showRole) {
 			selectedRole = user?.role || null
 		}
+	})
+
+	// Update local counters only when data changes (from server)
+	$effect(() => {
+		localCurrentParticipants = data.currentParticipants || 0
+		localCurrentJurors = data.currentJurors || 0
 	})
 
 	// Computed values for role selection using local counters
@@ -364,12 +380,40 @@
 	const canSelectParticipant = $derived(remainingParticipants > 0 || user?.role === 'participant')
 	const canSelectJuror = $derived(remainingJurors > 0 || user?.role === 'juror')
 
-	let formData = $state(
+	let formData = $derived(
 		(props as { form?: { message?: string; variant?: 'success' | 'error' } }).form
 	)
 
-	// Update formData when props change
+	// Role fetching interval
+	let roleIntervalId: ReturnType<typeof setInterval> | null = null
+
+	// Setup interval when role view is shown
 	$effect(() => {
-		formData = (props as { form?: { message?: string; variant?: 'success' | 'error' } }).form
+		if (showRole && browser) {
+			// Clear any existing interval
+			if (roleIntervalId) {
+				clearInterval(roleIntervalId)
+			}
+
+			// Start new interval to fetch role data every 2 seconds
+			roleIntervalId = setInterval(() => {
+				fetchRoleCounts()
+			}, 3000)
+		} else {
+			// Clear interval when role view is hidden
+			if (roleIntervalId) {
+				clearInterval(roleIntervalId)
+				roleIntervalId = null
+			}
+		}
+	})
+
+	// Cleanup interval on component destroy
+	onMount(() => {
+		return () => {
+			if (roleIntervalId) {
+				clearInterval(roleIntervalId)
+			}
+		}
 	})
 </script>

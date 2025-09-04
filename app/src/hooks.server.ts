@@ -75,17 +75,19 @@ export const handle: Handle = async ({ event, resolve }) => {
 			pathname === '/' || pathname === '/profile' || pathname.startsWith('/profile')
 		const allowForbidden = pathname === '/forbidden'
 		const allowRoleSelection = pathname === '/api/role' // Allow role selection API for default users
+		const allowRoleCounts = pathname === '/api/role-counts' // Allow role counts API for all users
 
 		const allowParticipant = pathname.startsWith('/song-choice')
 		const allowSpectatorJuror = pathname.startsWith('/rating')
 		const allowAdmin = pathname.startsWith('/admin')
 
-		let allowed = allowCommon || allowForbidden
+		let allowed = allowCommon || allowForbidden || allowRoleCounts
 		if (role === 'default')
 			allowed ||= allowCommon || allowRoleSelection // default role can access common areas + role selection
-		else if (role === 'participant') allowed ||= allowParticipant
-		else if (role === 'spectator' || role === 'juror') allowed ||= allowSpectatorJuror
-		else if (role === 'admin') allowed ||= allowAdmin
+		else if (role === 'participant') allowed ||= allowParticipant || allowCommon
+		else if (role === 'spectator' || role === 'juror')
+			allowed ||= allowSpectatorJuror || allowCommon
+		else if (role === 'admin') allowed ||= allowAdmin || allowCommon
 
 		if (!allowed) {
 			logger.debug('Guard role deny', { pathname, role })
