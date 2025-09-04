@@ -189,8 +189,8 @@
 		const totalEliminations = numbers.reduce((sum, n) => sum + n, 0)
 		const remaining = maxParticipants - totalEliminations
 
-		if (remaining !== settings.numberOfFinalSongs) {
-			return `Bei ${maxParticipants} Teilnehmern und ${totalEliminations} Eliminierungen bleiben ${remaining} für das Finale, erwartet werden ${settings.numberOfFinalSongs}`
+		if (remaining !== 2) {
+			return `Bei ${maxParticipants} Teilnehmern und ${totalEliminations} Eliminierungen bleiben ${remaining} für das Finale, erwartet werden 2`
 		}
 
 		return null

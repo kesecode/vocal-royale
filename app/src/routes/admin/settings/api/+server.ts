@@ -35,15 +35,10 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			const pattern = settings.roundEliminationPattern
 			const totalRounds = settings.totalRounds
 			const maxParticipants = settings.maxParticipantCount
-			const numberOfFinalSongs = settings.numberOfFinalSongs
+			// numberOfFinalSongs wird nicht mehr für Validierung benötigt (Finale hat immer 2 Teilnehmer)
 
-			if (pattern && totalRounds && maxParticipants && numberOfFinalSongs) {
-				const validationError = validateEliminationPattern(
-					pattern,
-					totalRounds,
-					maxParticipants,
-					numberOfFinalSongs
-				)
+			if (pattern && totalRounds && maxParticipants) {
+				const validationError = validateEliminationPattern(pattern, totalRounds, maxParticipants)
 				if (validationError) {
 					return json({ error: validationError }, { status: 400 })
 				}
@@ -74,8 +69,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 function validateEliminationPattern(
 	pattern: string,
 	totalRounds: number,
-	maxParticipants: number,
-	numberOfFinalSongs: number
+	maxParticipants: number
+	// numberOfFinalSongs wird ignoriert, da im Finale immer 2 Teilnehmer erwartet werden
 ): string | null {
 	if (!pattern.trim()) return 'Ausscheidungsmuster darf nicht leer sein'
 
@@ -94,8 +89,9 @@ function validateEliminationPattern(
 	const totalEliminations = numbers.reduce((sum, n) => sum + n, 0)
 	const remaining = maxParticipants - totalEliminations
 
-	if (remaining !== numberOfFinalSongs) {
-		return `Bei ${maxParticipants} Teilnehmern und ${totalEliminations} Eliminierungen bleiben ${remaining} für das Finale, erwartet werden ${numberOfFinalSongs}`
+	// Im Finale sind immer 2 Teilnehmer erwartet, unabhängig von numberOfFinalSongs
+	if (remaining !== 2) {
+		return `Bei ${maxParticipants} Teilnehmern und ${totalEliminations} Eliminierungen bleiben ${remaining} für das Finale, erwartet werden 2`
 	}
 
 	return null

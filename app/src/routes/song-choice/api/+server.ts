@@ -3,8 +3,13 @@ import { json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { getAppleMusicToken } from '$lib/server/appleToken'
 import type { ListResult } from 'pocketbase'
-import type { SongChoicesRecord, SongChoicesResponse } from '$lib/pocketbase-types'
+import type {
+	SongChoicesRecord,
+	SongChoicesResponse,
+	SettingsResponse
+} from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
+import { calculateTotalSongs, parseSettings } from '$lib/utils/competition-settings'
 
 const COLLECTION = 'song_choices' as const
 const VALIDATE = (env.SONG_CHOICE_VALIDATE ?? 'true') === 'true'
@@ -100,15 +105,37 @@ export const GET: RequestHandler = async ({ locals }) => {
 	try {
 		logger.info('SongChoices GET', { userId: locals.user.id })
 
+		// Get competition settings to determine song count
+		let totalSongs = 5 // Default fallback
+		try {
+			const settingsList = (await locals.pb
+				.collection('settings')
+				.getFullList()) as SettingsResponse[]
+			if (settingsList.length > 0) {
+				const settings = parseSettings(settingsList[0])
+				totalSongs = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
+				logger.info('SongChoices: using dynamic song count', {
+					totalSongs,
+					totalRounds: settings.totalRounds,
+					numberOfFinalSongs: settings.numberOfFinalSongs
+				})
+			}
+		} catch (settingsError) {
+			logger.warn('SongChoices: failed to load settings, using default', { error: settingsError })
+		}
+
 		const list = (await locals.pb.collection(COLLECTION).getFullList({
 			filter: `user = "${locals.user.id}"`,
 			sort: 'round'
 		})) as SongChoicesResponse[]
 
-		const songs: SongChoice[] = Array.from({ length: 5 }, () => ({ artist: '', songTitle: '' }))
+		const songs: SongChoice[] = Array.from({ length: totalSongs }, () => ({
+			artist: '',
+			songTitle: ''
+		}))
 		for (const rec of list) {
 			const r = Number(rec.round) || 0
-			if (r >= 1 && r <= 5) {
+			if (r >= 1 && r <= totalSongs) {
 				songs[r - 1] = {
 					artist: rec.artist ?? '',
 					songTitle: rec.songTitle ?? '',
@@ -119,7 +146,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		}
 
 		const present = songs.filter((s) => s.artist || s.songTitle).length
-		logger.info('SongChoices GET success', { fetched: list.length, present })
+		logger.info('SongChoices GET success', { fetched: list.length, present, totalSongs })
 		return json({ songs })
 	} catch (e: unknown) {
 		const err = e as Error & { status?: number; url?: string; data?: unknown }
@@ -154,8 +181,22 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 	const confirmed = Boolean(payload?.confirmed ?? false)
 	logger.info('SongChoices POST', { userId: locals.user.id, round, validate: VALIDATE })
 
-	if (!Number.isFinite(round) || round < 1 || round > 5) {
-		logger.warn('SongChoices invalid round', { round })
+	// Get max allowed rounds from settings
+	let maxRounds = 5 // Default fallback
+	try {
+		const settingsList = (await locals.pb
+			.collection('settings')
+			.getFullList()) as SettingsResponse[]
+		if (settingsList.length > 0) {
+			const settings = parseSettings(settingsList[0])
+			maxRounds = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
+		}
+	} catch {
+		// Use default if settings unavailable
+	}
+
+	if (!Number.isFinite(round) || round < 1 || round > maxRounds) {
+		logger.warn('SongChoices invalid round', { round, maxRounds })
 		return json({ error: 'invalid_round' }, { status: 400 })
 	}
 	if (!artist || !songTitle) {
