@@ -66,8 +66,6 @@ export class AdminPage extends BasePage {
 		// Wait for either info message or button state change
 		await Promise.race([this.waitForInfoMessage(), this.waitForButtonStateChange()])
 
-		// Wait for phase to actually change
-		await this.page.waitForTimeout(1000)
 		const finalPhase = await this.getCurrentPhase()
 		console.log('Competition started, new phase:', finalPhase)
 	}
@@ -98,12 +96,12 @@ export class AdminPage extends BasePage {
 
 	async showResults(): Promise<void> {
 		await this.showResultsBtn.click()
-		await this.page.waitForTimeout(1000) // Wait for results to load
+		await this.waitForInfoMessage()
 	}
 
 	async showWinner(): Promise<void> {
 		await this.showWinnerBtn.click()
-		await this.page.waitForTimeout(1000) // Wait for winner to load
+		await this.waitForInfoMessage()
 	}
 
 	async startNextRound(): Promise<void> {
@@ -132,11 +130,9 @@ export class AdminPage extends BasePage {
 		console.log('Resetting game to clean state')
 		// Handle confirmation dialog
 		this.page.on('dialog', (dialog) => dialog.accept())
-		await this.resetGameBtn.waitFor({ state: 'visible', timeout: 5000 })
+		await this.resetGameBtn.waitFor({ state: 'visible' })
 		await this.resetGameBtn.click()
 		await this.waitForInfoMessage()
-		// Wait for reset to complete
-		await this.page.waitForTimeout(1000)
 		console.log('Game reset completed')
 	}
 

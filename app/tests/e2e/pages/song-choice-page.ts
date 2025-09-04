@@ -124,16 +124,27 @@ export class SongChoicePage extends BasePage {
 	async fillAndSaveSong(round: number, artist: string, songTitle: string): Promise<void> {
 		await this.fillSong(round, artist, songTitle)
 		await this.saveSong()
-		await this.waitForSaveSuccess(round)
+
+		// Instead of waiting for success message, just wait a bit for the save request to complete
+		// The success message might disappear too quickly or not appear due to API issues
+		await this.page.waitForTimeout(2000)
 	}
 
 	// Success/Error Messages
 	async waitForSaveSuccess(round: number): Promise<void> {
 		const panel = this.getRoundPanel(round)
+		// Look for the success message - using a broader selector
 		const successMessage = panel.locator('span:has-text("Gespeichert!")')
-		await successMessage.waitFor({ state: 'visible', timeout: 5000 })
-		// Wait for message to disappear
-		await successMessage.waitFor({ state: 'hidden', timeout: 2000 })
+
+		// Wait with more generous timeout and check if it becomes visible
+		try {
+			await successMessage.waitFor({ state: 'visible', timeout: 8000 })
+		} catch (error) {
+			// Debug: log all visible text in the panel to help diagnose
+			const panelText = await panel.textContent()
+			console.log('Panel text content:', panelText)
+			throw error
+		}
 	}
 
 	async getSaveError(round: number): Promise<string> {

@@ -21,9 +21,9 @@ export class AuthPage extends BasePage {
 	}
 
 	async isLoaded(): Promise<boolean> {
-		// Wait for either login or signup form to be visible
+		// Wait for either login or signup form to be visible - faster timeout
 		try {
-			await this.page.waitForSelector('input[name="email"]', { timeout: 10000 })
+			await this.page.waitForSelector('input[name="email"]', { timeout: 3000 })
 			return true
 		} catch {
 			return false
@@ -34,17 +34,17 @@ export class AuthPage extends BasePage {
 	 * Login with credentials
 	 */
 	async login(identity: string, password: string): Promise<void> {
-		// Ensure page is loaded and in login mode
-		await this.page.waitForSelector('input[name="email"]', { timeout: 10000 })
+		// Ensure page is loaded and in login mode - faster timeout
+		await this.page.waitForSelector('input[name="email"]', { timeout: 3000 })
 
 		await this.identityInput.fill(identity)
 		await this.passwordInput.fill(password)
 		await this.loginButton.click()
 
-		// Wait for navigation or error
+		// Wait for navigation or error - faster timeout
 		await Promise.race([
 			this.page.waitForURL('/'),
-			this.page.waitForSelector('.text-rose-200', { timeout: 5000 })
+			this.page.waitForSelector('.text-rose-200', { timeout: 2000 })
 		])
 	}
 
@@ -60,23 +60,22 @@ export class AuthPage extends BasePage {
 	 * Login as participant
 	 */
 	async loginAsParticipant(index = 1): Promise<void> {
-		await this.login(`participant${index}@test.com`, 'testpass123')
-		// Additional wait to ensure session is fully established
-		await this.page.waitForTimeout(500)
+		await this.login(`participant${index}@test.com`, 'password123')
+		// Login method already waits for navigation
 	}
 
 	/**
 	 * Login as juror
 	 */
 	async loginAsJuror(index = 1): Promise<void> {
-		await this.login(`juror${index}@test.com`, 'testpass123')
+		await this.login(`juror${index}@test.com`, 'password123')
 	}
 
 	/**
 	 * Login as spectator
 	 */
 	async loginAsSpectator(index = 1): Promise<void> {
-		await this.login(`spectator${index}@test.com`, 'testpass123')
+		await this.login(`spectator${index}@test.com`, 'password123')
 	}
 
 	/**
@@ -98,23 +97,9 @@ export class AuthPage extends BasePage {
 	 * Logout current user
 	 */
 	async logout(): Promise<void> {
-		try {
-			// Simple approach: clear cookies and go to auth
-			await this.page.context().clearCookies()
-			await this.page.goto('/auth')
-			await this.waitForLoad()
-		} catch {
-			// Fallback: try the profile logout method
-			try {
-				await this.page.goto('/profile')
-				await this.page.waitForSelector('button:has-text("Logout")', { timeout: 5000 })
-				await this.page.click('button:has-text("Logout")')
-				await this.page.waitForURL('/auth', { timeout: 5000 })
-			} catch {
-				// Last resort: just clear cookies and navigate
-				await this.page.context().clearCookies()
-				await this.page.goto('/auth')
-			}
-		}
+		// Fast logout: clear cookies and navigate - no complex fallback
+		await this.page.context().clearCookies()
+		await this.page.goto('/auth')
+		await this.waitForLoad()
 	}
 }

@@ -13,11 +13,13 @@ export class BackendSetup {
 	 * Initialize backend with basic test data
 	 */
 	async initializeBackend(startCompetition = true): Promise<void> {
-		// Wait for backend to be ready with retries
-		const maxRetries = 30
+		// Fast backend readiness check - app is responsive
+		const maxRetries = 15 // 15 * 1s = 15s max wait
 		for (let i = 0; i < maxRetries; i++) {
 			try {
-				const response = await fetch('http://127.0.0.1:7090/')
+				const response = await fetch('http://127.0.0.1:7090/', {
+					signal: AbortSignal.timeout(1000) // 1s timeout per request
+				})
 				// PocketBase responds with 404 for root path when ready
 				if (response.status === 404) {
 					console.log('✅ Backend is ready for E2E tests')
@@ -29,11 +31,11 @@ export class BackendSetup {
 			}
 
 			if (i < maxRetries - 1) {
-				await new Promise((resolve) => setTimeout(resolve, 2000))
+				await new Promise((resolve) => setTimeout(resolve, 1000)) // 1s intervals
 			}
 		}
 
-		throw new Error(`Backend not ready after ${maxRetries * 2} seconds`)
+		throw new Error(`Backend not ready after ${maxRetries} seconds`)
 	}
 
 	/**
@@ -191,12 +193,28 @@ export class BackendSetup {
 				// No competition state exists, create one
 			}
 
+			// Get first participant to use as active participant if starting competition
+			let activeParticipantId = null
+			if (startCompetition) {
+				try {
+					const participants = await pb.collection('users').getFullList({
+						filter: 'role = "participant"'
+					})
+					if (participants.length > 0) {
+						activeParticipantId = participants[0].id
+					}
+				} catch (error) {
+					console.warn('⚠️  Could not get participants for active participant setup:', error)
+				}
+			}
+
 			const stateData = startCompetition
 				? {
 						competitionStarted: true,
 						roundState: 'rating_phase', // Set to rating phase for juror tests
 						round: 1,
-						competitionFinished: false
+						competitionFinished: false,
+						...(activeParticipantId && { activeParticipant: activeParticipantId })
 					}
 				: {
 						competitionStarted: false,
@@ -231,50 +249,50 @@ export class BackendSetup {
 			participants: [
 				{
 					email: 'participant1@test.com',
-					password: 'testpass123',
+					password: 'password123',
 					name: 'Test Participant 1',
 					role: 'participant'
 				},
 				{
 					email: 'participant2@test.com',
-					password: 'testpass123',
+					password: 'password123',
 					name: 'Test Participant 2',
 					role: 'participant'
 				},
 				{
 					email: 'participant3@test.com',
-					password: 'testpass123',
+					password: 'password123',
 					name: 'Test Participant 3',
 					role: 'participant'
 				},
 				{
 					email: 'participant4@test.com',
-					password: 'testpass123',
+					password: 'password123',
 					name: 'Test Participant 4',
 					role: 'participant'
 				},
 				{
 					email: 'participant5@test.com',
-					password: 'testpass123',
+					password: 'password123',
 					name: 'Test Participant 5',
 					role: 'participant'
 				}
 			],
 			jurors: [
-				{ email: 'juror1@test.com', password: 'testpass123', name: 'Test Juror 1', role: 'juror' },
-				{ email: 'juror2@test.com', password: 'testpass123', name: 'Test Juror 2', role: 'juror' },
-				{ email: 'juror3@test.com', password: 'testpass123', name: 'Test Juror 3', role: 'juror' }
+				{ email: 'juror1@test.com', password: 'password123', name: 'Test Juror 1', role: 'juror' },
+				{ email: 'juror2@test.com', password: 'password123', name: 'Test Juror 2', role: 'juror' },
+				{ email: 'juror3@test.com', password: 'password123', name: 'Test Juror 3', role: 'juror' }
 			],
 			spectators: [
 				{
 					email: 'spectator1@test.com',
-					password: 'testpass123',
+					password: 'password123',
 					name: 'Test Spectator 1',
 					role: 'spectator'
 				},
 				{
 					email: 'spectator2@test.com',
-					password: 'testpass123',
+					password: 'password123',
 					name: 'Test Spectator 2',
 					role: 'spectator'
 				}

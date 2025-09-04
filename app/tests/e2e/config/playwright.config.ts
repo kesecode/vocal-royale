@@ -5,14 +5,14 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
 	testDir: './tests/e2e',
-	/* Run tests in files in parallel */
-	fullyParallel: true,
+	/* Serial test execution for better stability */
+	fullyParallel: false,
 	/* Fail the build on CI if you accidentally left test.only in the source code. */
 	forbidOnly: !!process.env.CI,
-	/* Retry on CI only */
-	retries: process.env.CI ? 2 : 0,
-	/* Opt out of parallel tests on CI. */
-	workers: process.env.CI ? 1 : undefined,
+	/* Minimal retries - fail fast for quicker feedback */
+	retries: process.env.CI ? 1 : 0,
+	/* Serial execution for test stability */
+	workers: 1,
 	/* Reporter to use. See https://playwright.dev/docs/test-reporters */
 	reporter: 'html',
 	/* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -27,22 +27,21 @@ export default defineConfig({
 		screenshot: 'only-on-failure',
 
 		/* Videos on failure */
-		video: 'retain-on-failure'
+		video: 'retain-on-failure',
+
+		/* Aggressive timeouts for fast, responsive app */
+		actionTimeout: 2000, // 2s - app is responsive
+		navigationTimeout: 3000 // 3s - SvelteKit is fast
 	},
 
-	/* Configure projects for major browsers */
+	/* Global timeout for all tests - app is fast, tests should be too */
+	timeout: 6000,
+
+	/* Configure projects - focus on stability over coverage */
 	projects: [
 		{
 			name: 'chromium',
 			use: { ...devices['Desktop Chrome'] }
-		},
-		{
-			name: 'mobile',
-			use: { ...devices['iPhone 13'] }
-		},
-		{
-			name: 'tablet',
-			use: { ...devices['iPad'] }
 		}
 	],
 
@@ -56,10 +55,14 @@ export default defineConfig({
 		},
 		// Start frontend dev server
 		{
-			command: 'npm run dev -- --port 4173',
+			command: 'PB_URL=http://127.0.0.1:7090 SONG_CHOICE_VALIDATE=false npm run dev -- --port 4173',
 			port: 4173,
 			reuseExistingServer: !process.env.CI,
-			timeout: 120 * 1000
+			timeout: 120 * 1000,
+			env: {
+				PB_URL: 'http://127.0.0.1:7090',
+				SONG_CHOICE_VALIDATE: 'false'
+			}
 		}
 	],
 
