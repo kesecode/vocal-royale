@@ -390,18 +390,24 @@
 		font-size: 1.25rem;
 		line-height: 1;
 		color: rgba(255, 255, 255, 0.5);
-		transition:
-			transform 0.05s ease,
-			filter 0.15s ease;
 		border: none;
 		background: transparent;
 		padding: 2px;
+		cursor: default;
 	}
 	.star.on {
 		color: var(--color-gold-500);
 		filter: drop-shadow(2px 2px 0 var(--shadow-gold));
 	}
-	.star:hover {
+	
+	/* Only editable stars get hover and cursor pointer */
+	button.star {
+		cursor: pointer;
+		transition:
+			transform 0.05s ease,
+			filter 0.15s ease;
+	}
+	button.star:hover {
 		transform: translateY(1px);
 	}
 

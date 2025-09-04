@@ -101,13 +101,17 @@
 									<th class="p-2 sm:p-3">Teilnehmer</th>
 									<th class="p-2 sm:p-3">Bewertung</th>
 									{#if showActions}
-										<th class="p-2 sm:p-3">Aktion</th>
+										<th class="hidden sm:table-cell p-2 sm:p-3">Aktion</th>
 									{/if}
 								</tr>
 							</thead>
 							<tbody>
 								{#each participants as p (p.id)}
-									<tr class="border-t border-[#333]/40 align-middle hover:bg-white/5">
+									<tr 
+										class="border-t border-[#333]/40 align-middle hover:bg-white/5 sm:cursor-default cursor-pointer"
+										on:click={() => canRate && openOverlay(p)}
+										class:cursor-not-allowed={!canRate}
+									>
 										<td class="p-2 sm:p-3">
 											<div class="font-medium">{p.firstName || p.name}</div>
 											{#if p.artistName}
@@ -118,11 +122,11 @@
 											<StarRating editable={false} value={ratings[p.id]?.rating ?? 0} />
 										</td>
 										{#if showActions}
-											<td class="p-2 sm:p-3">
+											<td class="hidden sm:table-cell p-2 sm:p-3">
 												<button
 													type="button"
-													class="btn-ghost"
-													on:click={() => openOverlay(p)}
+													class="btn-brand"
+													on:click|stopPropagation={() => openOverlay(p)}
 													aria-label={`Bewerten: ${p.name}`}
 													disabled={!canRate}
 													aria-disabled={!canRate}
@@ -181,7 +185,7 @@
 
 		{#snippet footer()}
 			{#if selected}
-				<button class="btn-ghost" on:click={closeOverlay}>Abbrechen</button>
+				<button class="btn-danger" on:click={closeOverlay}>Abbrechen</button>
 				<button
 					class="btn-brand"
 					disabled={!canRate || ratings[selected.id]?.saving}
