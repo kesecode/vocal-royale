@@ -1,11 +1,12 @@
-<h1 class="mb-4 font-display text-2xl tracking-tight sm:text-3xl">Songauswahl</h1>
+<section class="section space-y-4">
+	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Songauswahl</h1>
 
-<p class="mb-4 text-white/80">
-	Trage bis zu 5 Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf- und
-	zuklappen.
-</p>
+	<p class="text-white/80">
+		Trage bis zu 5 Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf- und
+		zuklappen.
+	</p>
 
-<div class="space-y-4">
+	<div class="space-y-4">
 	{#each songs as song, i (i)}
 		<section class={`panel ${i % 2 === 0 ? 'panel-accent' : 'panel-brand'} overflow-hidden p-0`}>
 			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
@@ -76,7 +77,8 @@
 			{/if}
 		</section>
 	{/each}
-</div>
+	</div>
+</section>
 
 <!-- styles removed; centralized in app.css -->
 

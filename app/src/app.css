@@ -227,6 +227,17 @@
 }
 
 @layer components {
+	/* Universal section class */
+	.section {
+		/* Mobile: Header-breite mit Header-Padding */
+		@apply w-full px-2 sm:px-6 lg:px-8;
+		
+		/* Desktop: Content-zentriert */
+		@media (min-width: 768px) {
+			@apply mx-auto;
+		}
+	}
+
 	/* Panels: clean borders with elliptical radii (no scribble) */
 	.panel {
 		position: relative;

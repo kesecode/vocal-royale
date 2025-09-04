@@ -1,4 +1,4 @@
-<section class="mx-auto max-w-fit space-y-6">
+<section class="section space-y-6">
 	<h1 class="font-display text-2xl sm:text-3xl">Profil</h1>
 	<div class="panel panel-accent space-y-4 p-4 sm:p-6">
 		<p class="text-sm text-white/80">Hallo {user?.firstName || user?.name || user?.username}!</p>
