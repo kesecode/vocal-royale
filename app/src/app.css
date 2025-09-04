@@ -399,6 +399,13 @@
 		color: var(--color-gold-500);
 		filter: drop-shadow(2px 2px 0 var(--shadow-gold));
 	}
+	.star.half {
+		background: linear-gradient(90deg, var(--color-gold-500) 50%, rgba(255, 255, 255, 0.5) 50%);
+		background-clip: text;
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		filter: drop-shadow(1px 1px 0 var(--shadow-gold));
+	}
 
 	/* Only editable stars get hover and cursor pointer */
 	button.star {

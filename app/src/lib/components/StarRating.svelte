@@ -3,14 +3,14 @@
 		{#if editable}
 			<button
 				type="button"
-				class={`star ${value >= s ? 'on' : ''}`}
+				class={`star ${getStarClass(s)}`}
 				aria-label={`${s} ${ariaLabelPrefix}${s > 1 ? 'e' : ''}`}
 				onclick={() => handleClick(s)}
 			>
 				★
 			</button>
 		{:else}
-			<span class={`star ${value >= s ? 'on' : ''}`}>★</span>
+			<span class={`star ${getStarClass(s)}`}>★</span>
 		{/if}
 	{/each}
 	{@render children?.()}
@@ -31,6 +31,12 @@
 		const val = Math.max(1, Math.min(max, v))
 		value = val
 		onchange?.(val)
+	}
+
+	function getStarClass(starIndex: number): string {
+		if (value >= starIndex) return 'on'
+		if (value >= starIndex - 0.5) return 'half'
+		return ''
 	}
 
 	const items = $derived(Array.from({ length: max }, (_, i) => i + 1))
