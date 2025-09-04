@@ -2,81 +2,83 @@
 	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Songauswahl</h1>
 
 	<p class="text-white/80">
-		Trage bis zu 5 Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf- und
-		zuklappen.
+		Trage bis zu 5 Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf-
+		und zuklappen.
 	</p>
 
 	<div class="space-y-4">
-	{#each songs as song, i (i)}
-		<section class={`panel ${i % 2 === 0 ? 'panel-accent' : 'panel-brand'} overflow-hidden p-0`}>
-			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
-				<div class="font-semibold">Runde {i + 1}</div>
-				<button
-					type="button"
-					class="btn arrow-btn"
-					aria-expanded={openStates[i]}
-					aria-controls={`panel-${i}`}
-					on:click={() => toggle(i)}
-					title={openStates[i] ? 'Zuklappen' : 'Öffnen'}
-				>
-					{openStates[i] ? '▼' : '▶'}
-				</button>
-			</div>
+		{#each songs as song, i (i)}
+			<section class={`panel ${i % 2 === 0 ? 'panel-accent' : 'panel-brand'} overflow-hidden p-0`}>
+				<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
+					<div class="font-semibold">Runde {i + 1}</div>
+					<button
+						type="button"
+						class="btn arrow-btn"
+						aria-expanded={openStates[i]}
+						aria-controls={`panel-${i}`}
+						on:click={() => toggle(i)}
+						title={openStates[i] ? 'Zuklappen' : 'Öffnen'}
+					>
+						{openStates[i] ? '▼' : '▶'}
+					</button>
+				</div>
 
-			{#if openStates[i]}
-				<div id={`panel-${i}`} in:slide={{ duration: 250 }} out:slide={{ duration: 200 }}>
-					<div class="space-y-4 p-4 sm:p-6">
-						<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-							<div>
-								<label class="mb-1 block text-sm text-white/90" for={`artist-${i}`}>
-									Interpret
-								</label>
-								<input
-									id={`artist-${i}`}
-									class="input"
-									type="text"
-									bind:value={song.artist}
-									placeholder="z. B. Queen"
-								/>
+				{#if openStates[i]}
+					<div id={`panel-${i}`} in:slide={{ duration: 250 }} out:slide={{ duration: 200 }}>
+						<div class="space-y-4 p-4 sm:p-6">
+							<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+								<div>
+									<label class="mb-1 block text-sm text-white/90" for={`artist-${i}`}>
+										Interpret
+									</label>
+									<input
+										id={`artist-${i}`}
+										class="input"
+										type="text"
+										bind:value={song.artist}
+										placeholder="z. B. Queen"
+									/>
+								</div>
+								<div>
+									<label class="mb-1 block text-sm text-white/90" for={`songTitle-${i}`}>
+										Titel
+									</label>
+									<input
+										id={`songTitle-${i}`}
+										class="input"
+										type="text"
+										bind:value={song.songTitle}
+										placeholder="z. B. Bohemian Rhapsody"
+									/>
+								</div>
 							</div>
-							<div>
-								<label class="mb-1 block text-sm text-white/90" for={`songTitle-${i}`}>Titel</label>
-								<input
-									id={`songTitle-${i}`}
-									class="input"
-									type="text"
-									bind:value={song.songTitle}
-									placeholder="z. B. Bohemian Rhapsody"
-								/>
-							</div>
-						</div>
 
-						<div class="flex items-center gap-3">
-							<button type="button" class="btn-brand" on:click={() => save(i)}>Speichern</button>
-							{#if song?.appleMusicSongId && song.appleMusicSongId !== 'null'}
-								<button
-									type="button"
-									class="btn-apple"
-									data-tooltip="Schaue nach ob du den richtigen Song verlinkt hast."
-									on:click={() => openApple(i)}
-									aria-label="Bei Apple Music öffnen"
-								>
-									<span class="apple-mark" aria-hidden="true"></span>
-									<span>Music</span>
-								</button>
-							{/if}
-							{#if savedStates[i]}
-								<span class="text-xs text-white/90">Gespeichert!</span>
-							{/if}
-							{#if errors[i]}
-								<span class="text-xs text-rose-200">{errors[i]}</span>
-							{/if}
+							<div class="flex items-center gap-3">
+								<button type="button" class="btn-brand" on:click={() => save(i)}>Speichern</button>
+								{#if song?.appleMusicSongId && song.appleMusicSongId !== 'null'}
+									<button
+										type="button"
+										class="btn-apple"
+										data-tooltip="Schaue nach ob du den richtigen Song verlinkt hast."
+										on:click={() => openApple(i)}
+										aria-label="Bei Apple Music öffnen"
+									>
+										<span class="apple-mark" aria-hidden="true"></span>
+										<span>Music</span>
+									</button>
+								{/if}
+								{#if savedStates[i]}
+									<span class="text-xs text-white/90">Gespeichert!</span>
+								{/if}
+								{#if errors[i]}
+									<span class="text-xs text-rose-200">{errors[i]}</span>
+								{/if}
+							</div>
 						</div>
 					</div>
-				</div>
-			{/if}
-		</section>
-	{/each}
+				{/if}
+			</section>
+		{/each}
 	</div>
 </section>
 
