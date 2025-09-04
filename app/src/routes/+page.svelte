@@ -1,4 +1,4 @@
-<section class="section-spacing">
+<section class="section section-spacing">
 	<div class="content-spacing">
 		<h1 class="font-display text-3xl tracking-tight sm:text-4xl">Ai Gude {displayName} wie!?</h1>
 		<p class="text-secondary">Der Bre wird 30, singt für mich!</p>

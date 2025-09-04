@@ -1,4 +1,4 @@
-<section class="section-spacing">
+<section class="section section-spacing">
 	<h1 class="font-display heading-responsive">Einstellungen</h1>
 
 	<div class="panel-table">

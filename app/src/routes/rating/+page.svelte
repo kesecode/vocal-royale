@@ -1,4 +1,4 @@
-<section class="space-y-5">
+<section class="section space-y-5">
 	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Bewertung</h1>
 
 	<!-- Progress with 5 rounds: past = yellow, current = green, future = black (disabled) -->
