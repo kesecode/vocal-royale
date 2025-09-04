@@ -23,6 +23,10 @@
 						showPwd = true
 						showArtist = false
 						showRole = false
+						if (formData) {
+							formData.message = undefined
+							formData.variant = undefined
+						}
 					}}
 				>
 					Passwort ändern
@@ -35,6 +39,10 @@
 							showArtist = true
 							showPwd = false
 							showRole = false
+							if (formData) {
+								formData.message = undefined
+								formData.variant = undefined
+							}
 						}}
 					>
 						Künstlername ändern
@@ -46,6 +54,10 @@
 							showRole = true
 							showPwd = false
 							showArtist = false
+							if (formData) {
+								formData.message = undefined
+								formData.variant = undefined
+							}
 						}}
 					>
 						Rolle ändern
@@ -121,7 +133,7 @@
 							showPwd = false
 						}}
 					>
-						Abbrechen
+						Zurück
 					</button>
 					<button type="submit" class="btn-brand">Speichern</button>
 				</div>
@@ -165,7 +177,7 @@
 							showArtist = false
 						}}
 					>
-						Abbrechen
+						Zurück
 					</button>
 					<button type="submit" class="btn-brand">Speichern</button>
 				</div>
@@ -245,27 +257,6 @@
 						</label>
 					</div>
 
-					<!-- Zuschauer*in -->
-					<div class="choice-option">
-						<label class="choice-label">
-							<input
-								type="radio"
-								name="role"
-								value="spectator"
-								bind:group={selectedRole}
-								class="choice-radio"
-							/>
-							<div class="choice-content">
-								<div class="choice-title">
-									<span class="font-semibold">Zuschauer*in</span>
-								</div>
-								<div class="choice-description">
-									<span class="text-subtle">Immer verfügbar</span>
-								</div>
-							</div>
-						</label>
-					</div>
-
 					<!-- Juror*in -->
 					<div class="choice-option">
 						<label class="choice-label" class:disabled={!canSelectJuror}>
@@ -291,6 +282,27 @@
 							</div>
 						</label>
 					</div>
+
+					<!-- Zuschauer*in -->
+					<div class="choice-option">
+						<label class="choice-label">
+							<input
+								type="radio"
+								name="role"
+								value="spectator"
+								bind:group={selectedRole}
+								class="choice-radio"
+							/>
+							<div class="choice-content">
+								<div class="choice-title">
+									<span class="font-semibold">Zuschauer*in</span>
+								</div>
+								<div class="choice-description">
+									<span class="text-subtle">Immer verfügbar</span>
+								</div>
+							</div>
+						</label>
+					</div>
 				</div>
 
 				<div class="flex gap-2 pt-2">
@@ -301,7 +313,7 @@
 							showRole = false
 						}}
 					>
-						Abbrechen
+						Zurück
 					</button>
 					<button type="submit" class="btn-brand" disabled={!selectedRole}>Rolle ändern</button>
 				</div>
@@ -352,5 +364,12 @@
 	const canSelectParticipant = $derived(remainingParticipants > 0 || user?.role === 'participant')
 	const canSelectJuror = $derived(remainingJurors > 0 || user?.role === 'juror')
 
-	let formData = (props as { form?: { message?: string; variant?: 'success' | 'error' } }).form
+	let formData = $state(
+		(props as { form?: { message?: string; variant?: 'success' | 'error' } }).form
+	)
+
+	// Update formData when props change
+	$effect(() => {
+		formData = (props as { form?: { message?: string; variant?: 'success' | 'error' } }).form
+	})
 </script>

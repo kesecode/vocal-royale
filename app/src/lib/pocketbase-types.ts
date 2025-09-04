@@ -39,7 +39,7 @@ export type SongChoicesRecord = {
 	appleMusicSongId?: string
 }
 
-export type UserRole = 'default' | 'participant' | 'spectator' | 'juror' | 'admin'
+export type UserRole = 'default' | 'participant' | 'juror' | 'spectator' | 'admin'
 
 export type UsersRecord = {
 	email: string
