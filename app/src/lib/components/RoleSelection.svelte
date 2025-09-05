@@ -38,31 +38,6 @@
 				</label>
 			</div>
 
-			<!-- Zuschauer*in -->
-			<div class="choice-option">
-				<label class="choice-label">
-					<input
-						type="radio"
-						name="role"
-						value="spectator"
-						bind:group={selectedRole}
-						class="choice-radio"
-					/>
-					<div class="choice-content">
-						<div class="choice-title">
-							<span class="font-semibold">Zuschauer*in</span>
-							<Tooltip
-								content="Du schaust dem Wettbewerb zu und erlebst alle Auftritte live. Du gibst deine Stimme in Form einer Bewertung ab und bestimmst so mit, wer weiterkommt."
-								ariaLabel="Info zu Zuschauer*in Rolle"
-							/>
-						</div>
-						<div class="choice-description">
-							<span class="text-subtle">Immer verfügbar</span>
-						</div>
-					</div>
-				</label>
-			</div>
-
 			<!-- Juror*in -->
 			<div class="choice-option">
 				<label class="choice-label" class:disabled={!canSelectJuror}>
@@ -88,6 +63,31 @@
 							{:else}
 								<span class="text-red-400">Keine Plätze mehr frei</span>
 							{/if}
+						</div>
+					</div>
+				</label>
+			</div>
+
+			<!-- Zuschauer*in -->
+			<div class="choice-option">
+				<label class="choice-label">
+					<input
+						type="radio"
+						name="role"
+						value="spectator"
+						bind:group={selectedRole}
+						class="choice-radio"
+					/>
+					<div class="choice-content">
+						<div class="choice-title">
+							<span class="font-semibold">Zuschauer*in</span>
+							<Tooltip
+								content="Du schaust dem Wettbewerb zu und erlebst alle Auftritte live. Du gibst deine Stimme in Form einer Bewertung ab und bestimmst so mit, wer weiterkommt."
+								ariaLabel="Info zu Zuschauer*in Rolle"
+							/>
+						</div>
+						<div class="choice-description">
+							<span class="text-subtle">Immer verfügbar</span>
 						</div>
 					</div>
 				</label>
