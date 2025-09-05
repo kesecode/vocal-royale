@@ -8,7 +8,7 @@
 		<p class="text-muted">Hallo {displayName}!</p>
 		<p class="mt-1 text-sm text-subtle">Schön, dass du da bist.</p>
 		<div class="mt-4 flex flex-wrap gap-3">
-			<a href="/profile" class="btn-brand">Profil</a>
+			<a href="/profile" class="btn-brand">Profil-Einstellungen</a>
 		</div>
 	</div>
 
@@ -31,10 +31,10 @@
 				{/if}
 			</div>
 		</div>
-	{:else}
+	{:else if showRoleSelection === false}
 		<div class="panel-table">
 			<div class="table-header-border padding-responsive py-3">
-				<div class="font-semibold">Alle Teilnehmer</div>
+				<div class="font-semibold">Alle Teilnehmer*innen</div>
 			</div>
 			<div class="table-container">
 				<table class="w-full text-sm">
@@ -57,51 +57,48 @@
 				</table>
 			</div>
 		</div>
-		{#if showRoleSelection === false}
-			<div class="panel panel-accent overflow-hidden p-0">
-				<div class="table-header-border padding-responsive py-3">
-					<div class="font-semibold">Alle Spectators</div>
-				</div>
-				<div class="table-container">
-					<table class="w-full text-sm">
-						<thead>
-							<tr class="table-header">
-								<th class="table-cell">Name</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each data.spectators as u (u.id || u.name)}
-								<tr class="table-row-border">
-									<td class="table-cell">{u.name}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+		<div class="panel panel-accent overflow-hidden p-0">
+			<div class="table-header-border padding-responsive py-3">
+				<div class="font-semibold">Alle Juror*innen</div>
 			</div>
-
-			<div class="panel panel-accent overflow-hidden p-0">
-				<div class="table-header-border padding-responsive py-3">
-					<div class="font-semibold">Alle Juroren</div>
-				</div>
-				<div class="table-container">
-					<table class="w-full text-sm">
-						<thead>
-							<tr class="table-header">
-								<th class="table-cell">Name</th>
+			<div class="table-container">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="table-header">
+							<th class="table-cell">Name</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.jurors as u (u.id || u.name)}
+							<tr class="table-row-border">
+								<td class="table-cell">{u.name}</td>
 							</tr>
-						</thead>
-						<tbody>
-							{#each data.jurors as u (u.id || u.name)}
-								<tr class="table-row-border">
-									<td class="table-cell">{u.name}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+						{/each}
+					</tbody>
+				</table>
 			</div>
-		{/if}
+		</div>
+		<div class="panel panel-accent overflow-hidden p-0">
+			<div class="table-header-border padding-responsive py-3">
+				<div class="font-semibold">Alle Zuschauer*innen</div>
+			</div>
+			<div class="table-container">
+				<table class="w-full text-sm">
+					<thead>
+						<tr class="table-header">
+							<th class="table-cell">Name</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each data.spectators as u (u.id || u.name)}
+							<tr class="table-row-border">
+								<td class="table-cell">{u.name}</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		</div>
 	{/if}
 </section>
 
