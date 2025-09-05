@@ -7,9 +7,10 @@
 			disabled={r > activeRound}
 			aria-current={r === activeRound}
 			aria-disabled={r > activeRound}
-			aria-label={`Runde ${r}`}
+			aria-label={labels[r - 1] || `Runde ${r}`}
+			title={labels[r - 1] || `Runde ${r}`}
 		>
-			{r}
+			{labels.length > 0 && labels[r - 1] ? (labels[r - 1].startsWith('Finale') ? 'F' : r) : r}
 		</button>
 		{#if r < total}
 			<span class={`progress-conn ${r < activeRound ? 'is-on' : ''}`} aria-hidden="true"></span>
@@ -22,12 +23,14 @@
 		onSelect,
 		activeRound = 1,
 		currentRound: initialRound = 1,
-		total = 5
+		total = 5,
+		labels = []
 	} = $props<{
 		onSelect?: (round: number) => void
 		activeRound?: number
 		currentRound?: number
 		total?: number
+		labels?: string[]
 	}>()
 
 	let currentRound = $state(initialRound)

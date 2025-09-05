@@ -1,9 +1,15 @@
 <section class="section space-y-5">
 	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Bewertung</h1>
 
-	<!-- Progress with 5 rounds: past = yellow, current = green, future = black (disabled) -->
+	<!-- Progress with dynamic rounds: past = yellow, current = green, future = black (disabled) -->
 	<div class="panel panel-accent p-3 sm:p-4">
-		<ProgressRounds onSelect={setRound} {activeRound} {currentRound} total={5} />
+		<ProgressRounds
+			onSelect={setRound}
+			{activeRound}
+			{currentRound}
+			total={totalRounds}
+			labels={roundLabels}
+		/>
 	</div>
 
 	{#if competitionFinished}
@@ -280,6 +286,9 @@
 	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
 	import StarRating from '$lib/components/StarRating.svelte'
 	import Modal from '$lib/components/Modal.svelte'
+	import { getSongLabels, parseSettings, DEFAULT_SETTINGS } from '$lib/utils/competition-settings'
+
+	export let data
 
 	type Participant = {
 		id: string
@@ -299,6 +308,11 @@
 		vocalRating?: number
 		difficultyRating?: number
 	}
+
+	// Competition settings
+	const settings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
+	const totalRounds = settings.totalRounds
+	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
 
 	// activeRound controls progressbar state from global competition state
 	let activeRound = 1
