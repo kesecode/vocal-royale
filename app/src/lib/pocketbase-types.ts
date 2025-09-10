@@ -74,6 +74,7 @@ export type SettingsRecord = {
 	numberOfFinalSongs?: number
 	songChoiceDeadline?: string // datetime
 	roundEliminationPattern?: string // e.g. "5,3,3,2" (number of eliminations per round)
+	registrationPassword?: string // password required for registration
 }
 
 // Competition State

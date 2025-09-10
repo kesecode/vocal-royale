@@ -3,6 +3,48 @@
 		<div class="panel panel-accent p-3 text-sm">{banner}</div>
 	{/if}
 
+	<Modal
+		bind:open={showPasswordModal}
+		title="Registrierung freischalten"
+		onclose={closePasswordModal}
+	>
+		<div class="space-y-4">
+			<p class="text-sm">Bitte gib das Registrierungs-Passwort ein, um dich zu registrieren.</p>
+			{#if passwordError}
+				<div class="text-sm text-rose-200">{passwordError}</div>
+			{/if}
+			<form
+				onsubmit={(e) => {
+					e.preventDefault()
+					validatePassword()
+				}}
+			>
+				<label class="block text-sm font-medium">
+					Passwort
+					<input
+						class="input mt-1"
+						type="password"
+						bind:value={passwordInput}
+						disabled={validatingPassword || remainingAttempts <= 0}
+						required
+					/>
+				</label>
+				<div class="mt-4 flex gap-2">
+					<button
+						type="submit"
+						class="btn-brand"
+						disabled={validatingPassword || remainingAttempts <= 0}
+					>
+						{validatingPassword ? 'Prüfe...' : 'Bestätigen'}
+					</button>
+					<button type="button" class="btn-secondary" onclick={closePasswordModal}>
+						Abbrechen
+					</button>
+				</div>
+			</form>
+		</div>
+	</Modal>
+
 	{#if mode === 'login'}
 		<section class="panel panel-accent p-4 sm:p-6">
 			<h2 class="font-semibold">Login</h2>
@@ -76,9 +118,17 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { enhance } from '$app/forms'
+	import Modal from '$lib/components/Modal.svelte'
+
 	let mode = $state<'login' | 'signup'>('login')
 	let banner = $state<string | null>(null)
 	let next = $state('')
+	let showPasswordModal = $state(false)
+	let registrationUnlocked = $state(false)
+	let passwordInput = $state('')
+	let passwordError = $state<string | null>(null)
+	let remainingAttempts = $state(3)
+	let validatingPassword = $state(false)
 
 	let { form: formData }: { form?: { message?: string } } = $props()
 
@@ -95,7 +145,73 @@
 				banner = 'Dein Konto wurde gelöscht. Du kannst dich neu registrieren.'
 			}
 			next = q.get('next') ?? ''
+
+			// Check if registration is already unlocked in session
+			if (sessionStorage.getItem('registrationUnlocked') === 'true') {
+				registrationUnlocked = true
+			}
 		}
 	})
-	const toggle = () => (mode = mode === 'login' ? 'signup' : 'login')
+
+	const toggle = () => {
+		if (mode === 'login') {
+			if (!registrationUnlocked) {
+				showPasswordModal = true
+				passwordInput = ''
+				passwordError = null
+			} else {
+				mode = 'signup'
+			}
+		} else {
+			mode = 'login'
+		}
+	}
+
+	async function validatePassword() {
+		if (!passwordInput.trim()) {
+			passwordError = 'Bitte Passwort eingeben'
+			return
+		}
+
+		validatingPassword = true
+		passwordError = null
+
+		try {
+			const response = await fetch('/auth/validate-registration-password', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password: passwordInput })
+			})
+
+			const result = await response.json()
+
+			if (result.valid) {
+				registrationUnlocked = true
+				sessionStorage.setItem('registrationUnlocked', 'true')
+				showPasswordModal = false
+				mode = 'signup'
+			} else {
+				remainingAttempts--
+				if (remainingAttempts <= 0) {
+					passwordError = 'Keine Versuche mehr. Bitte lade die Seite neu.'
+					setTimeout(() => {
+						showPasswordModal = false
+					}, 3000)
+				} else {
+					passwordError = `Falsches Passwort. ${remainingAttempts} ${remainingAttempts === 1 ? 'Versuch' : 'Versuche'} verbleibend.`
+				}
+				passwordInput = ''
+			}
+		} catch {
+			passwordError = 'Fehler bei der Überprüfung. Bitte versuche es erneut.'
+		} finally {
+			validatingPassword = false
+		}
+	}
+
+	function closePasswordModal() {
+		showPasswordModal = false
+		passwordInput = ''
+		passwordError = null
+	}
 </script>
