@@ -107,6 +107,22 @@
 							<div class="text-xs text-rose-300 mt-1">{validationError}</div>
 						{/if}
 					</div>
+
+					<div>
+						<label class="block text-sm font-medium text-white/90 mb-1" for="registrationPassword">
+							Registrierungs-Passwort
+						</label>
+						<input
+							id="registrationPassword"
+							type="text"
+							bind:value={settings.registrationPassword}
+							placeholder="vocal-royale-2025"
+							class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white placeholder-white/50"
+						/>
+						<div class="text-xs text-white/70 mt-1">
+							Passwort für die Registrierung. Standard: vocal-royale-2025
+						</div>
+					</div>
 				</div>
 
 				<div class="flex gap-2 pt-4">
@@ -135,7 +151,8 @@
 		totalRounds: 5,
 		numberOfFinalSongs: 2,
 		songChoiceDeadline: '',
-		roundEliminationPattern: '5,3,3,2'
+		roundEliminationPattern: '5,3,3,2',
+		registrationPassword: ''
 	}
 
 	let loading = false
@@ -157,7 +174,8 @@
 				settings = {
 					...settings,
 					...data.settings,
-					songChoiceDeadline: data.settings.songChoiceDeadline || ''
+					songChoiceDeadline: data.settings.songChoiceDeadline || '',
+					registrationPassword: data.settings.registrationPassword || ''
 				}
 			}
 		} catch {
@@ -220,7 +238,8 @@
 					action: 'update',
 					settings: {
 						...settings,
-						songChoiceDeadline: settings.songChoiceDeadline || null
+						songChoiceDeadline: settings.songChoiceDeadline || null,
+						registrationPassword: settings.registrationPassword || null
 					}
 				})
 			})
@@ -247,7 +266,8 @@
 				totalRounds: 5,
 				numberOfFinalSongs: 2,
 				songChoiceDeadline: '',
-				roundEliminationPattern: '5,3,3,2'
+				roundEliminationPattern: '5,3,3,2',
+				registrationPassword: ''
 			}
 			validationError = null
 		}
