@@ -129,7 +129,10 @@
 	{/if}
 </section>
 
-<!-- Role Selection Modal -->
+<!-- Email Verification Modal - shown first if email not verified -->
+<EmailVerificationModal visible={showEmailVerification} email={data.userEmail} />
+
+<!-- Role Selection Modal - shown after email is verified -->
 <RoleSelection
 	visible={showRoleSelection}
 	maxParticipants={data.maxParticipants}
@@ -145,6 +148,7 @@
 	import { goto } from '$app/navigation'
 	import type { PageProps } from './$types'
 	import type { UserRole } from '$lib/pocketbase-types'
+	import EmailVerificationModal from '$lib/components/EmailVerificationModal.svelte'
 	import RoleSelection from '$lib/components/RoleSelection.svelte'
 	import Pagination from '$lib/components/Pagination.svelte'
 
@@ -154,6 +158,7 @@
 		data.user?.firstName || data.user?.name || data.user?.username || data.user?.id
 	const competitionFinished = $derived(Boolean(data?.competitionFinished ?? false))
 
+	let showEmailVerification = $state(false)
 	let showRoleSelection = $state(false)
 	let roleSelectionLoading = $state(false)
 
@@ -193,8 +198,14 @@
 	}
 
 	onMount(() => {
-		// Show role selection modal if user needs to select a role
-		if (data.needsRoleSelection) {
+		// Priority 1: Email verification (must come before role selection)
+		if (data.needsEmailVerification) {
+			showEmailVerification = true
+			showRoleSelection = false
+		}
+		// Priority 2: Role selection (only if email is verified)
+		else if (data.needsRoleSelection) {
+			showEmailVerification = false
 			showRoleSelection = true
 		}
 	})
