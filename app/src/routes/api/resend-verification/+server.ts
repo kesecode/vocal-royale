@@ -7,7 +7,7 @@ const rateLimitMap = new Map<string, number>()
 const RATE_LIMIT_WINDOW_MS = 2 * 60 * 1000 // 2 Minuten
 
 // Test helper: reset rate limiting map (only for testing)
-export function resetRateLimitForTesting() {
+export function _resetRateLimitForTesting() {
 	rateLimitMap.clear()
 }
 

@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { POST, resetRateLimitForTesting } from '../../../src/routes/api/resend-verification/+server'
+import {
+	POST,
+	_resetRateLimitForTesting
+} from '../../../src/routes/api/resend-verification/+server'
 import { createPBMock, makeUser, createRequestEvent } from '../../utils/mocks'
 
 type TestLocals = {
@@ -14,7 +17,7 @@ describe('/api/resend-verification endpoint', () => {
 
 	beforeEach(() => {
 		// Reset rate limiting between tests
-		resetRateLimitForTesting()
+		_resetRateLimitForTesting()
 		vi.clearAllMocks()
 
 		mockRequestVerification = vi.fn(() => Promise.resolve())
