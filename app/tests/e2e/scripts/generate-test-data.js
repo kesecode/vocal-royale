@@ -185,7 +185,7 @@ async function createSongChoices(pb, participant, totalSongs, confirmed) {
 			artist: song.artist,
 			songTitle: song.title,
 			confirmed: confirmed,
-			appleMusicSongId: 'null'
+			appleMusicSongId: null
 		}
 
 		try {
