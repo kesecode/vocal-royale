@@ -37,9 +37,7 @@
 					>
 						{validatingPassword ? 'Prüfe...' : 'Bestätigen'}
 					</button>
-					<button type="button" class="btn-secondary" onclick={closePasswordModal}>
-						Abbrechen
-					</button>
+					<button type="button" class="btn-ghost" onclick={closePasswordModal}>Abbrechen</button>
 				</div>
 			</form>
 		</div>
@@ -61,6 +59,15 @@
 					Passwort
 					<input class="input mt-1" name="password" type="password" required minlength="8" />
 				</label>
+				<div class="mt-2 text-right">
+					<a
+						href="/auth/forgot-password"
+						class="text-sm hover:underline"
+						style="color: var(--color-gold-500)"
+					>
+						Passwort vergessen?
+					</a>
+				</div>
 				<button type="submit" class="btn-brand">Login</button>
 			</form>
 		</section>
@@ -143,6 +150,8 @@
 				banner = 'Bitte melde dich an, um fortzufahren.'
 			} else if (reason === 'account_deleted') {
 				banner = 'Dein Konto wurde gelöscht. Du kannst dich neu registrieren.'
+			} else if (reason === 'password_reset_success') {
+				banner = 'Passwort erfolgreich zurückgesetzt. Du kannst dich jetzt anmelden.'
 			}
 			next = q.get('next') ?? ''
 

@@ -37,6 +37,9 @@ export const actions: Actions = {
 				role: 'default'
 			})
 
+			// Email-Verifizierung anfordern
+			await locals.pb.collection('users').requestVerification(email)
+
 			// Auto-Login nach Registrierung
 			await locals.pb.collection('users').authWithPassword(email, password)
 			logger.info('Signup success', { email, userId: locals.pb.authStore.record?.id })

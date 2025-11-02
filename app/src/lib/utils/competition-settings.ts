@@ -74,3 +74,35 @@ export function getSongLabels(totalRounds: number, numberOfFinalSongs: number): 
 
 	return labels
 }
+
+/**
+ * Check if the song choice deadline has passed
+ * @param deadline - ISO 8601 datetime string or null/undefined
+ * @returns true if deadline exists and has passed, false otherwise
+ */
+export function isDeadlinePassed(deadline: string | null | undefined): boolean {
+	if (!deadline) return false // No deadline set = always allow
+	const deadlineTime = new Date(deadline).getTime()
+	const now = new Date().getTime()
+	return now > deadlineTime
+}
+
+/**
+ * Format deadline for display in German locale
+ * @param deadline - ISO 8601 datetime string or null/undefined
+ * @returns Formatted string like "15.11.2025, 18:30 Uhr" or empty string if no deadline
+ */
+export function formatDeadline(deadline: string | null | undefined): string {
+	if (!deadline) return ''
+	const date = new Date(deadline)
+	const dateStr = date.toLocaleDateString('de-DE', {
+		day: '2-digit',
+		month: '2-digit',
+		year: 'numeric'
+	})
+	const timeStr = date.toLocaleTimeString('de-DE', {
+		hour: '2-digit',
+		minute: '2-digit'
+	})
+	return `${dateStr}, ${timeStr} Uhr`
+}
