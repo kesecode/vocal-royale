@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     image: vocal-royale-backend
     container_name: vocal-royale-backend
+    env_file:
+      - compose.env
     ports:
       # Map host BACKEND_PORT → container 8080 (PocketBase)
       - "${BACKEND_PORT:-8090}:8090"

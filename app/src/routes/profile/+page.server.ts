@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit'
 import { logger } from '$lib/server/logger'
 import type { Actions, PageServerLoad } from './$types'
 import type { SettingsResponse, UsersResponse, UserRole } from '$lib/pocketbase-types'
+import { isDeadlinePassed } from '$lib/utils/competition-settings'
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Layout guard already enforces auth; just return the user.
@@ -13,8 +14,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		// Load role selection settings
 		let maxParticipants = 10 // default fallback
 		let maxJurors = 3 // default fallback
+		let competitionSettings: SettingsResponse | null = null
 		try {
 			const settings = (await locals.pb.collection('settings').getFullList()) as SettingsResponse[]
+			competitionSettings = settings[0] || null
 			if (settings[0]?.maxParticipantCount) {
 				maxParticipants = settings[0].maxParticipantCount
 			}
@@ -35,7 +38,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			maxParticipants,
 			maxJurors,
 			currentParticipants,
-			currentJurors
+			currentJurors,
+			competitionSettings
 		}
 	} catch (error) {
 		logger.warn('Error loading profile data', { userId: locals.user.id, error })
@@ -137,6 +141,27 @@ export const actions: Actions = {
 			})
 		}
 
+		// Check if deadline has passed - no role changes after deadline
+		try {
+			const settings = (await locals.pb.collection('settings').getFullList()) as SettingsResponse[]
+			const deadline = settings[0]?.songChoiceDeadline
+
+			if (deadline && isDeadlinePassed(deadline)) {
+				logger.warn('Role change prevented: deadline passed', {
+					userId: locals.user.id,
+					requestedRole: role,
+					deadline
+				})
+				return fail(403, {
+					message: 'Rollenwechsel nicht mehr möglich. Die Deadline ist abgelaufen.',
+					variant: 'error'
+				})
+			}
+		} catch (error) {
+			logger.warn('Could not check deadline for role change', { error })
+			// Fallback: Allow role change if settings cannot be loaded
+		}
+
 		try {
 			// Check role limits for participant and juror
 			if (role === 'participant' || role === 'juror') {
@@ -170,15 +195,45 @@ export const actions: Actions = {
 				}
 			}
 
+			// Store old role before update
+			const oldRole = locals.user.role
+
 			// Update user role
 			await locals.pb.collection('users').update(locals.user.id, { role })
+
+			// Delete all song choices if user was participant and is now changing to a different role
+			if (oldRole === 'participant' && role !== 'participant') {
+				try {
+					const songChoices = await locals.pb.collection('song_choices').getFullList({
+						filter: `user = "${locals.user.id}"`
+					})
+
+					// Delete each song choice record
+					for (const choice of songChoices) {
+						await locals.pb.collection('song_choices').delete(choice.id)
+					}
+
+					logger.info('Deleted song choices after role change from participant', {
+						userId: locals.user.id,
+						oldRole,
+						newRole: role,
+						deletedCount: songChoices.length
+					})
+				} catch (error) {
+					logger.warn('Failed to delete song choices after role change', {
+						userId: locals.user.id,
+						error
+					})
+					// Not critical - role change has already succeeded
+				}
+			}
 
 			// Update the auth store to reflect the new role immediately
 			if (locals.pb.authStore.record) {
 				locals.pb.authStore.record.role = role
 			}
 
-			logger.info('Role changed via profile', { userId: locals.user.id, newRole: role })
+			logger.info('Role changed via profile', { userId: locals.user.id, oldRole, newRole: role })
 			return { message: `Rolle erfolgreich zu "${role}" geändert.`, variant: 'success' }
 		} catch (error) {
 			logger.warn('Role change failed via profile', { userId: locals.user.id, role, error })

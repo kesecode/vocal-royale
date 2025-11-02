@@ -50,6 +50,7 @@
 					<button
 						type="button"
 						class="btn-accent"
+						disabled={deadlinePassed}
 						onclick={() => {
 							showRole = true
 							showPwd = false
@@ -62,6 +63,11 @@
 					>
 						Rolle ändern
 					</button>
+					{#if deadlinePassed}
+						<p class="text-xs text-rose-300 w-full">
+							Rollenwechsel nach Deadline nicht mehr möglich
+						</p>
+					{/if}
 				{/if}
 			</div>
 			<div class="flex gap-3 pt-2">
@@ -188,6 +194,21 @@
 			<form
 				method="post"
 				action="?/changeRole"
+				onsubmit={(e) => {
+					// Show warning if user is changing from participant role
+					if (user?.role === 'participant' && selectedRole !== 'participant') {
+						e.preventDefault()
+						if (
+							!confirm(
+								'Achtung: Wenn du deine Rolle änderst, werden alle deine Song-Auswahlen gelöscht. Fortfahren?'
+							)
+						) {
+							return
+						}
+						// User confirmed, submit the form
+						;(e.currentTarget as HTMLFormElement).requestSubmit()
+					}
+				}}
 				use:enhance={() => {
 					const oldRole = user?.role
 					const newRole = selectedRole
@@ -327,7 +348,9 @@
 					>
 						Zurück
 					</button>
-					<button type="submit" class="btn-brand" disabled={!selectedRole}>Rolle ändern</button>
+					<button type="submit" class="btn-brand" disabled={!selectedRole || deadlinePassed}>
+						Rolle ändern
+					</button>
 				</div>
 			</form>
 		{/if}
@@ -341,6 +364,7 @@
 	import { onMount } from 'svelte'
 	import { browser } from '$app/environment'
 	import Tooltip from '$lib/components/Tooltip.svelte'
+	import { isDeadlinePassed } from '$lib/utils/competition-settings'
 
 	const props = $props()
 	let { data } = props as PageProps
@@ -353,6 +377,13 @@
 
 	// Role selection state - pre-select current role
 	let selectedRole: UserRole | null = $state(user?.role || null)
+
+	// Check if deadline has passed for role changes
+	const deadlinePassed = $derived(
+		data.competitionSettings?.songChoiceDeadline
+			? isDeadlinePassed(data.competitionSettings.songChoiceDeadline)
+			: false
+	)
 
 	// Local reactive counters that won't be overwritten by server updates
 	let localCurrentParticipants = $state(data.currentParticipants || 0)
