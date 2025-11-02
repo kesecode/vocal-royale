@@ -25,6 +25,13 @@ done
 
 echo "✅ PocketBase API is ready!"
 
+# Create superuser if credentials are provided
+if [ -n "$PB_ADMIN_EMAIL" ] && [ -n "$PB_ADMIN_PASSWORD" ]; then
+  echo "👤 Ensuring PocketBase superuser exists..."
+  /pb/pocketbase superuser upsert "${PB_ADMIN_EMAIL}" "${PB_ADMIN_PASSWORD}" > /dev/null 2>&1 || true
+  echo "✅ Superuser ready"
+fi
+
 # Configure APP_URL setting if environment variable is set
 if [ -n "$APP_URL" ]; then
   echo "🔧 Configuring PocketBase APP_URL setting to: $APP_URL"
@@ -88,8 +95,60 @@ if [ -n "$APP_URL" ]; then
       echo "$CURRENT_SETTINGS" | head -c 1000
       echo ""
     fi
+
+    # Configure APP_NAME setting if environment variable is set
+    if [ -n "$APP_NAME" ]; then
+      echo ""
+      echo "🔧 Configuring PocketBase APP_NAME setting to: $APP_NAME"
+
+      # Update settings with APP_NAME
+      echo "📝 Updating application name..."
+
+      # Attempt 1: Top-level appName property
+      echo "   Trying format: {\"appName\":\"...\"}"
+      APP_NAME_RESPONSE=$(curl -s -X PATCH http://localhost:8090/api/settings \
+        -H "Content-Type: application/json" \
+        -H "Authorization: $TOKEN" \
+        -d "{\"appName\":\"${APP_NAME}\"}")
+
+      # Verify if it worked
+      if echo "$APP_NAME_RESPONSE" | grep -q "appName"; then
+        echo "✅ APP_NAME set successfully with top-level property"
+      else
+        echo "   ⚠️  Top-level format failed, trying nested meta format..."
+        # Attempt 2: Nested in meta object
+        APP_NAME_RESPONSE=$(curl -s -X PATCH http://localhost:8090/api/settings \
+          -H "Content-Type: application/json" \
+          -H "Authorization: $TOKEN" \
+          -d "{\"meta\":{\"appName\":\"${APP_NAME}\"}}")
+
+        if echo "$APP_NAME_RESPONSE" | grep -q "meta"; then
+          echo "✅ APP_NAME set successfully with meta wrapper"
+        else
+          echo "   ⚠️  Meta format also failed"
+          echo "   📋 Response:"
+          echo "   $APP_NAME_RESPONSE"
+        fi
+      fi
+
+      echo ""
+
+      # Verify by fetching current settings
+      echo "🔍 Verifying APP_NAME configuration..."
+      CURRENT_SETTINGS_NAME=$(curl -s http://localhost:8090/api/settings)
+
+      if echo "$CURRENT_SETTINGS_NAME" | grep -q "$APP_NAME"; then
+        echo "✅ APP_NAME configured successfully: $APP_NAME"
+        echo "   Found in settings response"
+      else
+        echo "⚠️  Warning: Could not verify APP_NAME in settings"
+        echo "   Expected: $APP_NAME"
+      fi
+    else
+      echo "ℹ️  APP_NAME environment variable not set - skipping configuration"
+    fi
   else
-    echo "⚠️  Warning: Admin authentication failed - APP_URL not configured"
+    echo "⚠️  Warning: Admin authentication failed - APP_URL and APP_NAME not configured"
     echo "   Email: $PB_ADMIN_EMAIL"
     echo "   Auth response: $AUTH_RESPONSE"
     echo "   Make sure PB_ADMIN_EMAIL and PB_ADMIN_PASSWORD are correct"
@@ -101,6 +160,7 @@ fi
 echo ""
 echo "🎉 PocketBase startup complete!"
 echo "📧 E-mail links will use: ${APP_URL:-<not configured>}"
+echo "✉️  E-mail templates will use app name: ${APP_NAME:-<not configured>}"
 echo ""
 
 # Bring PocketBase process to foreground

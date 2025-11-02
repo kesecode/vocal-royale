@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Email-Verifizierung - Vocal Royale</title>
+	<title>Email-Verifizierung - {PUBLIC_APP_NAME}</title>
 </svelte:head>
 
 <section class="mx-auto max-w-sm space-y-6">
@@ -26,6 +26,7 @@
 
 <script lang="ts">
 	import { goto } from '$app/navigation'
+	import { PUBLIC_APP_NAME } from '$env/static/public'
 
 	let { data } = $props()
 

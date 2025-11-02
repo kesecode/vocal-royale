@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Vocal Royale</title>
+	<title>{PUBLIC_APP_NAME}</title>
 	<link rel="icon" href={favicon} />
 	<meta
 		name="viewport"
@@ -16,7 +16,7 @@
 		<div class="flex-between px-4 sm:px-6 lg:px-8">
 			<!-- Logo ganz links -->
 			<div class="logo mt-1.5 mb-1.5 flex items-center">
-				<a href="/" class="font-display text-responsive drop-shadow">Aja, 30!</a>
+				<a href="/" class="font-display text-responsive drop-shadow">{PUBLIC_APP_NAME}</a>
 			</div>
 
 			<!-- Right-Container (zentriert begrenzt) -->
@@ -139,6 +139,7 @@
 	import '../app.css'
 	import favicon from '$lib/assets/favicon.png'
 	import { slide } from 'svelte/transition'
+	import { PUBLIC_APP_NAME } from '$env/static/public'
 
 	let { children, data } = $props()
 	const isLoggedIn = $derived(!!data?.user)

@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Passwort zurücksetzen - Vocal Royale</title>
+	<title>Passwort zurücksetzen - {PUBLIC_APP_NAME}</title>
 </svelte:head>
 
 <section class="mx-auto max-w-sm space-y-6">
@@ -54,6 +54,7 @@
 
 <script lang="ts">
 	import { enhance } from '$app/forms'
+	import { PUBLIC_APP_NAME } from '$env/static/public'
 
 	let { form: formData }: { form?: { message?: string } } = $props()
 	let isSubmitting = $state(false)
