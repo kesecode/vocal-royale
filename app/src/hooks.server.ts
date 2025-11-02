@@ -68,6 +68,25 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(303, '/')
 	}
 
+	// Email verification guard: unverified users can only access limited routes
+	if (isLoggedIn && !isAsset && !event.locals.user?.verified) {
+		const allowForUnverified =
+			pathname === '/' ||
+			pathname === '/profile' ||
+			pathname.startsWith('/profile/') ||
+			pathname === '/api/resend-verification' ||
+			pathname === '/api/role-counts' || // Allow checking role counts
+			pathname === '/forbidden'
+
+		if (!allowForUnverified) {
+			logger.debug('Guard redirect to / (email not verified)', {
+				pathname,
+				userId: event.locals.user?.id
+			})
+			throw redirect(303, '/')
+		}
+	}
+
 	// Role-based route allowlist
 	if (isLoggedIn && !isAsset) {
 		const role = event.locals.user?.role as string | undefined

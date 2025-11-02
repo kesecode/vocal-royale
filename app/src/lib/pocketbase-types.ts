@@ -53,6 +53,7 @@ export type UsersRecord = {
 	role: UserRole
 	eliminated?: boolean // eliminated from competition
 	sangThisRound?: boolean // performed in the current round
+	checkedIn?: boolean // checked in by admin
 }
 
 export type RatingsRecord = {

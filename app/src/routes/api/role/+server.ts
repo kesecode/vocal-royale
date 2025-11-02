@@ -9,6 +9,11 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		return json({ error: 'Nicht authentifiziert' }, { status: 401 })
 	}
 
+	// Check if user has verified their email
+	if (!locals.user.verified) {
+		return json({ error: 'Email-Adresse muss zuerst bestätigt werden' }, { status: 403 })
+	}
+
 	// Check if user already has a non-default role
 	if (locals.user.role && locals.user.role !== 'default') {
 		return json({ error: 'Rolle bereits vergeben' }, { status: 400 })

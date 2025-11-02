@@ -52,6 +52,39 @@ describe('/api/role endpoint', () => {
 		})
 	})
 
+	describe('Email verification', () => {
+		it('should return 403 if user has not verified their email', async () => {
+			locals.user = makeUser({ id: 'testuser', role: 'default', verified: false })
+			const request = new Request('http://localhost/api/role', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ role: 'participant' })
+			})
+
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
+			expect(response.status).toBe(403)
+
+			const data = await response.json()
+			expect(data.error).toContain('Email-Adresse muss zuerst bestätigt werden')
+		})
+
+		it('should allow role selection if user has verified their email', async () => {
+			locals.user = makeUser({ id: 'testuser', role: 'default', verified: true })
+			const request = new Request('http://localhost/api/role', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ role: 'participant' })
+			})
+
+			const response = await POST(
+				createRequestEvent(locals, request) as unknown as Parameters<typeof POST>[0]
+			)
+			expect(response.status).toBe(200)
+		})
+	})
+
 	describe('Role validation', () => {
 		it('should accept valid participant role', async () => {
 			const request = new Request('http://localhost/api/role', {

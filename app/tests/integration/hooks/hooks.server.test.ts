@@ -24,7 +24,7 @@ vi.mock('pocketbase', () => {
 					const role = /role=([^;]+)/.exec(cookie || '')?.[1]
 					const id = /id=([^;]+)/.exec(cookie || '')?.[1] || 'u1'
 					if (role) {
-						authStore.record = { id, role }
+						authStore.record = { id, role, verified: true }
 						authStore.isValid = true
 					}
 				}),
