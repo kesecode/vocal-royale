@@ -46,7 +46,8 @@ export const actions: Actions = {
 		const collection_ref = formData.get('collection_ref') as string
 		const subject = formData.get('subject') as string
 		const body = formData.get('body') as string
-		const is_active = formData.get('is_active') === 'true'
+		// Checkbox: true if present and === 'true', false otherwise (unchecked checkboxes don't send values)
+		const is_active = formData.has('is_active') && formData.get('is_active') === 'true'
 
 		if (!id || !template_type || !collection_ref || !subject || !body) {
 			return fail(400, { message: 'Alle Felder sind erforderlich' })
@@ -81,7 +82,8 @@ export const actions: Actions = {
 		const value = formData.get('value') as string
 		const category = formData.get('category') as string
 		const description = formData.get('description') as string
-		const is_active = formData.get('is_active') === 'true'
+		// Checkbox: true if present and === 'true', false otherwise (unchecked checkboxes don't send values)
+		const is_active = formData.has('is_active') && formData.get('is_active') === 'true'
 
 		if (!id || !key || !value || !category) {
 			return fail(400, { message: 'Key, Value und Category sind erforderlich' })

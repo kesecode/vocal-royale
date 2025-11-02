@@ -151,10 +151,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		maxJurors,
 		currentParticipants: participants.length,
 		currentJurors: jurors.length,
-		// Email verification check - must verify email first before selecting role
-		needsEmailVerification: !locals.user?.verified,
+		// Email verification check - must verify email first before selecting role (except for admins)
+		needsEmailVerification: !locals.user?.verified && locals.user?.role !== 'admin',
 		userEmail: locals.user?.email || '',
-		// User needs to select role if they have verified email AND default role
-		needsRoleSelection: locals.user?.verified && locals.user?.role === 'default'
+		// User needs to select role if they have default role AND verified email
+		needsRoleSelection: locals.user?.role === 'default' && locals.user?.verified
 	}
 }

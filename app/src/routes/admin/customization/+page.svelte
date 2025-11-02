@@ -67,6 +67,18 @@
 										rows="3"
 										class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white text-sm"
 										required
+										onkeydown={(e) => {
+											if (e.key === 'Tab') {
+												e.preventDefault()
+												const form = e.currentTarget.closest('form')
+												const focusable = form?.querySelectorAll(
+													'input:not([type=hidden]), textarea, select, button'
+												)
+												const index = Array.from(focusable || []).indexOf(e.currentTarget)
+												const nextElement = focusable?.[index + (e.shiftKey ? -1 : 1)]
+												if (nextElement instanceof HTMLElement) nextElement.focus()
+											}
+										}}
 									>
 										{item.value}
 									</textarea>
@@ -117,7 +129,7 @@
 										type="checkbox"
 										name="is_active"
 										value="true"
-										checked={item.is_active}
+										bind:checked={item.is_active}
 										class="rounded border-white/20 bg-white/10"
 									/>
 									<label for="active-ui-{item.id}" class="text-sm text-white/80">Aktiv</label>
@@ -220,6 +232,18 @@
 										rows="15"
 										class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white text-sm font-mono"
 										required
+										onkeydown={(e) => {
+											if (e.key === 'Tab') {
+												e.preventDefault()
+												const form = e.currentTarget.closest('form')
+												const focusable = form?.querySelectorAll(
+													'input:not([type=hidden]), textarea, select, button'
+												)
+												const index = Array.from(focusable || []).indexOf(e.currentTarget)
+												const nextElement = focusable?.[index + (e.shiftKey ? -1 : 1)]
+												if (nextElement instanceof HTMLElement) nextElement.focus()
+											}
+										}}
 									>
 										{template.body}
 									</textarea>
@@ -234,7 +258,7 @@
 										type="checkbox"
 										name="is_active"
 										value="true"
-										checked={template.is_active}
+										bind:checked={template.is_active}
 										class="rounded border-white/20 bg-white/10"
 									/>
 									<label for="active-email-{template.id}" class="text-sm text-white/80">
