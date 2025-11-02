@@ -3,10 +3,8 @@
 		<div class="content-spacing">
 			<h2 class="font-display text-responsive">Bitte Email Adresse bestätigen!</h2>
 			<p class="text-sm text-muted">
-				Um dein Passwort zurücksetzen zu können musst du deine
-				Email-Adresse bestätigen. Dir wurde eine Bestätigungs-Email an <strong
-					class="text-brand"
-				>
+				Um dein Passwort zurücksetzen zu können musst du deine Email-Adresse bestätigen. Dir wurde
+				eine Bestätigungs-Email an <strong class="text-brand">
 					{email}
 				</strong>
 				gesendet.
