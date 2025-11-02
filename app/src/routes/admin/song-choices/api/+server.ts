@@ -1,0 +1,87 @@
+import type { RequestHandler } from './$types'
+import { json } from '@sveltejs/kit'
+import type { SongChoicesResponse } from '$lib/pocketbase-types'
+import { logger } from '$lib/server/logger'
+
+const COLLECTION = 'song_choices' as const
+const PER_PAGE = 10
+
+export const GET: RequestHandler = async ({ url, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'not_authenticated' }, { status: 401 })
+	}
+	if (locals.user.role !== 'admin') {
+		return json({ error: 'forbidden' }, { status: 403 })
+	}
+
+	try {
+		const page = Number(url.searchParams.get('page')) || 1
+		logger.info('Admin SongChoices GET', { page, perPage: PER_PAGE })
+
+		const result = await locals.pb.collection(COLLECTION).getList(page, PER_PAGE, {
+			expand: 'user',
+			sort: 'round,-updated'
+		})
+
+		logger.info('Admin SongChoices GET success', {
+			page: result.page,
+			totalPages: result.totalPages,
+			totalItems: result.totalItems
+		})
+
+		return json({
+			items: result.items,
+			page: result.page,
+			perPage: result.perPage,
+			totalItems: result.totalItems,
+			totalPages: result.totalPages
+		})
+	} catch (e: unknown) {
+		const err = e as Error & { status?: number; message?: string }
+		logger.error('Admin SongChoices GET failed', {
+			status: err?.status,
+			message: err?.message
+		})
+		return json({ error: 'fetch_failed' }, { status: 500 })
+	}
+}
+
+export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'not_authenticated' }, { status: 401 })
+	}
+	if (locals.user.role !== 'admin') {
+		return json({ error: 'forbidden' }, { status: 403 })
+	}
+
+	let payload: { choiceId?: string; confirmed?: boolean }
+	try {
+		payload = await request.json()
+	} catch {
+		return json({ error: 'invalid_json' }, { status: 400 })
+	}
+
+	const { choiceId, confirmed } = payload
+	if (!choiceId || typeof confirmed !== 'boolean') {
+		logger.warn('Admin SongChoices invalid payload', { choiceId, confirmed })
+		return json({ error: 'invalid_payload' }, { status: 400 })
+	}
+
+	try {
+		logger.info('Admin SongChoices POST', { choiceId, confirmed })
+
+		const updated = (await locals.pb.collection(COLLECTION).update(choiceId, {
+			confirmed
+		})) as SongChoicesResponse
+
+		logger.info('Admin SongChoices POST success', { id: updated.id, confirmed: updated.confirmed })
+		return json({ ok: true, choice: updated })
+	} catch (e: unknown) {
+		const err = e as Error & { status?: number; message?: string }
+		logger.error('Admin SongChoices POST failed', {
+			status: err?.status,
+			message: err?.message
+		})
+		return json({ error: 'update_failed' }, { status: 500 })
+	}
+}

@@ -9,7 +9,11 @@ import type {
 	SettingsResponse
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
-import { calculateTotalSongs, parseSettings } from '$lib/utils/competition-settings'
+import {
+	calculateTotalSongs,
+	parseSettings,
+	isDeadlinePassed
+} from '$lib/utils/competition-settings'
 
 const COLLECTION = 'song_choices' as const
 const VALIDATE = (env.SONG_CHOICE_VALIDATE ?? 'true') === 'true'
@@ -181,8 +185,9 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 	const confirmed = Boolean(payload?.confirmed ?? false)
 	logger.info('SongChoices POST', { userId: locals.user.id, round, validate: VALIDATE })
 
-	// Get max allowed rounds from settings
+	// Get max allowed rounds and deadline from settings
 	let maxRounds = 5 // Default fallback
+	let deadline: string | null = null
 	try {
 		const settingsList = (await locals.pb
 			.collection('settings')
@@ -190,6 +195,7 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 		if (settingsList.length > 0) {
 			const settings = parseSettings(settingsList[0])
 			maxRounds = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
+			deadline = settings.songChoiceDeadline
 		}
 	} catch {
 		// Use default if settings unavailable
@@ -198,6 +204,18 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 	if (!Number.isFinite(round) || round < 1 || round > maxRounds) {
 		logger.warn('SongChoices invalid round', { round, maxRounds })
 		return json({ error: 'invalid_round' }, { status: 400 })
+	}
+
+	// Check if deadline has passed
+	if (isDeadlinePassed(deadline)) {
+		logger.warn('SongChoices update prevented: deadline passed', { deadline })
+		return json(
+			{
+				error: 'deadline_exceeded',
+				details: 'Die Deadline für die Song-Auswahl ist abgelaufen.'
+			},
+			{ status: 403 }
+		)
 	}
 	if (!artist || !songTitle) {
 		logger.warn('SongChoices missing fields', { artistEmpty: !artist, songTitleEmpty: !songTitle })
@@ -247,6 +265,18 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 
 		if (list.items.length > 0) {
 			const rec = list.items[0]
+			// Prevent updating confirmed song choices
+			if (rec.confirmed) {
+				logger.warn('SongChoices update prevented: already confirmed', { id: rec.id, round })
+				return json(
+					{
+						error: 'song_choice_confirmed',
+						details:
+							'Diese Song-Auswahl wurde bereits bestätigt und kann nicht mehr geändert werden.'
+					},
+					{ status: 403 }
+				)
+			}
 			const updateData: Partial<SongChoicesRecord> = { artist, songTitle: songTitle, confirmed }
 			if (payload.appleMusicSongId) updateData.appleMusicSongId = payload.appleMusicSongId
 			logger.info('SongChoices update', { id: rec.id, round })

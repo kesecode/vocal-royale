@@ -1,5 +1,15 @@
 <section class="section space-y-4">
-	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Songauswahl</h1>
+	<div>
+		<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Songauswahl</h1>
+		{#if deadlineText}
+			<p class="mt-1 text-sm {deadlinePassed ? 'text-rose-300' : 'text-white/70'}">
+				Deadline: {deadlineText}
+				{#if deadlinePassed}
+					<span class="font-medium">(abgelaufen)</span>
+				{/if}
+			</p>
+		{/if}
+	</div>
 
 	<p class="text-white/80">
 		Trage deine Songs ein — je Runde einen (Interpret und Titel). Jeder Eintrag lässt sich auf- und
@@ -37,6 +47,8 @@
 										type="text"
 										bind:value={song.artist}
 										placeholder="z. B. Queen"
+										disabled={song.confirmed || deadlinePassed}
+										readonly={song.confirmed || deadlinePassed}
 									/>
 								</div>
 								<div>
@@ -49,12 +61,22 @@
 										type="text"
 										bind:value={song.songTitle}
 										placeholder="z. B. Bohemian Rhapsody"
+										disabled={song.confirmed || deadlinePassed}
+										readonly={song.confirmed || deadlinePassed}
 									/>
 								</div>
 							</div>
 
 							<div class="flex items-center gap-3">
-								<button type="button" class="btn-brand" on:click={() => save(i)}>Speichern</button>
+								{#if song.confirmed}
+									<span class="text-sm text-emerald-200">✓ Bestätigt</span>
+								{:else if deadlinePassed}
+									<span class="text-sm text-rose-300">Deadline abgelaufen</span>
+								{:else}
+									<button type="button" class="btn-brand" on:click={() => save(i)}>
+										Speichern
+									</button>
+								{/if}
 								{#if song?.appleMusicSongId && song.appleMusicSongId !== 'null'}
 									<button
 										type="button"
@@ -63,7 +85,7 @@
 										on:click={() => openApple(i)}
 										aria-label="Bei Apple Music öffnen"
 									>
-										<span class="apple-mark" aria-hidden="true"></span>
+										<span class="apple-mark" aria-hidden="true"></span>
 										<span>Music</span>
 									</button>
 								{/if}
@@ -92,16 +114,20 @@
 		getSongLabels,
 		DEFAULT_SETTINGS,
 		parseSettings,
+		isDeadlinePassed,
+		formatDeadline,
 		type CompetitionSettings
 	} from '$lib/utils/competition-settings'
 
 	export let data
 
-	type Song = { artist: string; songTitle: string; appleMusicSongId?: string }
+	type Song = { artist: string; songTitle: string; appleMusicSongId?: string; confirmed?: boolean }
 
 	let settings: CompetitionSettings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
 	let totalSongs = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
 	let songLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
+	let deadlinePassed = isDeadlinePassed(settings.songChoiceDeadline)
+	let deadlineText = formatDeadline(settings.songChoiceDeadline)
 
 	let songs: Song[] = []
 	let openStates: boolean[] = []
@@ -137,6 +163,7 @@
 						song_title?: string
 						appleMusicSongId?: string
 						apple_music_song_id?: string
+						confirmed?: boolean
 					}
 					// Map server response to our structure, respecting totalSongs
 					const serverSongs = data.songs as ServerSongChoice[]
@@ -146,7 +173,8 @@
 							songs[i] = {
 								artist: s?.artist ?? '',
 								songTitle: s?.songTitle ?? s?.song_title ?? '',
-								appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
+								appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined,
+								confirmed: s?.confirmed ?? false
 							}
 						}
 					}
@@ -193,7 +221,13 @@
 					return
 				}
 				const err = data?.error ?? 'Fehler beim Speichern'
-				if (err === 'song_not_available') {
+				if (err === 'song_choice_confirmed') {
+					errors[i] = 'Diese Auswahl wurde bereits bestätigt.'
+					return
+				} else if (err === 'deadline_exceeded') {
+					errors[i] = 'Die Deadline ist abgelaufen.'
+					return
+				} else if (err === 'song_not_available') {
 					errors[i] = 'Song nicht verfügbar.'
 				} else if (err === 'no_lyrics') {
 					errors[i] = 'Keine Lyrics verfügbar.'
@@ -221,11 +255,13 @@
 							song_title?: string
 							appleMusicSongId?: string
 							apple_music_song_id?: string
+							confirmed?: boolean
 						}
 						songs = (data.songs as ServerSongChoice[]).map((s) => ({
 							artist: s?.artist ?? '',
 							songTitle: s?.songTitle ?? s?.song_title ?? '',
-							appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined
+							appleMusicSongId: s?.appleMusicSongId ?? s?.apple_music_song_id ?? undefined,
+							confirmed: s?.confirmed ?? false
 						}))
 					}
 				}

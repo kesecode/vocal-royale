@@ -14,6 +14,12 @@ type CollectionMock = {
 	delete?: (id: string) => Promise<void>
 	// auth methods for users service
 	authWithPassword?: (email: string, password: string) => Promise<Record<string, unknown>>
+	// email verification methods
+	requestVerification?: (email: string) => Promise<void>
+	confirmVerification?: (token: string) => Promise<void>
+	// password reset methods
+	requestPasswordReset?: (email: string) => Promise<void>
+	confirmPasswordReset?: (token: string, password: string, passwordConfirm: string) => Promise<void>
 }
 
 export function createPBMock(collections: Record<string, CollectionMock> = {}) {
@@ -45,6 +51,20 @@ export function createPBMock(collections: Record<string, CollectionMock> = {}) {
 				delete: vi.fn((id: string) => (svc.delete ? svc.delete(id) : Promise.resolve())),
 				authWithPassword: vi.fn((email: string, password: string) =>
 					svc.authWithPassword ? svc.authWithPassword(email, password) : Promise.resolve({})
+				),
+				requestVerification: vi.fn((email: string) =>
+					svc.requestVerification ? svc.requestVerification(email) : Promise.resolve()
+				),
+				confirmVerification: vi.fn((token: string) =>
+					svc.confirmVerification ? svc.confirmVerification(token) : Promise.resolve()
+				),
+				requestPasswordReset: vi.fn((email: string) =>
+					svc.requestPasswordReset ? svc.requestPasswordReset(email) : Promise.resolve()
+				),
+				confirmPasswordReset: vi.fn((token: string, password: string, passwordConfirm: string) =>
+					svc.confirmPasswordReset
+						? svc.confirmPasswordReset(token, password, passwordConfirm)
+						: Promise.resolve()
 				)
 			}
 		}),
