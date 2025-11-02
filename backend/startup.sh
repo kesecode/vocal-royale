@@ -33,7 +33,7 @@ if [ -n "$APP_URL" ]; then
   echo "🔐 Authenticating as admin..."
   AUTH_RESPONSE=$(curl -s -X POST http://localhost:8090/api/admins/auth-with-password \
     -H "Content-Type: application/json" \
-    -d "{\"identity\":\"${PB_ADMIN_EMAIL}\",\"password\":\"${PB_ADMIN_PASSWORD}\"}" 2>/dev/null || echo '{}')
+    -d "{\"identity\":\"${PB_ADMIN_EMAIL}\",\"password\":\"${PB_ADMIN_PASSWORD}\"}")
 
   TOKEN=$(echo "$AUTH_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
 
@@ -41,27 +41,64 @@ if [ -n "$APP_URL" ]; then
     echo "✅ Admin authentication successful"
 
     # Update settings with APP_URL
+    # Try different API formats as PocketBase API structure may vary
     echo "📝 Updating application settings..."
+
+    # Attempt 1: Top-level appUrl property
+    echo "   Trying format: {\"appUrl\":\"...\"}"
     SETTINGS_RESPONSE=$(curl -s -X PATCH http://localhost:8090/api/settings \
       -H "Content-Type: application/json" \
       -H "Authorization: $TOKEN" \
-      -d "{\"meta\":{\"appUrl\":\"${APP_URL}\"}}" 2>/dev/null || echo '{}')
+      -d "{\"appUrl\":\"${APP_URL}\"}")
 
+    # Verify if it worked
     if echo "$SETTINGS_RESPONSE" | grep -q "appUrl"; then
-      echo "✅ APP_URL configured successfully: $APP_URL"
+      echo "✅ APP_URL set successfully with top-level property"
     else
-      echo "⚠️  Warning: Could not verify APP_URL configuration"
-      echo "   Response: $SETTINGS_RESPONSE"
+      echo "   ⚠️  Top-level format failed, trying nested meta format..."
+      # Attempt 2: Nested in meta object
+      SETTINGS_RESPONSE=$(curl -s -X PATCH http://localhost:8090/api/settings \
+        -H "Content-Type: application/json" \
+        -H "Authorization: $TOKEN" \
+        -d "{\"meta\":{\"appUrl\":\"${APP_URL}\"}}")
+
+      if echo "$SETTINGS_RESPONSE" | grep -q "meta"; then
+        echo "✅ APP_URL set successfully with meta wrapper"
+      else
+        echo "   ⚠️  Meta format also failed"
+        echo "   📋 Response:"
+        echo "   $SETTINGS_RESPONSE"
+      fi
+    fi
+
+    echo ""
+
+    # Verify by fetching current settings
+    echo "🔍 Verifying APP_URL configuration..."
+    CURRENT_SETTINGS=$(curl -s http://localhost:8090/api/settings)
+
+    if echo "$CURRENT_SETTINGS" | grep -q "$APP_URL"; then
+      echo "✅ APP_URL configured successfully: $APP_URL"
+      echo "   Found in settings response"
+    else
+      echo "⚠️  Warning: Could not verify APP_URL in settings"
+      echo "   Expected: $APP_URL"
+      echo ""
+      echo "   Full settings response:"
+      echo "$CURRENT_SETTINGS" | head -c 1000
+      echo ""
     fi
   else
     echo "⚠️  Warning: Admin authentication failed - APP_URL not configured"
-    echo "   Response: $AUTH_RESPONSE"
+    echo "   Email: $PB_ADMIN_EMAIL"
+    echo "   Auth response: $AUTH_RESPONSE"
     echo "   Make sure PB_ADMIN_EMAIL and PB_ADMIN_PASSWORD are correct"
   fi
 else
   echo "ℹ️  APP_URL environment variable not set - skipping configuration"
 fi
 
+echo ""
 echo "🎉 PocketBase startup complete!"
 echo "📧 E-mail links will use: ${APP_URL:-<not configured>}"
 echo ""

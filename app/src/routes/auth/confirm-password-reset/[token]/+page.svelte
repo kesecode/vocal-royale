@@ -10,18 +10,44 @@
 			<div class="mt-2 text-sm text-rose-200">{formData.message}</div>
 		{/if}
 
-		<form method="post" class="mt-4 space-y-4" use:enhance>
+		<form
+			method="post"
+			class="mt-4 space-y-4"
+			use:enhance={() => {
+				isSubmitting = true
+				return async ({ update }) => {
+					await update()
+					isSubmitting = false
+				}
+			}}
+		>
 			<label class="block text-sm font-medium">
 				Neues Passwort
-				<input class="input mt-1" name="password" type="password" required minlength="8" />
+				<input
+					class="input mt-1"
+					name="password"
+					type="password"
+					required
+					minlength="8"
+					disabled={isSubmitting}
+				/>
 			</label>
 
 			<label class="block text-sm font-medium">
 				Passwort bestätigen
-				<input class="input mt-1" name="passwordConfirm" type="password" required minlength="8" />
+				<input
+					class="input mt-1"
+					name="passwordConfirm"
+					type="password"
+					required
+					minlength="8"
+					disabled={isSubmitting}
+				/>
 			</label>
 
-			<button type="submit" class="btn-brand">Passwort ändern</button>
+			<button type="submit" class="btn-brand" disabled={isSubmitting}>
+				{isSubmitting ? 'Wird geändert...' : 'Passwort ändern'}
+			</button>
 		</form>
 	</div>
 </section>
@@ -30,4 +56,5 @@
 	import { enhance } from '$app/forms'
 
 	let { form: formData }: { form?: { message?: string } } = $props()
+	let isSubmitting = $state(false)
 </script>
