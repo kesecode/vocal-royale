@@ -39,7 +39,8 @@ async function ensureInitialData(pb: TypedPocketBase) {
 					lastName,
 					password,
 					passwordConfirm: password,
-					role: 'admin'
+					role: 'admin',
+					verified: true
 				})
 				logger.info('Bootstrap: created admin app user')
 				// authenticate to allow protected writes if needed

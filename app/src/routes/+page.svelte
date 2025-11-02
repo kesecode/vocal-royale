@@ -1,12 +1,12 @@
 <section class="section section-spacing">
 	<div class="content-spacing">
-		<h1 class="font-display text-3xl tracking-tight sm:text-4xl">Ai Gude {displayName} wie!?</h1>
-		<p class="text-secondary">Der Bre wird 30, singt für mich!</p>
+		<h1 class="font-display text-3xl tracking-tight sm:text-4xl">{greeting}</h1>
+		<p class="text-secondary">{subtitle}</p>
 	</div>
 
 	<div class="panel-content">
-		<p class="text-muted">Hallo {displayName}!</p>
-		<p class="mt-1 text-sm text-subtle">Schön, dass du da bist.</p>
+		<p class="text-muted">{welcomeMessage}</p>
+		<p class="mt-1 text-sm text-subtle">{welcomeSubtext}</p>
 		<div class="mt-4 flex flex-wrap gap-3">
 			<a href="/profile" class="btn-brand">Profil-Einstellungen</a>
 		</div>
@@ -151,12 +151,24 @@
 	import EmailVerificationModal from '$lib/components/EmailVerificationModal.svelte'
 	import RoleSelection from '$lib/components/RoleSelection.svelte'
 	import Pagination from '$lib/components/Pagination.svelte'
+	import { interpolate } from '$lib/utils/interpolate'
 
 	let { data }: PageProps = $props()
 
 	const displayName =
-		data.user?.firstName || data.user?.name || data.user?.username || data.user?.id
+		data.user?.firstName || data.user?.name || data.user?.username || data.user?.id || 'Freund'
 	const competitionFinished = $derived(Boolean(data?.competitionFinished ?? false))
+
+	// Dynamische UI-Texte mit Interpolation
+	const greeting = interpolate(data.uiContent?.['home.greeting'] || 'Hallo {displayName}!', {
+		displayName
+	})
+	const subtitle = data.uiContent?.['home.subtitle'] || 'Willkommen!'
+	const welcomeMessage = interpolate(
+		data.uiContent?.['home.welcome_message'] || 'Hallo {displayName}!',
+		{ displayName }
+	)
+	const welcomeSubtext = data.uiContent?.['home.welcome_subtext'] || 'Schön, dass du da bist.'
 
 	let showEmailVerification = $state(false)
 	let showRoleSelection = $state(false)

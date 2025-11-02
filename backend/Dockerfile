@@ -10,7 +10,8 @@ RUN unzip /tmp/pb.zip -d /pb/ && chmod +x /pb/pocketbase
 WORKDIR /pb
 COPY ./pb_migrations /pb/pb_migrations
 COPY ./startup.sh /pb/startup.sh
-RUN chmod +x /pb/startup.sh
+COPY ./sync-email-templates.sh /pb/sync-email-templates.sh
+RUN chmod +x /pb/startup.sh /pb/sync-email-templates.sh
 
 EXPOSE 8090
 

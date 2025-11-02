@@ -147,6 +147,15 @@ if [ -n "$APP_URL" ]; then
     else
       echo "ℹ️  APP_NAME environment variable not set - skipping configuration"
     fi
+
+    # Sync email templates from database
+    echo ""
+    if [ -f "/pb/sync-email-templates.sh" ]; then
+      chmod +x /pb/sync-email-templates.sh
+      /pb/sync-email-templates.sh "$TOKEN"
+    else
+      echo "ℹ️  Email template sync script not found - skipping template sync"
+    fi
   else
     echo "⚠️  Warning: Admin authentication failed - APP_URL and APP_NAME not configured"
     echo "   Email: $PB_ADMIN_EMAIL"

@@ -72,6 +72,7 @@
 				<a href="/admin/users" class="btn-ghost">User-Verwaltung</a>
 				<a href="/admin/song-choices" class="btn-ghost">Song-Auswahl</a>
 				<a href="/admin/settings" class="btn-ghost">Einstellungen</a>
+				<a href="/admin/customization" class="btn-ghost">Customization</a>
 			</div>
 		</div>
 	</div>

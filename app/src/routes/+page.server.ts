@@ -3,7 +3,8 @@ import type {
 	UsersResponse,
 	CompetitionStateResponse,
 	RatingsResponse,
-	SettingsResponse
+	SettingsResponse,
+	UiContentResponse
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
 
@@ -111,9 +112,35 @@ export const load: PageServerLoad = async ({ locals }) => {
 		// ignore and keep defaults
 	}
 
+	// Load UI content for home page
+	let uiContent: Record<string, string> = {}
+	try {
+		const contentItems = (await locals.pb.collection('ui_content').getFullList({
+			filter: 'category = "home" && is_active = true'
+		})) as UiContentResponse[]
+
+		uiContent = contentItems.reduce(
+			(acc, item) => {
+				acc[item.key] = item.value
+				return acc
+			},
+			{} as Record<string, string>
+		)
+	} catch {
+		logger.warn('Could not load UI content, using default texts')
+		// Fallback to hardcoded texts
+		uiContent = {
+			'home.greeting': 'Ai Gude {displayName} wie!?',
+			'home.subtitle': 'Der Bre wird 30, singt für mich!',
+			'home.welcome_message': 'Hallo {displayName}!',
+			'home.welcome_subtext': 'Schön, dass du da bist.'
+		}
+	}
+
 	return {
 		user: locals.user,
 		pb_healthy: healthy,
+		uiContent,
 		participants,
 		spectators,
 		jurors,
