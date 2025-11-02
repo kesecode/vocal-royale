@@ -32,6 +32,52 @@
       "name": "Attach: Node (9229)",
       "port": 9229,
       "restart": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Generate Test Data (Default)",
+      "program": "${workspaceFolder}/app/tests/e2e/scripts/generate-test-data.js",
+      "cwd": "${workspaceFolder}/app/tests/e2e/scripts",
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Generate Test Data (Custom)",
+      "program": "${workspaceFolder}/app/tests/e2e/scripts/generate-test-data.js",
+      "cwd": "${workspaceFolder}/app/tests/e2e/scripts",
+      "args": [
+        "--participants", "10",
+        "--jurors", "3",
+        "--spectators", "5",
+        "--rounds", "4",
+        "--finalSongs", "2"
+      ],
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Generate Test Data (Confirmed Songs)",
+      "program": "${workspaceFolder}/app/tests/e2e/scripts/generate-test-data.js",
+      "cwd": "${workspaceFolder}/app/tests/e2e/scripts",
+      "args": [
+        "--participants", "5",
+        "--jurors", "2",
+        "--spectators", "4",
+        "--confirmed"
+      ],
+      "console": "integratedTerminal",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
     }
   ]
 }

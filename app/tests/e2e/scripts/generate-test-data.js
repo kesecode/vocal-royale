@@ -13,6 +13,8 @@
  *   --rounds <number>        Total number of rounds (default: 4)
  *   --finalSongs <number>    Number of final songs (default: 2)
  *   --confirmed              Set song choices as confirmed (default: false)
+ *
+ * @file This is a JavaScript file, not TypeScript
  */
 import PocketBase from 'pocketbase'
 
@@ -135,16 +137,21 @@ async function createUsers(pb, role, count, emailPrefix) {
 			await pb.collection('users').getFirstListItem(`email="${userData.email}"`)
 			console.log(`⚠️  User ${userData.email} already exists, skipping`)
 			// Get the user to add to our list
-			const existingUser = await pb.collection('users').getFirstListItem(`email="${userData.email}"`)
+			const existingUser = await pb
+				.collection('users')
+				.getFirstListItem(`email="${userData.email}"`)
 			users.push(existingUser)
-		} catch (checkError) {
+		} catch {
 			// User doesn't exist, create it
 			try {
 				const newUser = await pb.collection('users').create(userData)
 				console.log(`✅ Created ${role}: ${userData.email} (${userData.name})`)
 				users.push(newUser)
 			} catch (createError) {
-				console.error(`❌ Error creating user ${userData.email}:`, createError.response || createError)
+				console.error(
+					`❌ Error creating user ${userData.email}:`,
+					createError.response || createError
+				)
 				throw createError
 			}
 		}
