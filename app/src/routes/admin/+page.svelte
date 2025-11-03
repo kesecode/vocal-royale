@@ -72,7 +72,7 @@
 				<a href="/admin/users" class="btn-purple">User-Verwaltung</a>
 				<a href="/admin/song-choices" class="btn-purple">Song-Auswahl</a>
 				<a href="/admin/settings" class="btn-purple">Einstellungen</a>
-				<a href="/admin/customization" class="btn-purple">Customization</a>
+				<a href="/admin/customization" class="btn-purple">Anpassung</a>
 			</div>
 		</div>
 	</div>

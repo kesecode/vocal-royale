@@ -106,3 +106,18 @@ export function formatDeadline(deadline: string | null | undefined): string {
 	})
 	return `${dateStr}, ${timeStr} Uhr`
 }
+
+/**
+ * Parse the roundEliminationPattern string into an array of numbers
+ * @param pattern - Comma-separated pattern like "5,3,3,2"
+ * @returns Array of numbers, e.g. [5, 3, 3, 2]
+ */
+export function parseEliminationPattern(pattern: string): number[] {
+	if (!pattern || !pattern.trim()) {
+		return []
+	}
+	return pattern
+		.split(',')
+		.map((s) => Number(s.trim()) || 0)
+		.filter((n) => n >= 0)
+}

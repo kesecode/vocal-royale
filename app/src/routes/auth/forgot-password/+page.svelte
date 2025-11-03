@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Passwort vergessen - {PUBLIC_APP_NAME}</title>
+	<title>Passwort vergessen - Vocal Royale</title>
 </svelte:head>
 
 <section class="mx-auto max-w-sm space-y-6">
@@ -38,7 +38,6 @@
 
 <script lang="ts">
 	import { enhance } from '$app/forms'
-	import { PUBLIC_APP_NAME } from '$env/static/public'
 
 	let { form: formData }: { form?: { success?: boolean; message?: string } } = $props()
 </script>
