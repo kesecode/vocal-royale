@@ -1,6 +1,6 @@
 <div class="flex items-center justify-between gap-3 px-4 py-3">
 	<button
-		class="btn-ghost"
+		class="btn-purple"
 		disabled={currentPage === 1}
 		onclick={() => onPageChange(currentPage - 1)}
 	>
@@ -12,7 +12,7 @@
 	</div>
 
 	<button
-		class="btn-ghost"
+		class="btn-purple"
 		disabled={currentPage === totalPages}
 		onclick={() => onPageChange(currentPage + 1)}
 	>

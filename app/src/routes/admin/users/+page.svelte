@@ -72,7 +72,7 @@
 											{user.checkedIn ? 'Auschecken' : 'Einchecken'}
 										</button>
 										<button
-											class="btn-ghost text-xs px-3 py-1.5"
+											class="btn-purple text-xs px-3 py-1.5"
 											onclick={() => openRoleChangeModal(user)}
 										>
 											Rolle ändern
@@ -94,7 +94,7 @@
 	</div>
 
 	<div class="mt-4">
-		<a href="/admin" class="btn-ghost">← Zurück zum Admin</a>
+		<a href="/admin" class="btn-purple">← Zurück</a>
 	</div>
 </section>
 
@@ -137,7 +137,7 @@
 			</div>
 
 			<div class="flex gap-3 justify-end">
-				<button class="btn-ghost" onclick={closeRoleChangeModal}>Abbrechen</button>
+				<button class="btn-purple" onclick={closeRoleChangeModal}>Abbrechen</button>
 				<button class="btn-brand" disabled={newRole === selectedUser.role} onclick={changeUserRole}>
 					Rolle ändern
 				</button>

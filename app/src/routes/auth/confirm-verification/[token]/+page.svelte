@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>Email-Verifizierung - Vocal Royale</title>
+	<title>Email-Verifizierung - {PUBLIC_APP_NAME}</title>
 </svelte:head>
 
 <section class="mx-auto max-w-sm space-y-6">
@@ -16,7 +16,7 @@
 				<div class="text-4xl">✗</div>
 				<h2 class="font-semibold text-lg">Verifizierung fehlgeschlagen</h2>
 				<p class="text-sm text-rose-200">{data.message}</p>
-				<button type="button" class="btn-ghost" onclick={() => goto('/auth')}>
+				<button type="button" class="btn-purple" onclick={() => goto('/auth')}>
 					Zurück zum Login
 				</button>
 			</div>
@@ -26,6 +26,7 @@
 
 <script lang="ts">
 	import { goto } from '$app/navigation'
+	import { PUBLIC_APP_NAME } from '$env/static/public'
 
 	let { data } = $props()
 

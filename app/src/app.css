@@ -86,7 +86,9 @@
 	label,
 	.btn,
 	.btn-brand,
-	.btn-accent {
+	.btn-accent,
+	.btn-danger,
+	.btn-purple {
 		cursor: pointer;
 	}
 }
@@ -170,15 +172,17 @@
 		box-shadow: 5px 5px 0 var(--shadow-2);
 		background: var(--color-brand-700);
 	}
-	.btn-ghost {
-		@apply inline-flex items-center justify-center px-3 py-1.5 font-semibold transition active:translate-y-0.5;
+	.btn-purple {
+		@apply inline-flex items-center justify-center px-4 py-2 font-semibold transition active:translate-y-0.5;
 		color: #fff;
 		border: 2px solid #333;
-		border-radius: 10px;
-		background: transparent;
+		border-radius: 10px 14px 12px 10px/12px 10px 14px 12px;
+		box-shadow: 4px 4px 0 var(--shadow-1);
+		background: var(--color-accent-600);
 	}
-	.btn-ghost:hover {
-		background: rgb(255 255 255 / 0.06);
+	.btn-purple:hover {
+		box-shadow: 5px 5px 0 var(--shadow-1);
+		background: var(--color-accent-700);
 	}
 	/* Utility for any custom clickable container */
 	.clickable,

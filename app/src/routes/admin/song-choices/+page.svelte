@@ -93,7 +93,7 @@
 	</div>
 
 	<div class="mt-4">
-		<a href="/admin" class="btn-ghost">← Zurück zum Admin</a>
+		<a href="/admin" class="btn-purple">← Zurück</a>
 	</div>
 </section>
 

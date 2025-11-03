@@ -399,7 +399,7 @@ migrate((app) => {
     {
       "authAlert": {
         "emailTemplate": {
-          "body": "<p>Hello,</p>\n<p>We noticed a login to your Aja 30! account from a new location.</p>\n<p>If this was you, you may disregard this email.</p>\n<p><strong>If this wasn't you, you should immediately change your Aja 30! account password to revoke access from all other locations.</strong></p>\n<p>\n  Thanks,<br/>\n  Aja 30! team\n</p>",
+          "body": "<p>Hello,</p>\n<p>We noticed a login to your {app_name} account from a new location.</p>\n<p>If this was you, you may disregard this email.</p>\n<p><strong>If this wasn't you, you should immediately change your {app_name} account password to revoke access from all other locations.</strong></p>\n<p>\n  Thanks,<br/>\n  {app_name} team\n</p>",
           "subject": "Login from a new location"
         },
         "enabled": true
@@ -409,8 +409,8 @@ migrate((app) => {
         "duration": 86400
       },
       "confirmEmailChangeTemplate": {
-        "body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"aja30.davidweppler.io/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  Aja 30! team\n</p>",
-        "subject": "Confirm your Aja 30! new email address"
+        "body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"{app_url}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {app_name} team\n</p>",
+        "subject": "Confirm your new {app_name} email address"
       },
       "createRule": null,
       "deleteRule": null,
@@ -537,8 +537,8 @@ migrate((app) => {
       "otp": {
         "duration": 180,
         "emailTemplate": {
-          "body": "<p>Hello,</p>\n<p>Your one-time password is: <strong>{OTP}</strong></p>\n<p><i>If you didn't ask for the one-time password, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  Aja 30! team\n</p>",
-          "subject": "OTP for Aja 30!"
+          "body": "<p>Hello,</p>\n<p>Your one-time password is: <strong>{OTP}</strong></p>\n<p><i>If you didn't ask for the one-time password, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {app_name} team\n</p>",
+          "subject": "OTP for {app_name}"
         },
         "enabled": false,
         "length": 8
@@ -553,15 +553,15 @@ migrate((app) => {
         "duration": 1800
       },
       "resetPasswordTemplate": {
-        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Passwort zurücksetzen - Aja, 30!</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">Aja, 30!!</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Passwort zurücksetzen</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Hallo,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt. Klicke auf den Button unten, um ein neues Passwort festzulegen:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"aja30.davidweppler.io/auth/confirm-password-reset/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">Passwort zurücksetzen</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #e6e6e6;\"><i>Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail einfach ignorieren.</i></p>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 30 Minuten gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Viel Spaß beim Singen!<br/>Dein Aja, 30! Team</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
-        "subject": "Passwort zurücksetzen - Aja, 30!"
+        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Passwort zurücksetzen - {app_name}</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">{app_name}</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Passwort zurücksetzen</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Hallo,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt. Klicke auf den Button unten, um ein neues Passwort festzulegen:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"{app_url}/auth/confirm-password-reset/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">Passwort zurücksetzen</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #e6e6e6;\"><i>Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail einfach ignorieren.</i></p>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 30 Minuten gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Viel Spaß beim Singen!<br/>Dein {app_name} Team</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
+        "subject": "Passwort zurücksetzen - {app_name}"
       },
       "system": true,
       "type": "auth",
       "updateRule": null,
       "verificationTemplate": {
-        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>E-Mail verifizieren - Aja, 30!</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">Aja, 30!!</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Willkommen bei Aja, 30!!</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Hallo,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Vielen Dank, dass du dich bei Aja, 30! angemeldet hast! Klicke auf den Button unten, um deine E-Mail-Adresse zu verifizieren:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"aja30.davidweppler.io/auth/confirm-verification/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">E-Mail verifizieren</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 72 Stunden gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Bis bald du Sack!<br/>Gruß<br/>David</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
-        "subject": "E-Mail verifizieren - Aja, 30!"
+        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>E-Mail verifizieren - {app_name}</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">{app_name}</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Willkommen bei {app_name}</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Hallo,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Vielen Dank, dass du dich bei {app_name} angemeldet hast! Klicke auf den Button unten, um deine E-Mail-Adresse zu verifizieren:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"{app_url}/auth/confirm-verification/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">E-Mail verifizieren</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 72 Stunden gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Bis bald du Sack!<br/>Gruß<br/>David</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
+        "subject": "E-Mail verifizieren - {app_name}"
       },
       "verificationToken": {
         "duration": 259200
@@ -571,8 +571,8 @@ migrate((app) => {
     {
       "authAlert": {
         "emailTemplate": {
-          "body": "<p>Hello,</p>\n<p>We noticed a login to your Aja 30! account from a new location.</p>\n<p>If this was you, you may disregard this email.</p>\n<p><strong>If this wasn't you, you should immediately change your Aja 30! account password to revoke access from all other locations.</strong></p>\n<p>\n  Thanks,<br/>\n  Aja 30! team\n</p>",
-          "subject": "Login from a new location"
+          "body": "<p>Hallo,</p>\n<p>Wir haben einen Login mit deinem {app_name}-Konto von einem unbekannten Ort festgestellt.</p>\n<p>Wenn du das warst, kannst du diese E-Mail ignorieren.</p>\n<p><strong>Wenn du das nicht warst, ändere bitte umgehend dein Passwort.</strong></p>\n<p>\n  Vielen Dank,<br/>\n  dein {app_name}-Team\n</p>",
+          "subject": "Anmeldung von einem unbekannten Ort"
         },
         "enabled": true
       },
@@ -581,8 +581,8 @@ migrate((app) => {
         "duration": 604800
       },
       "confirmEmailChangeTemplate": {
-        "body": "<p>Hello,</p>\n<p>Click on the button below to confirm your new email address.</p>\n<p>\n  <a class=\"btn\" href=\"aja30.davidweppler.io/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Confirm new email</a>\n</p>\n<p><i>If you didn't ask to change your email address, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  Aja 30! team\n</p>",
-        "subject": "Confirm your Aja 30! new email address"
+        "body": "<p>Hallo,</p>\n<p>Klicke auf die Schaltfläche unten, um deine neue E-Mail-Adresse zu bestätigen.</p>\n<p>\n  <a class=\"btn\" href=\"{app_url}/_/#/auth/confirm-email-change/{TOKEN}\" target=\"_blank\" rel=\"noopener\">Neue E-Mail bestätigen</a>\n</p>\n<p><i>Wenn du keine Änderung deiner E-Mail-Adresse angefordert hast, kannst du diese Nachricht ignorieren.</i></p>\n<p>\n  Vielen Dank,<br/>\n  dein {app_name}-Team\n</p>",
+        "subject": "Bestätige deine neue E-Mail-Adresse für {app_name}"
       },
       "createRule": "",
       "deleteRule": "id = @request.auth.id",
@@ -810,7 +810,7 @@ migrate((app) => {
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
       ],
       "listRule": "@request.auth.id != ''",
-      "manageRule": null,
+      "manageRule": "@request.auth.id = '' || @request.auth.role = 'admin'",
       "mfa": {
         "duration": 1800,
         "enabled": false,
@@ -829,8 +829,8 @@ migrate((app) => {
       "otp": {
         "duration": 180,
         "emailTemplate": {
-          "body": "<p>Hello,</p>\n<p>Your one-time password is: <strong>{OTP}</strong></p>\n<p><i>If you didn't ask for the one-time password, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  Aja 30! team\n</p>",
-          "subject": "OTP for Aja 30!"
+          "body": "<p>Hello,</p>\n<p>Your one-time password is: <strong>{OTP}</strong></p>\n<p><i>If you didn't ask for the one-time password, you can ignore this email.</i></p>\n<p>\n  Thanks,<br/>\n  {app_name} team\n</p>",
+          "subject": "OTP for {app_name}"
         },
         "enabled": false,
         "length": 8
@@ -845,15 +845,15 @@ migrate((app) => {
         "duration": 1800
       },
       "resetPasswordTemplate": {
-        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Passwort zurücksetzen - Aja, 30!</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">Aja, 30!!</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Passwort zurücksetzen</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Gude aus Darmstadt,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt. Klicke auf den Button unten, um ein neues Passwort festzulegen:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"aja30.davidweppler.io/auth/confirm-password-reset/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">Passwort zurücksetzen</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #e6e6e6;\"><i>Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail einfach ignorieren.</i></p>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 30 Minuten gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Viel Spaß beim Singen!<br/>Dein Aja, 30! Team</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
-        "subject": "Passwort zurücksetzen - Aja, 30!"
+        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Passwort zurücksetzen - {app_name}</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">{app_name}</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Passwort zurücksetzen</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Ai Gude,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Du hast eine Anfrage zum Zurücksetzen deines Passworts gestellt. Klicke auf den Button unten, um ein neues Passwort festzulegen:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"{app_url}/auth/confirm-password-reset/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">Passwort zurücksetzen</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #e6e6e6;\"><i>Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail einfach ignorieren.</i></p>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 30 Minuten gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Viel Spaß beim Singen!<br/>Dein {app_name} Team</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
+        "subject": "Passwort zurücksetzen - {app_name}"
       },
       "system": false,
       "type": "auth",
       "updateRule": "id = @request.auth.id",
       "verificationTemplate": {
-        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>E-Mail verifizieren - Aja, 30!</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">Aja, 30!!</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Willkommen bei Aja, 30!!</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Gude aus Darmstadt,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Vielen Dank, dass du dich bei Aja, 30! angemeldet hast! Klicke auf den Button unten, um deine E-Mail-Adresse zu verifizieren:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"aja30.davidweppler.io/auth/confirm-verification/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">E-Mail verifizieren</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 72 Stunden gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Wir freuen uns auf deine Teilnahme!<br/>Dein Aja, 30! Team</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
-        "subject": "E-Mail verifizieren - Aja, 30!"
+        "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>E-Mail verifizieren - {app_name}</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">{app_name}</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Willkommen bei {app_name}</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Ai Gude,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Vielen Dank, dass du dich bei {app_name} angemeldet hast! Klicke auf den Button unten, um deine E-Mail-Adresse zu verifizieren:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"{app_url}/auth/confirm-verification/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">E-Mail verifizieren</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 72 Stunden gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Wir freuen uns auf deine Teilnahme!<br/>Dein {app_name} Team</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
+        "subject": "E-Mail verifizieren - {app_name}"
       },
       "verificationToken": {
         "duration": 259200
@@ -1338,6 +1338,428 @@ migrate((app) => {
       "type": "base",
       "updateRule": "user = @request.auth.id || @request.auth.role = 'admin'",
       "viewRule": "user = @request.auth.id"
+    },
+    {
+      "id": "pbc_email_templates",
+      "name": "email_templates",
+      "type": "base",
+      "system": false,
+      "listRule": "@request.auth.role = \"admin\"",
+      "viewRule": "@request.auth.role = \"admin\"",
+      "createRule": "@request.auth.role = \"admin\"",
+      "updateRule": "@request.auth.role = \"admin\"",
+      "deleteRule": null,
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "select_template_type",
+          "maxSelect": 1,
+          "name": "template_type",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "verification",
+            "password_reset",
+            "email_change"
+          ]
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text_subject",
+          "max": 500,
+          "min": 0,
+          "name": "subject",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "convertUrls": false,
+          "hidden": false,
+          "id": "editor_body",
+          "name": "body",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "editor"
+        },
+        {
+          "hidden": false,
+          "id": "select_collection_ref",
+          "maxSelect": 1,
+          "name": "collection_ref",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "users",
+            "_superusers"
+          ]
+        },
+        {
+          "hidden": false,
+          "id": "bool_is_active",
+          "name": "is_active",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "pbc_ui_content",
+      "name": "ui_content",
+      "type": "base",
+      "system": false,
+      "listRule": "@request.auth.id != \"\"",
+      "viewRule": "@request.auth.id != \"\"",
+      "createRule": "@request.auth.role = \"admin\"",
+      "updateRule": "@request.auth.role = \"admin\"",
+      "deleteRule": null,
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text_key",
+          "max": 200,
+          "min": 0,
+          "name": "key",
+          "pattern": "^[a-z0-9._-]+$",
+          "presentable": true,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text",
+          "unique": true
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text_value",
+          "max": 5000,
+          "min": 0,
+          "name": "value",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "select_category",
+          "maxSelect": 1,
+          "name": "category",
+          "presentable": false,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "home",
+            "auth",
+            "profile",
+            "admin",
+            "rating",
+            "song_choice"
+          ]
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text_description",
+          "max": 500,
+          "min": 0,
+          "name": "description",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": false,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "json_variables",
+          "maxSize": 1000,
+          "name": "variables",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "json"
+        },
+        {
+          "hidden": false,
+          "id": "bool_is_active",
+          "name": "is_active",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "pbc_app_settings",
+      "name": "app_settings",
+      "type": "base",
+      "system": false,
+      "listRule": "@request.auth.id != \"\"",
+      "viewRule": "@request.auth.id != \"\"",
+      "createRule": "@request.auth.role = \"admin\"",
+      "updateRule": "@request.auth.role = \"admin\"",
+      "deleteRule": null,
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text_setting_key",
+          "max": 200,
+          "min": 0,
+          "name": "key",
+          "pattern": "^[a-z_]+$",
+          "presentable": true,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text",
+          "unique": true
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text_setting_value",
+          "max": 1000,
+          "min": 0,
+          "name": "value",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text_setting_description",
+          "max": 500,
+          "min": 0,
+          "name": "description",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": false,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "id": "pbc_app_assets",
+      "name": "app_assets",
+      "type": "base",
+      "system": false,
+      "listRule": "@request.auth.id != \"\"",
+      "viewRule": "@request.auth.id != \"\"",
+      "createRule": "@request.auth.role = \"admin\"",
+      "updateRule": "@request.auth.role = \"admin\"",
+      "deleteRule": "@request.auth.role = \"admin\"",
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "select_asset_type",
+          "maxSelect": 1,
+          "name": "asset_type",
+          "presentable": true,
+          "required": true,
+          "system": false,
+          "type": "select",
+          "values": [
+            "favicon",
+            "logo"
+          ]
+        },
+        {
+          "hidden": false,
+          "id": "file_asset_file",
+          "maxSelect": 1,
+          "maxSize": 5242880,
+          "mimeTypes": [
+            "image/x-icon",
+            "image/vnd.microsoft.icon",
+            "image/png",
+            "image/svg+xml",
+            "image/jpeg",
+            "image/gif",
+            "image/webp"
+          ],
+          "name": "file",
+          "presentable": false,
+          "protected": false,
+          "required": true,
+          "system": false,
+          "thumbs": null,
+          "type": "file"
+        },
+        {
+          "hidden": false,
+          "id": "bool_is_active",
+          "name": "is_active",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        },
+        {
+          "hidden": false,
+          "id": "autodate2990389176",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate3332085495",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        }
+      ],
+      "indexes": []
     }
   ];
 

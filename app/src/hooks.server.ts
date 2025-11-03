@@ -68,8 +68,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 		throw redirect(303, '/')
 	}
 
-	// Email verification guard: unverified users can only access limited routes
-	if (isLoggedIn && !isAsset && !event.locals.user?.verified) {
+	// Email verification guard: unverified users can only access limited routes (except admins)
+	if (
+		isLoggedIn &&
+		!isAsset &&
+		!event.locals.user?.verified &&
+		event.locals.user?.role !== 'admin'
+	) {
 		const allowForUnverified =
 			pathname === '/' ||
 			pathname === '/profile' ||
