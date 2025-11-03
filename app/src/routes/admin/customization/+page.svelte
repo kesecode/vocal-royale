@@ -56,6 +56,11 @@
 		<div class="panel-table">
 			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">UI-Texte verwalten</div>
+				<form method="post" action="?/resetUiContent" use:enhance>
+					<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
+						{resetting ? 'Setze zurück...' : 'Auf Standardwerte zurücksetzen'}
+					</button>
+				</form>
 			</div>
 
 			<div class="space-y-4 p-3 sm:p-4">
@@ -197,11 +202,18 @@
 		<div class="panel-table">
 			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">Email-Templates verwalten</div>
-				<form method="post" action="?/syncTemplates" use:enhance>
-					<button type="submit" class="btn-accent text-xs" disabled={syncing}>
-						{syncing ? 'Synchronisiere...' : 'Templates synchronisieren'}
-					</button>
-				</form>
+				<div class="flex gap-2">
+					<form method="post" action="?/resetEmailTemplates" use:enhance>
+						<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
+							{resetting ? 'Setze zurück...' : 'Auf Standardwerte zurücksetzen'}
+						</button>
+					</form>
+					<form method="post" action="?/syncTemplates" use:enhance>
+						<button type="submit" class="btn-accent text-xs" disabled={syncing}>
+							{syncing ? 'Synchronisiere...' : 'Templates synchronisieren'}
+						</button>
+					</form>
+				</div>
 			</div>
 
 			<div class="space-y-4 p-3 sm:p-4">
