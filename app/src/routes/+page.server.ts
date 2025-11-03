@@ -130,10 +130,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		logger.warn('Could not load UI content, using default texts')
 		// Fallback to hardcoded texts
 		uiContent = {
-			'home.greeting': 'Ai Gude {displayName} wie!?',
-			'home.subtitle': 'Der Bre wird 30, singt für mich!',
-			'home.welcome_message': 'Hallo {displayName}!',
-			'home.welcome_subtext': 'Schön, dass du da bist.'
+			'home.greeting': 'Ai Gude {displayName}, wie!?',
+			'home.subtitle': 'Schön, dass du da bist!'
 		}
 	}
 

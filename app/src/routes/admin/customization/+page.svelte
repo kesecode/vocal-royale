@@ -2,7 +2,7 @@
 	<h1 class="font-display heading-responsive">Customization</h1>
 
 	<!-- Tab Navigation -->
-	<div class="flex gap-2 mb-4">
+	<div class="flex gap-2 mb-4 flex-wrap">
 		<button
 			type="button"
 			class="px-4 py-2 rounded-md {activeTab === 'ui'
@@ -20,6 +20,24 @@
 			onclick={() => (activeTab = 'email')}
 		>
 			Email-Templates
+		</button>
+		<button
+			type="button"
+			class="px-4 py-2 rounded-md {activeTab === 'settings'
+				? 'bg-accent text-white'
+				: 'bg-white/10 text-white/60 hover:text-white'}"
+			onclick={() => (activeTab = 'settings')}
+		>
+			App-Einstellungen
+		</button>
+		<button
+			type="button"
+			class="px-4 py-2 rounded-md {activeTab === 'favicon'
+				? 'bg-accent text-white'
+				: 'bg-white/10 text-white/60 hover:text-white'}"
+			onclick={() => (activeTab = 'favicon')}
+		>
+			Favicon
 		</button>
 	</div>
 
@@ -248,7 +266,7 @@
 										{template.body}
 									</textarea>
 									<div class="text-xs text-white/50 mt-1">
-										Variablen: {'{APP_NAME}'}, {'{APP_URL}'}, {'{TOKEN}'}
+										Variablen: {'{app_name}'}, {'{app_url}'}, {'{TOKEN}'}
 									</div>
 								</div>
 
@@ -298,6 +316,178 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- App Settings Tab -->
+	{#if activeTab === 'settings'}
+		<div class="panel-table">
+			<div class="flex-between table-header-border padding-responsive py-3">
+				<div class="font-semibold">App-Einstellungen</div>
+				<form method="post" action="?/resetAppSettings" use:enhance>
+					<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
+						{resetting ? 'Setze zurück...' : 'Auf Standardwerte zurücksetzen'}
+					</button>
+				</form>
+			</div>
+
+			<div class="space-y-4 p-3 sm:p-4">
+				{#each data.appSettings as setting (setting.id)}
+					<div class="border border-white/20 rounded-md p-4 space-y-3 bg-white/5">
+						<div class="flex-between">
+							<div class="text-sm font-medium">{setting.key}</div>
+							<button
+								type="button"
+								class="text-xs text-white/60 hover:text-white"
+								onclick={() => toggleEdit('settings', setting.id)}
+							>
+								{editingId === setting.id ? 'Abbrechen' : 'Bearbeiten'}
+							</button>
+						</div>
+
+						{#if editingId === setting.id}
+							<form method="post" action="?/updateAppSetting" use:enhance class="space-y-3">
+								<input type="hidden" name="id" value={setting.id} />
+								<input type="hidden" name="key" value={setting.key} />
+
+								<div>
+									<label class="block text-xs text-white/80 mb-1" for="value-{setting.id}">
+										Wert
+									</label>
+									<input
+										id="value-{setting.id}"
+										type="text"
+										name="value"
+										value={setting.value}
+										class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white text-sm"
+										required
+									/>
+									{#if setting.description}
+										<div class="text-xs text-white/50 mt-1">
+											{setting.description}
+										</div>
+									{/if}
+								</div>
+
+								<div class="flex gap-2">
+									<button type="submit" class="btn-brand text-sm" disabled={updating}>
+										{updating ? 'Speichere...' : 'Speichern'}
+									</button>
+									<button
+										type="button"
+										class="btn-ghost text-sm"
+										onclick={() => (editingId = null)}
+									>
+										Abbrechen
+									</button>
+								</div>
+							</form>
+						{:else}
+							<div class="text-xs text-white/60">
+								<div>
+									<strong>Wert:</strong>
+									{setting.value}
+								</div>
+								{#if setting.description}
+									<div class="mt-1">
+										<strong>Beschreibung:</strong>
+										{setting.description}
+									</div>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<div class="text-sm text-white/60">Keine Einstellungen gefunden</div>
+				{/each}
+			</div>
+		</div>
+	{/if}
+
+	<!-- Favicon Tab -->
+	{#if activeTab === 'favicon'}
+		<div class="panel-table">
+			<div class="flex-between table-header-border padding-responsive py-3">
+				<div class="font-semibold">Favicon verwalten</div>
+				<form method="post" action="?/resetFavicon" use:enhance>
+					<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
+						{resetting ? 'Setze zurück...' : 'Auf Standard zurücksetzen'}
+					</button>
+				</form>
+			</div>
+
+			<div class="space-y-4 p-3 sm:p-4">
+				<!-- Current Favicon -->
+				{#if data.favicon}
+					<div class="border border-white/20 rounded-md p-4 space-y-3 bg-white/5">
+						<div class="text-sm font-medium">Aktuelles Favicon</div>
+						<div class="flex items-center gap-4">
+							<img
+								src={data.favicon.url}
+								alt="Current Favicon"
+								class="w-16 h-16 border border-white/20 rounded bg-white/10"
+							/>
+							<div class="text-xs text-white/60">
+								<div>
+									<strong>Datei:</strong>
+									{data.favicon.file}
+								</div>
+								<div class="mt-1">
+									<strong>Status:</strong>
+									{data.favicon.is_active ? '✓ Aktiv' : '✗ Inaktiv'}
+								</div>
+							</div>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Upload New Favicon -->
+				<div class="border border-white/20 rounded-md p-4 space-y-3 bg-white/5">
+					<div class="text-sm font-medium">Neues Favicon hochladen</div>
+					<form
+						method="post"
+						action="?/uploadFavicon"
+						use:enhance
+						enctype="multipart/form-data"
+						class="space-y-3"
+					>
+						<div>
+							<label class="block text-xs text-white/80 mb-1" for="favicon-file">
+								Datei auswählen
+							</label>
+							<input
+								id="favicon-file"
+								type="file"
+								name="file"
+								accept=".ico,.png,.svg,.jpg,.jpeg,.gif,.webp"
+								class="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-md text-white text-sm"
+								required
+							/>
+							<div class="text-xs text-white/50 mt-1">
+								Unterstützte Formate: ICO, PNG, SVG, JPG, GIF, WEBP (max. 5 MB)
+							</div>
+						</div>
+
+						<div class="flex items-center gap-2">
+							<input
+								id="active-favicon"
+								type="checkbox"
+								name="is_active"
+								value="true"
+								checked
+								class="rounded border-white/20 bg-white/10"
+							/>
+							<label for="active-favicon" class="text-sm text-white/80">
+								Als aktives Favicon setzen
+							</label>
+						</div>
+
+						<button type="submit" class="btn-brand text-sm" disabled={uploading}>
+							{uploading ? 'Hochladen...' : 'Hochladen'}
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	{/if}
 </section>
 
 <script lang="ts">
@@ -305,12 +495,14 @@
 
 	let { data, form } = $props()
 
-	let activeTab = $state<'ui' | 'email'>('ui')
+	let activeTab = $state<'ui' | 'email' | 'settings' | 'favicon'>('ui')
 	let editingId = $state<string | null>(null)
 	let updating = $state(false)
 	let syncing = $state(false)
+	let uploading = $state(false)
+	let resetting = $state(false)
 
-	function toggleEdit(tab: 'ui' | 'email', id: string) {
+	function toggleEdit(tab: 'ui' | 'email' | 'settings', id: string) {
 		editingId = editingId === id ? null : id
 	}
 </script>

@@ -29,6 +29,8 @@ export type Collections = {
 	settings: SettingsResponse
 	emailTemplates: EmailTemplatesResponse
 	uiContent: UiContentResponse
+	appSettings: AppSettingsResponse
+	appAssets: AppAssetsResponse
 }
 
 // Records
@@ -118,6 +120,21 @@ export type UiContentRecord = {
 	is_active?: boolean
 }
 
+// App Settings
+export type AppSettingsRecord = {
+	key: 'app_name' | 'app_url'
+	value: string
+	description?: string
+}
+
+// App Assets
+export type AssetType = 'favicon' | 'logo'
+export type AppAssetsRecord = {
+	asset_type: AssetType
+	file: string
+	is_active?: boolean
+}
+
 // Responses
 export type SongChoicesResponse<Texpand = unknown> = SongChoicesRecord & BaseSystemFields<Texpand>
 export type UsersResponse<Texpand = unknown> = UsersRecord & AuthSystemFields<Texpand>
@@ -128,6 +145,8 @@ export type SettingsResponse<Texpand = unknown> = SettingsRecord & BaseSystemFie
 export type EmailTemplatesResponse<Texpand = unknown> = EmailTemplatesRecord &
 	BaseSystemFields<Texpand>
 export type UiContentResponse<Texpand = unknown> = UiContentRecord & BaseSystemFields<Texpand>
+export type AppSettingsResponse<Texpand = unknown> = AppSettingsRecord & BaseSystemFields<Texpand>
+export type AppAssetsResponse<Texpand = unknown> = AppAssetsRecord & BaseSystemFields<Texpand>
 
 // Typed PocketBase instance
 export interface TypedPocketBase extends PocketBase {
@@ -138,5 +157,7 @@ export interface TypedPocketBase extends PocketBase {
 	collection(idOrName: 'settings'): RecordService<SettingsResponse>
 	collection(idOrName: 'email_templates'): RecordService<EmailTemplatesResponse>
 	collection(idOrName: 'ui_content'): RecordService<UiContentResponse>
+	collection(idOrName: 'app_settings'): RecordService<AppSettingsResponse>
+	collection(idOrName: 'app_assets'): RecordService<AppAssetsResponse>
 	collection(idOrName: string): RecordService<RecordModel>
 }
