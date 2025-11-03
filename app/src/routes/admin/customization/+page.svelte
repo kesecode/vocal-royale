@@ -195,12 +195,12 @@
 			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">Email-Templates verwalten</div>
 				<div class="flex gap-2">
-					<form method="post" action="?/resetEmailTemplates" use:enhance>
+					<form method="post" action="?/syncTemplates" use:enhance>
 						<button type="submit" class="btn-accent text-xs" disabled={syncing}>
 							{syncing ? 'Synchronisiere...' : 'Templates synchronisieren'}
 						</button>
 					</form>
-					<form method="post" action="?/syncTemplates" use:enhance>
+					<form method="post" action="?/resetEmailTemplates" use:enhance>
 						<button type="submit" class="btn-danger text-xs" disabled={resetting}>
 							{resetting ? 'Setze zurück...' : 'Auf Standard zurücksetzen'}
 						</button>

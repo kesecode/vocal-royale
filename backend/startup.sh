@@ -38,7 +38,7 @@ if [ -n "$APP_URL" ]; then
 
   # Login as admin to get auth token
   echo "🔐 Authenticating as admin..."
-  AUTH_RESPONSE=$(curl -s -X POST http://localhost:8090/api/admins/auth-with-password \
+  AUTH_RESPONSE=$(curl -s -X POST http://localhost:8090/api/collections/_superusers/auth-with-password \
     -H "Content-Type: application/json" \
     -d "{\"identity\":\"${PB_ADMIN_EMAIL}\",\"password\":\"${PB_ADMIN_PASSWORD}\"}")
 
@@ -148,14 +148,6 @@ if [ -n "$APP_URL" ]; then
       echo "ℹ️  APP_NAME environment variable not set - skipping configuration"
     fi
 
-    # Sync email templates from database
-    echo ""
-    if [ -f "/pb/sync-email-templates.sh" ]; then
-      chmod +x /pb/sync-email-templates.sh
-      /pb/sync-email-templates.sh "$TOKEN"
-    else
-      echo "ℹ️  Email template sync script not found - skipping template sync"
-    fi
   else
     echo "⚠️  Warning: Admin authentication failed - APP_URL and APP_NAME not configured"
     echo "   Email: $PB_ADMIN_EMAIL"
@@ -164,12 +156,42 @@ if [ -n "$APP_URL" ]; then
   fi
 else
   echo "ℹ️  APP_URL environment variable not set - skipping configuration"
+
+  # Still try to sync email templates even without APP_URL ENV variable
+  # (the sync script will fetch app_name and app_url from database)
+  if [ -n "$PB_ADMIN_EMAIL" ] && [ -n "$PB_ADMIN_PASSWORD" ]; then
+    echo "🔐 Authenticating as admin for template sync..."
+    AUTH_RESPONSE=$(curl -s -X POST http://localhost:8090/api/collections/_superusers/auth-with-password \
+      -H "Content-Type: application/json" \
+      -d "{\"identity\":\"${PB_ADMIN_EMAIL}\",\"password\":\"${PB_ADMIN_PASSWORD}\"}")
+
+    TOKEN=$(echo "$AUTH_RESPONSE" | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
+
+    if [ -n "$TOKEN" ]; then
+      echo "✅ Admin authentication successful"
+    else
+      echo "⚠️  Admin authentication failed for template sync"
+      echo "   Response: $AUTH_RESPONSE"
+    fi
+  fi
+fi
+
+# Sync email templates from database (always run if auth token is available)
+echo ""
+if [ -n "$TOKEN" ]; then
+  if [ -f "/pb/sync-email-templates.sh" ]; then
+    chmod +x /pb/sync-email-templates.sh
+    /pb/sync-email-templates.sh "$TOKEN"
+  else
+    echo "ℹ️  Email template sync script not found - skipping template sync"
+  fi
+else
+  echo "⚠️  Warning: No auth token available - skipping email template sync"
 fi
 
 echo ""
 echo "🎉 PocketBase startup complete!"
-echo "📧 E-mail links will use: ${APP_URL:-<not configured>}"
-echo "✉️  E-mail templates will use app name: ${APP_NAME:-<not configured>}"
+echo "📧 E-mail templates are configured via database (app_settings collection)"
 echo ""
 
 # Bring PocketBase process to foreground
