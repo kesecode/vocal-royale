@@ -11,8 +11,32 @@ TOKEN=$1
 
 echo "📧 Syncing email templates from database to collection settings..."
 
+# Fetch app settings for template variable replacement
+echo "   Loading app settings..."
+APP_SETTINGS_JSON=$(curl -s "http://localhost:8090/api/collections/app_settings/records" \
+  -H "Authorization: $TOKEN")
+
+# Extract app_name and app_url from settings
+APP_NAME=$(echo "$APP_SETTINGS_JSON" | grep -o '"key":"app_name"[^}]*"value":"[^"]*' | grep -o '"value":"[^"]*' | sed 's/"value":"//' | head -n 1)
+APP_URL=$(echo "$APP_SETTINGS_JSON" | grep -o '"key":"app_url"[^}]*"value":"[^"]*' | grep -o '"value":"[^"]*' | sed 's/"value":"//' | head -n 1)
+
+# Fallback to defaults if not found
+if [ -z "$APP_NAME" ]; then
+  APP_NAME="Vocal Royale"
+  echo "   ⚠️  app_name not found in settings, using default: $APP_NAME"
+else
+  echo "   Found app_name: $APP_NAME"
+fi
+
+if [ -z "$APP_URL" ]; then
+  APP_URL="http://localhost:3000"
+  echo "   ⚠️  app_url not found in settings, using default: $APP_URL"
+else
+  echo "   Found app_url: $APP_URL"
+fi
+
 # Fetch active templates from email_templates collection
-TEMPLATES_JSON=$(curl -s "http://localhost:8090/api/collections/email_templates/records?filter=is_active=true" \
+TEMPLATES_JSON=$(curl -s "http://localhost:8090/api/collections/email_templates/records?filter=(is_active=true)" \
   -H "Authorization: $TOKEN")
 
 # Check if fetch was successful
@@ -37,17 +61,34 @@ extract_template() {
   local collection=$2
   local field=$3  # "body" or "subject"
 
-  echo "$TEMPLATES_JSON" | grep -o "{[^}]*\"template_type\":\"$type\"[^}]*\"collection_ref\":\"$collection\"[^}]*}" | \
-    grep -o "\"$field\":\"[^\"]*" | sed 's/^"'$field'":"//' | head -n 1
+  # Use python to parse JSON properly (more reliable than grep)
+  echo "$TEMPLATES_JSON" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data.get('items', []):
+    if item.get('template_type') == '$type' and item.get('collection_ref') == '$collection':
+        print(item.get('$field', ''))
+        break
+"
+}
+
+# Function to replace template variables
+replace_variables() {
+  local template=$1
+
+  # Replace {app_name} and {app_url} with actual values
+  # Note: sed on macOS requires different syntax than GNU sed
+  echo "$template" | sed "s/{app_name}/$APP_NAME/g" | sed "s|{app_url}|$APP_URL|g"
 }
 
 # Sync users collection templates
 echo "   Syncing users collection templates..."
 
-USER_VERIFICATION_BODY=$(extract_template "verification" "users" "body")
-USER_VERIFICATION_SUBJECT=$(extract_template "verification" "users" "subject")
-USER_RESET_BODY=$(extract_template "password_reset" "users" "body")
-USER_RESET_SUBJECT=$(extract_template "password_reset" "users" "subject")
+# Extract templates and replace variables
+USER_VERIFICATION_BODY=$(replace_variables "$(extract_template "verification" "users" "body")")
+USER_VERIFICATION_SUBJECT=$(replace_variables "$(extract_template "verification" "users" "subject")")
+USER_RESET_BODY=$(replace_variables "$(extract_template "password_reset" "users" "body")")
+USER_RESET_SUBJECT=$(replace_variables "$(extract_template "password_reset" "users" "subject")")
 
 if [ -n "$USER_VERIFICATION_BODY" ] && [ -n "$USER_RESET_BODY" ]; then
   # Create JSON payload with proper escaping
@@ -84,10 +125,11 @@ fi
 # Sync _superusers collection templates
 echo "   Syncing _superusers collection templates..."
 
-SUPERUSER_VERIFICATION_BODY=$(extract_template "verification" "_superusers" "body")
-SUPERUSER_VERIFICATION_SUBJECT=$(extract_template "verification" "_superusers" "subject")
-SUPERUSER_RESET_BODY=$(extract_template "password_reset" "_superusers" "body")
-SUPERUSER_RESET_SUBJECT=$(extract_template "password_reset" "_superusers" "subject")
+# Extract templates and replace variables
+SUPERUSER_VERIFICATION_BODY=$(replace_variables "$(extract_template "verification" "_superusers" "body")")
+SUPERUSER_VERIFICATION_SUBJECT=$(replace_variables "$(extract_template "verification" "_superusers" "subject")")
+SUPERUSER_RESET_BODY=$(replace_variables "$(extract_template "password_reset" "_superusers" "body")")
+SUPERUSER_RESET_SUBJECT=$(replace_variables "$(extract_template "password_reset" "_superusers" "subject")")
 
 if [ -n "$SUPERUSER_VERIFICATION_BODY" ] && [ -n "$SUPERUSER_RESET_BODY" ]; then
   # Create JSON payload with proper escaping
