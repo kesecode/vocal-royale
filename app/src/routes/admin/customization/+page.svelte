@@ -5,36 +5,28 @@
 	<div class="flex gap-2 mb-4 flex-wrap">
 		<button
 			type="button"
-			class="px-4 py-2 rounded-md {activeTab === 'ui'
-				? 'bg-accent text-white'
-				: 'bg-white/10 text-white/60 hover:text-white'}"
+			class={activeTab === 'ui' ? 'btn-purple' : 'btn-brand'}
 			onclick={() => (activeTab = 'ui')}
 		>
 			UI-Texte
 		</button>
 		<button
 			type="button"
-			class="px-4 py-2 rounded-md {activeTab === 'email'
-				? 'bg-accent text-white'
-				: 'bg-white/10 text-white/60 hover:text-white'}"
+			class={activeTab === 'email' ? 'btn-purple' : 'btn-brand'}
 			onclick={() => (activeTab = 'email')}
 		>
 			Email-Templates
 		</button>
 		<button
 			type="button"
-			class="px-4 py-2 rounded-md {activeTab === 'settings'
-				? 'bg-accent text-white'
-				: 'bg-white/10 text-white/60 hover:text-white'}"
+			class={activeTab === 'settings' ? 'btn-purple' : 'btn-brand'}
 			onclick={() => (activeTab = 'settings')}
 		>
 			App-Einstellungen
 		</button>
 		<button
 			type="button"
-			class="px-4 py-2 rounded-md {activeTab === 'favicon'
-				? 'bg-accent text-white'
-				: 'bg-white/10 text-white/60 hover:text-white'}"
+			class={activeTab === 'favicon' ? 'btn-purple' : 'btn-brand'}
 			onclick={() => (activeTab = 'favicon')}
 		>
 			Favicon
@@ -57,8 +49,8 @@
 			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">UI-Texte verwalten</div>
 				<form method="post" action="?/resetUiContent" use:enhance>
-					<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
-						{resetting ? 'Setze zurück...' : 'Auf Standardwerte zurücksetzen'}
+					<button type="submit" class="btn-danger text-xs" disabled={resetting}>
+						{resetting ? 'Setze zurück...' : 'Auf Standard zurücksetzen'}
 					</button>
 				</form>
 			</div>
@@ -164,7 +156,7 @@
 									</button>
 									<button
 										type="button"
-										class="btn-ghost text-sm"
+										class="btn-purple text-sm"
 										onclick={() => (editingId = null)}
 									>
 										Abbrechen
@@ -204,13 +196,13 @@
 				<div class="font-semibold">Email-Templates verwalten</div>
 				<div class="flex gap-2">
 					<form method="post" action="?/resetEmailTemplates" use:enhance>
-						<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
-							{resetting ? 'Setze zurück...' : 'Auf Standardwerte zurücksetzen'}
+						<button type="submit" class="btn-accent text-xs" disabled={syncing}>
+							{syncing ? 'Synchronisiere...' : 'Templates synchronisieren'}
 						</button>
 					</form>
 					<form method="post" action="?/syncTemplates" use:enhance>
-						<button type="submit" class="btn-accent text-xs" disabled={syncing}>
-							{syncing ? 'Synchronisiere...' : 'Templates synchronisieren'}
+						<button type="submit" class="btn-danger text-xs" disabled={resetting}>
+							{resetting ? 'Setze zurück...' : 'Auf Standard zurücksetzen'}
 						</button>
 					</form>
 				</div>
@@ -302,7 +294,7 @@
 									</button>
 									<button
 										type="button"
-										class="btn-ghost text-sm"
+										class="btn-purple text-sm"
 										onclick={() => (editingId = null)}
 									>
 										Abbrechen
@@ -335,8 +327,8 @@
 			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">App-Einstellungen</div>
 				<form method="post" action="?/resetAppSettings" use:enhance>
-					<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
-						{resetting ? 'Setze zurück...' : 'Auf Standardwerte zurücksetzen'}
+					<button type="submit" class="btn-danger text-xs" disabled={resetting}>
+						{resetting ? 'Setze zurück...' : 'Auf Standard zurücksetzen'}
 					</button>
 				</form>
 			</div>
@@ -385,7 +377,7 @@
 									</button>
 									<button
 										type="button"
-										class="btn-ghost text-sm"
+										class="btn-purple text-sm"
 										onclick={() => (editingId = null)}
 									>
 										Abbrechen
@@ -420,7 +412,7 @@
 			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">Favicon verwalten</div>
 				<form method="post" action="?/resetFavicon" use:enhance>
-					<button type="submit" class="btn-ghost text-xs" disabled={resetting}>
+					<button type="submit" class="btn-danger text-xs" disabled={resetting}>
 						{resetting ? 'Setze zurück...' : 'Auf Standard zurücksetzen'}
 					</button>
 				</form>
@@ -500,6 +492,10 @@
 			</div>
 		</div>
 	{/if}
+
+	<div class="mt-4">
+		<a href="/admin" class="btn-purple">← Zurück</a>
+	</div>
 </section>
 
 <script lang="ts">

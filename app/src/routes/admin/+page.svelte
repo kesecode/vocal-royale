@@ -69,10 +69,10 @@
 			</div>
 
 			<div class="pt-3 border-t border-white/10 flex flex-wrap gap-2">
-				<a href="/admin/users" class="btn-ghost">User-Verwaltung</a>
-				<a href="/admin/song-choices" class="btn-ghost">Song-Auswahl</a>
-				<a href="/admin/settings" class="btn-ghost">Einstellungen</a>
-				<a href="/admin/customization" class="btn-ghost">Customization</a>
+				<a href="/admin/users" class="btn-purple">User-Verwaltung</a>
+				<a href="/admin/song-choices" class="btn-purple">Song-Auswahl</a>
+				<a href="/admin/settings" class="btn-purple">Einstellungen</a>
+				<a href="/admin/customization" class="btn-purple">Customization</a>
 			</div>
 		</div>
 	</div>

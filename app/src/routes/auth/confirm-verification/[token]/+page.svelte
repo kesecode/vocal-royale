@@ -16,7 +16,7 @@
 				<div class="text-4xl">✗</div>
 				<h2 class="font-semibold text-lg">Verifizierung fehlgeschlagen</h2>
 				<p class="text-sm text-rose-200">{data.message}</p>
-				<button type="button" class="btn-ghost" onclick={() => goto('/auth')}>
+				<button type="button" class="btn-purple" onclick={() => goto('/auth')}>
 					Zurück zum Login
 				</button>
 			</div>

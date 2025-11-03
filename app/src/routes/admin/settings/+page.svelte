@@ -129,14 +129,14 @@
 					<button type="submit" class="btn-brand" disabled={loading || !!validationError}>
 						Speichern
 					</button>
-					<button type="button" class="btn-ghost" onclick={resetToDefaults}>Zurücksetzen</button>
+					<button type="button" class="btn-danger" onclick={resetToDefaults}>Zurücksetzen</button>
 				</div>
 			</form>
 		</div>
 	</div>
 
 	<div class="mt-4">
-		<a href="/admin" class="btn-ghost">← Zurück zum Admin</a>
+		<a href="/admin" class="btn-purple">← Zurück</a>
 	</div>
 </section>
 
