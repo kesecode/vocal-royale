@@ -9,24 +9,7 @@ import type {
 	SettingsResponse
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
-import { env } from '$env/dynamic/private'
-import { parseSettings } from '$lib/utils/competition-settings'
-
-function readParticipantsToEliminate(): number[] {
-	const raw = env.PARTICIPANTS_TO_ELIMINATE
-	if (raw && raw.trim()) {
-		try {
-			const arr = JSON.parse(raw)
-			if (Array.isArray(arr)) return arr.map((n) => Number(n) || 0)
-		} catch {
-			// allow comma-separated fallback like "1,0,0,0"
-			const csv = raw.split(',').map((s) => Number(s.trim()) || 0)
-			if (csv.length) return csv
-		}
-	}
-	// default
-	return [1, 0, 0, 0]
-}
+import { parseSettings, parseEliminationPattern } from '$lib/utils/competition-settings'
 
 const STATE_COLLECTION = 'competition_state' as const
 const USERS_COLLECTION = 'users' as const
@@ -376,13 +359,15 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			// Sort ascending by average (lowest = worst)
 			rows.sort((a, b) => a.avg - b.avg || a.name?.localeCompare(b.name || '') || 0)
 
+			// Get settings to determine elimination pattern
+			const settings = await getCompetitionSettings(locals)
+
 			let eliminateCount = 0
-			if (round >= 1 && round <= 4) {
-				const arr = readParticipantsToEliminate()
-				eliminateCount = Math.max(0, Number(arr?.[round - 1] ?? 0))
+			if (round >= 1 && round < settings.totalRounds) {
+				const pattern = parseEliminationPattern(settings.roundEliminationPattern)
+				eliminateCount = Math.max(0, Number(pattern?.[round - 1] ?? 0))
 			}
 			// In finale round no elimination, show winner only
-			const settings = await getCompetitionSettings(locals)
 			if (round === settings.totalRounds) eliminateCount = 0
 			// Ensure at least one participant remains
 			eliminateCount = Math.min(eliminateCount, Math.max(rows.length - 1, 0))

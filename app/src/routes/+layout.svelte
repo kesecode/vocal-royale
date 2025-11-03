@@ -1,5 +1,5 @@
 <svelte:head>
-	<title>{data?.appSettings?.app_name || PUBLIC_APP_NAME}</title>
+	<title>{data?.appSettings?.app_name || 'Vocal Royale'}</title>
 	{#if data?.favicon}
 		<link rel="icon" href={data.favicon.url} type={data.favicon.type} />
 	{:else}
@@ -20,7 +20,9 @@
 		<div class="flex-between px-4 sm:px-6 lg:px-8">
 			<!-- Logo ganz links -->
 			<div class="logo mt-1.5 mb-1.5 flex items-center">
-				<a href="/" class="font-display text-responsive drop-shadow">{PUBLIC_APP_NAME}</a>
+				<a href="/" class="font-display text-responsive drop-shadow">
+					{data?.appSettings?.app_name || 'Vocal Royale'}
+				</a>
 			</div>
 
 			<!-- Right-Container (zentriert begrenzt) -->
@@ -143,7 +145,6 @@
 	import '../app.css'
 	import faviconFallback from '$lib/assets/favicon.png'
 	import { slide } from 'svelte/transition'
-	import { PUBLIC_APP_NAME } from '$env/static/public'
 
 	let { children, data } = $props()
 	const isLoggedIn = $derived(!!data?.user)

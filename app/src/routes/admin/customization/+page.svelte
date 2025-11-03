@@ -1,5 +1,5 @@
 <section class="section section-spacing">
-	<h1 class="font-display heading-responsive">Customization</h1>
+	<h1 class="font-display heading-responsive">Anpassung</h1>
 
 	<!-- Tab Navigation -->
 	<div class="flex gap-2 mb-4 flex-wrap">
