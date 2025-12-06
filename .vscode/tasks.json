@@ -8,7 +8,7 @@
       "command": "/bin/bash",
       "args": [
         "-lc",
-        "set -euo pipefail; docker compose down; docker compose down -v; docker compose build --no-cache backend; docker compose build --no-cache app;"
+        "set -euo pipefail; docker compose down -v; docker compose build --no-cache backend; docker compose build --no-cache app; docker compose up -d"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -27,7 +27,7 @@
     {
       "label": "Start PocketBase",
       "type": "shell",
-      "command": "./pocketbase superuser upsert admin_db@vocal.royale vocal_royale_2025 && nohup ./pocketbase serve > pocketbase.log 2>&1 &", 
+      "command": "pkill pocketbase || true; rm -rf pb_data; ./pocketbase superuser upsert admin_db@vocal.royale vocal_royale_2025 && nohup ./pocketbase serve > pocketbase.log 2>&1 &",
       "options": {
         "cwd": "${env:HOME}/Dev/pocketbase"
       },
