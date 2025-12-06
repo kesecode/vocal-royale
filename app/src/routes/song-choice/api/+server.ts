@@ -2,13 +2,11 @@ import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { getAppleMusicToken } from '$lib/server/appleToken'
-import PocketBase from 'pocketbase'
 import type { ListResult } from 'pocketbase'
 import type {
 	SongChoicesRecord,
 	SongChoicesResponse,
-	SettingsResponse,
-	TypedPocketBase
+	SettingsResponse
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
 import {
