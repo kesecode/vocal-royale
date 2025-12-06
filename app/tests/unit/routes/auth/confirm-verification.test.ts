@@ -83,4 +83,26 @@ describe('Email Verification Load Function', () => {
 			status: 400
 		})
 	})
+
+	it('should return success message when user is not logged in', async () => {
+		const confirmVerification = vi.fn(async () => undefined)
+		const pb = createPBMock({ users: { confirmVerification } })
+		// authStore.isValid is false by default (user not logged in)
+		const mockCookies = createMockCookies()
+
+		const event = {
+			params: { token: 'valid-token' },
+			locals: { pb: pb as unknown as TypedPocketBase },
+			cookies: mockCookies,
+			url: new URL('https://example.com/auth/confirm-verification/valid-token')
+		} as unknown as Parameters<typeof load>[0]
+
+		const result = (await load(event)) as { success: boolean; message: string }
+
+		expect(result.success).toBe(true)
+		expect(result.message).toContain('erfolgreich bestätigt')
+		expect(confirmVerification).toHaveBeenCalledWith('valid-token')
+		// Cookie should NOT be set when user is not logged in
+		expect(mockCookies.set).not.toHaveBeenCalled()
+	})
 })
