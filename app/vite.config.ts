@@ -40,7 +40,8 @@ export default defineConfig(({ command }) => {
 						$lib: path.resolve(rootDir, 'src/lib'),
 						$src: path.resolve(rootDir, 'src'),
 						// Mock SvelteKit virtual modules used in server code during tests
-						'$app/environment': path.resolve(rootDir, 'tests/mocks/app-environment.ts')
+						'$app/environment': path.resolve(rootDir, 'tests/mocks/app-environment.ts'),
+						'$env/dynamic/private': path.resolve(rootDir, 'tests/mocks/env-dynamic-private.ts')
 					}
 				}
 			: undefined,
