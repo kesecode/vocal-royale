@@ -16,9 +16,24 @@ echo "   Loading app settings..."
 APP_SETTINGS_JSON=$(curl -s "http://localhost:8090/api/collections/app_settings/records" \
   -H "Authorization: $TOKEN")
 
-# Extract app_name and app_url from settings
-APP_NAME=$(echo "$APP_SETTINGS_JSON" | grep -o '"key":"app_name"[^}]*"value":"[^"]*' | grep -o '"value":"[^"]*' | sed 's/"value":"//' | head -n 1)
-APP_URL=$(echo "$APP_SETTINGS_JSON" | grep -o '"key":"app_url"[^}]*"value":"[^"]*' | grep -o '"value":"[^"]*' | sed 's/"value":"//' | head -n 1)
+# Extract app_name and app_url from settings using Python for reliable JSON parsing
+APP_NAME=$(echo "$APP_SETTINGS_JSON" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data.get('items', []):
+    if item.get('key') == 'app_name':
+        print(item.get('value', ''))
+        break
+")
+
+APP_URL=$(echo "$APP_SETTINGS_JSON" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for item in data.get('items', []):
+    if item.get('key') == 'app_url':
+        print(item.get('value', ''))
+        break
+")
 
 # Fallback to defaults if not found
 if [ -z "$APP_NAME" ]; then
