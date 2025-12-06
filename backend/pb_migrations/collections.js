@@ -1346,12 +1346,12 @@ migrate((app) => {
       "indexes": [
         "CREATE UNIQUE INDEX `idx_song_choices_user_round` ON `song_choices` (\n  `user`,\n  `round`\n)"
       ],
-      "listRule": "user = @request.auth.id",
+      "listRule": "@request.auth.id != ''",
       "name": "song_choices",
       "system": false,
       "type": "base",
       "updateRule": "user = @request.auth.id || @request.auth.role = 'admin'",
-      "viewRule": "user = @request.auth.id"
+      "viewRule": "@request.auth.id != ''"
     },
     {
       "id": "pbc_email_templates",
