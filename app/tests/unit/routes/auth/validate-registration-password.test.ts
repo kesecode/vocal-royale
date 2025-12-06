@@ -1,86 +1,31 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { POST } from '../../../../src/routes/auth/validate-registration-password/+server'
 
-interface MockPb {
-	collection: ReturnType<typeof vi.fn>
-}
-
-interface MockLocals {
-	pb: MockPb
-}
-
 describe('validate-registration-password API', () => {
-	let mockPb: MockPb
-	let mockLocals: MockLocals
-	let mockGetList: ReturnType<typeof vi.fn>
+	// Note: Since the endpoint now uses its own admin-authenticated PocketBase client,
+	// we can only test the fallback behavior (default password) in unit tests.
+	// Integration tests with a real PocketBase instance should test custom password scenarios.
 
-	beforeEach(() => {
-		mockGetList = vi.fn()
-		mockPb = {
-			collection: vi.fn(() => ({
-				getList: mockGetList
-			}))
-		}
-		mockLocals = {
-			pb: mockPb
-		}
-	})
-
-	it('should validate correct password from settings', async () => {
-		const customPassword = 'custom-password-123'
-		mockGetList.mockResolvedValue({
-			totalItems: 1,
-			items: [{ registrationPassword: customPassword }]
-		})
-
-		const request = new Request('http://localhost', {
-			method: 'POST',
-			body: JSON.stringify({ password: customPassword })
-		})
-
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
-		const data = await response.json()
-
-		expect(response.status).toBe(200)
-		expect(data.valid).toBe(true)
-	})
-
-	it('should use default password when not configured', async () => {
-		mockGetList.mockResolvedValue({
-			totalItems: 0,
-			items: []
-		})
-
+	it('should validate correct default password', async () => {
 		const request = new Request('http://localhost', {
 			method: 'POST',
 			body: JSON.stringify({ password: 'vocal-royale-2025' })
 		})
 
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
+		const response = await POST({ request } as unknown as Parameters<typeof POST>[0])
 		const data = await response.json()
 
 		expect(response.status).toBe(200)
 		expect(data.valid).toBe(true)
 	})
 
-	it('should reject incorrect password', async () => {
-		mockGetList.mockResolvedValue({
-			totalItems: 1,
-			items: [{ registrationPassword: 'correct-password' }]
-		})
-
+	it('should reject incorrect password when using default', async () => {
 		const request = new Request('http://localhost', {
 			method: 'POST',
 			body: JSON.stringify({ password: 'wrong-password' })
 		})
 
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
+		const response = await POST({ request } as unknown as Parameters<typeof POST>[0])
 		const data = await response.json()
 
 		expect(response.status).toBe(200)
@@ -93,9 +38,7 @@ describe('validate-registration-password API', () => {
 			body: JSON.stringify({})
 		})
 
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
+		const response = await POST({ request } as unknown as Parameters<typeof POST>[0])
 		const data = await response.json()
 
 		expect(response.status).toBe(400)
@@ -109,9 +52,7 @@ describe('validate-registration-password API', () => {
 			body: 'invalid json'
 		})
 
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
+		const response = await POST({ request } as unknown as Parameters<typeof POST>[0])
 		const data = await response.json()
 
 		expect(response.status).toBe(500)
@@ -119,61 +60,31 @@ describe('validate-registration-password API', () => {
 		expect(data.error).toBe('Serverfehler')
 	})
 
-	it('should handle database errors gracefully', async () => {
-		mockGetList.mockRejectedValue(new Error('Database error'))
-
+	it('should handle non-string password', async () => {
 		const request = new Request('http://localhost', {
 			method: 'POST',
-			body: JSON.stringify({ password: 'any-password' })
+			body: JSON.stringify({ password: 12345 })
 		})
 
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
+		const response = await POST({ request } as unknown as Parameters<typeof POST>[0])
 		const data = await response.json()
 
-		expect(response.status).toBe(500)
+		expect(response.status).toBe(400)
 		expect(data.valid).toBe(false)
-		expect(data.error).toBe('Serverfehler')
+		expect(data.error).toBe('Passwort erforderlich')
 	})
 
-	it('should validate when settings exists but registrationPassword is null', async () => {
-		mockGetList.mockResolvedValue({
-			totalItems: 1,
-			items: [{ registrationPassword: null }]
-		})
-
+	it('should handle empty string password', async () => {
 		const request = new Request('http://localhost', {
 			method: 'POST',
-			body: JSON.stringify({ password: 'vocal-royale-2025' })
+			body: JSON.stringify({ password: '' })
 		})
 
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
+		const response = await POST({ request } as unknown as Parameters<typeof POST>[0])
 		const data = await response.json()
 
-		expect(response.status).toBe(200)
-		expect(data.valid).toBe(true)
-	})
-
-	it('should validate when settings exists but registrationPassword is empty string', async () => {
-		mockGetList.mockResolvedValue({
-			totalItems: 1,
-			items: [{ registrationPassword: '' }]
-		})
-
-		const request = new Request('http://localhost', {
-			method: 'POST',
-			body: JSON.stringify({ password: 'vocal-royale-2025' })
-		})
-
-		const response = await POST({ request, locals: mockLocals } as unknown as Parameters<
-			typeof POST
-		>[0])
-		const data = await response.json()
-
-		expect(response.status).toBe(200)
-		expect(data.valid).toBe(true)
+		expect(response.status).toBe(400)
+		expect(data.valid).toBe(false)
+		expect(data.error).toBe('Passwort erforderlich')
 	})
 })

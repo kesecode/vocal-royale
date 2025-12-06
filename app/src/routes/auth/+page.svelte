@@ -207,7 +207,7 @@
 						showPasswordModal = false
 					}, 3000)
 				} else {
-					passwordError = `Falsches Passwort. ${remainingAttempts} ${remainingAttempts === 1 ? 'Versuch' : 'Versuche'} verbleibend.`
+					passwordError = `Falsches Passwort. ${remainingAttempts} ${remainingAttempts === 1 ? ' Versuch' : 'Versuche'} verbleibend.`
 				}
 				passwordInput = ''
 			}

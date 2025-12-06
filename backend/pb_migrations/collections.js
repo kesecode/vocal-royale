@@ -1184,6 +1184,20 @@ migrate((app) => {
           "type": "date"
         },
         {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "text1234567890",
+          "max": 100,
+          "min": 0,
+          "name": "registrationPassword",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": false,
+          "system": false,
+          "type": "text"
+        },
+        {
           "hidden": false,
           "id": "autodate2990389176",
           "name": "created",
