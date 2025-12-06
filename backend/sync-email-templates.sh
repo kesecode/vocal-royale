@@ -44,8 +44,8 @@ else
 fi
 
 if [ -z "$APP_URL" ]; then
-  APP_URL="http://localhost:3000"
-  echo "   ⚠️  app_url not found in settings, using default: $APP_URL"
+  APP_URL="${ORIGIN:-http://localhost:3000}"
+  echo "   ⚠️  app_url not found in settings, using ORIGIN: $APP_URL"
 else
   echo "   Found app_url: $APP_URL"
 fi

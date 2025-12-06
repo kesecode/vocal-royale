@@ -431,7 +431,7 @@ async function ensureInitialData(pb: TypedPocketBase) {
 		if (!list || list.totalItems === 0) {
 			// Use ENV values if available, otherwise use hardcoded defaults
 			const appName = env.APP_NAME || 'Vocal Royale'
-			const appUrl = env.APP_URL || 'https://app.example.com'
+			const appUrl = env.ORIGIN || 'https://app.example.com'
 
 			const settings = [
 				{
