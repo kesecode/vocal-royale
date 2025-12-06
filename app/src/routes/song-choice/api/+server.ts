@@ -2,11 +2,13 @@ import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { getAppleMusicToken } from '$lib/server/appleToken'
+import PocketBase from 'pocketbase'
 import type { ListResult } from 'pocketbase'
 import type {
 	SongChoicesRecord,
 	SongChoicesResponse,
-	SettingsResponse
+	SettingsResponse,
+	TypedPocketBase
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
 import {
@@ -226,8 +228,14 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 	}
 
 	// Check for duplicate song (same artist + title by another user)
+	// Use admin client because users can only see their own song_choices
+	const adminPb = new PocketBase(env.PB_URL || 'http://127.0.0.1:8090') as TypedPocketBase
 	try {
-		const allChoices = (await locals.pb.collection(COLLECTION).getFullList({
+		const adminEmail = env.ADMIN_EMAIL || 'admin@vocal.royale'
+		const adminPassword = env.ADMIN_PASSWORD || 'ChangeMeNow!'
+		await adminPb.collection('users').authWithPassword(adminEmail, adminPassword)
+
+		const allChoices = (await adminPb.collection(COLLECTION).getFullList({
 			filter: `user != "${locals.user.id}"`
 		})) as SongChoicesResponse[]
 
@@ -257,6 +265,8 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 	} catch (err) {
 		logger.warn('SongChoices duplicate check failed', { error: (err as Error)?.message })
 		// Continue anyway - don't block on failed duplicate check
+	} finally {
+		adminPb.authStore.clear()
 	}
 
 	if (VALIDATE) {
