@@ -107,17 +107,16 @@ USER_RESET_SUBJECT=$(replace_variables "$(extract_template "password_reset" "use
 
 if [ -n "$USER_VERIFICATION_BODY" ] && [ -n "$USER_RESET_BODY" ]; then
   # Create JSON payload with proper escaping
+  # Note: Templates must be at the top level, NOT nested in "options"
   USERS_PAYLOAD=$(cat <<EOF
 {
-  "options": {
-    "verificationTemplate": {
-      "body": $(echo "$USER_VERIFICATION_BODY" | jq -Rs .),
-      "subject": "$USER_VERIFICATION_SUBJECT"
-    },
-    "resetPasswordTemplate": {
-      "body": $(echo "$USER_RESET_BODY" | jq -Rs .),
-      "subject": "$USER_RESET_SUBJECT"
-    }
+  "verificationTemplate": {
+    "body": $(echo "$USER_VERIFICATION_BODY" | jq -Rs .),
+    "subject": "$USER_VERIFICATION_SUBJECT"
+  },
+  "resetPasswordTemplate": {
+    "body": $(echo "$USER_RESET_BODY" | jq -Rs .),
+    "subject": "$USER_RESET_SUBJECT"
   }
 }
 EOF
@@ -148,17 +147,16 @@ SUPERUSER_RESET_SUBJECT=$(replace_variables "$(extract_template "password_reset"
 
 if [ -n "$SUPERUSER_VERIFICATION_BODY" ] && [ -n "$SUPERUSER_RESET_BODY" ]; then
   # Create JSON payload with proper escaping
+  # Note: Templates must be at the top level, NOT nested in "options"
   SUPERUSERS_PAYLOAD=$(cat <<EOF
 {
-  "options": {
-    "verificationTemplate": {
-      "body": $(echo "$SUPERUSER_VERIFICATION_BODY" | jq -Rs .),
-      "subject": "$SUPERUSER_VERIFICATION_SUBJECT"
-    },
-    "resetPasswordTemplate": {
-      "body": $(echo "$SUPERUSER_RESET_BODY" | jq -Rs .),
-      "subject": "$SUPERUSER_RESET_SUBJECT"
-    }
+  "verificationTemplate": {
+    "body": $(echo "$SUPERUSER_VERIFICATION_BODY" | jq -Rs .),
+    "subject": "$SUPERUSER_VERIFICATION_SUBJECT"
+  },
+  "resetPasswordTemplate": {
+    "body": $(echo "$SUPERUSER_RESET_BODY" | jq -Rs .),
+    "subject": "$SUPERUSER_RESET_SUBJECT"
   }
 }
 EOF
