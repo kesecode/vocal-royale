@@ -1,11 +1,83 @@
 import type { PageServerLoad, Actions } from './$types'
 import { fail, redirect } from '@sveltejs/kit'
+import { env } from '$env/dynamic/private'
 import type {
 	EmailTemplatesResponse,
 	UiContentResponse,
 	AppSettingsResponse,
 	AppAssetsResponse
 } from '$lib/pocketbase-types'
+import type PocketBase from 'pocketbase'
+
+const PB_URL = env.PB_URL || 'http://127.0.0.1:8090'
+
+/**
+ * Replace template placeholders with actual values
+ */
+function replacePlaceholders(text: string, appName: string, appUrl: string): string {
+	return text.replace(/{app_name}/g, appName).replace(/{app_url}/g, appUrl)
+}
+
+/**
+ * Sync email templates from database to PocketBase collection settings.
+ * This replaces {app_name} and {app_url} placeholders with actual values.
+ */
+async function syncEmailTemplatesToCollections(pb: PocketBase): Promise<void> {
+	// 1. Get current app_settings (app_name, app_url)
+	const settings = await pb.collection('app_settings').getFullList<AppSettingsResponse>()
+	const appName = settings.find((s) => s.key === 'app_name')?.value || 'Vocal Royale'
+	const appUrl = settings.find((s) => s.key === 'app_url')?.value || 'https://app.example.com'
+
+	// 2. Get active email_templates
+	const templates = await pb.collection('email_templates').getFullList<EmailTemplatesResponse>({
+		filter: 'is_active = true'
+	})
+
+	// 3. Replace placeholders and update PocketBase collection settings
+	for (const collectionName of ['users', '_superusers']) {
+		const verification = templates.find(
+			(t) => t.template_type === 'verification' && t.collection_ref === collectionName
+		)
+		const passwordReset = templates.find(
+			(t) => t.template_type === 'password_reset' && t.collection_ref === collectionName
+		)
+
+		if (verification || passwordReset) {
+			const options: Record<string, { subject: string; body: string }> = {}
+
+			if (verification) {
+				options.verificationTemplate = {
+					subject: replacePlaceholders(verification.subject, appName, appUrl),
+					body: replacePlaceholders(verification.body, appName, appUrl)
+				}
+			}
+
+			if (passwordReset) {
+				options.resetPasswordTemplate = {
+					subject: replacePlaceholders(passwordReset.subject, appName, appUrl),
+					body: replacePlaceholders(passwordReset.body, appName, appUrl)
+				}
+			}
+
+			// Update PocketBase collection settings via API
+			const response = await fetch(`${PB_URL}/api/collections/${collectionName}`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: pb.authStore.token || ''
+				},
+				body: JSON.stringify({ options })
+			})
+
+			if (!response.ok) {
+				console.error(
+					`[customization] Failed to sync templates to ${collectionName}:`,
+					await response.text()
+				)
+			}
+		}
+	}
+}
 
 // Default values (matching bootstrap.ts)
 const DEFAULT_APP_SETTINGS = [
@@ -250,6 +322,9 @@ export const actions: Actions = {
 				is_active
 			})
 
+			// Sync templates to PocketBase collections
+			await syncEmailTemplatesToCollections(pb)
+
 			return { success: true, message: 'Email-Template erfolgreich aktualisiert' }
 		} catch (error) {
 			console.error('[customization] Failed to update email template:', error)
@@ -326,6 +401,11 @@ export const actions: Actions = {
 				key,
 				value
 			})
+
+			// Sync email templates if app_name or app_url changed
+			if (key === 'app_name' || key === 'app_url') {
+				await syncEmailTemplatesToCollections(pb)
+			}
 
 			return { success: true, message: 'App-Einstellung erfolgreich aktualisiert' }
 		} catch (error) {
@@ -404,6 +484,9 @@ export const actions: Actions = {
 				}
 			}
 
+			// Sync email templates with new default values
+			await syncEmailTemplatesToCollections(pb)
+
 			return { success: true, message: 'App-Einstellungen auf Standardwerte zurückgesetzt' }
 		} catch (error) {
 			console.error('[customization] Failed to reset app settings:', error)
@@ -465,6 +548,9 @@ export const actions: Actions = {
 					})
 				}
 			}
+
+			// Sync templates to PocketBase collections
+			await syncEmailTemplatesToCollections(pb)
 
 			return { success: true, message: 'Email-Templates auf Standardwerte zurückgesetzt' }
 		} catch (error) {
