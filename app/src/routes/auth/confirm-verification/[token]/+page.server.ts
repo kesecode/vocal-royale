@@ -24,12 +24,11 @@ export const load: PageServerLoad = async ({ params, locals, cookies, url }) => 
 			await locals.pb.collection('users').authRefresh()
 
 			// Cookie manuell setzen, da redirect() die normale Response-Verarbeitung überspringt
-			const cookieValue = encodeURIComponent(
-				JSON.stringify({
-					token: locals.pb.authStore.token,
-					record: locals.pb.authStore.record
-				})
-			)
+			// Format muss mit PocketBase's loadFromCookie kompatibel sein
+			const cookieValue = JSON.stringify({
+				token: locals.pb.authStore.token,
+				record: locals.pb.authStore.record
+			})
 			cookies.set(APP_COOKIE_KEY, cookieValue, {
 				secure: url.protocol === 'https:',
 				httpOnly: true,

@@ -119,12 +119,20 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const allowRoleSelection = pathname === '/api/role' // Allow role selection API for default users
 		const allowRoleCounts = pathname === '/api/role-counts' // Allow role counts API for all users
 		const allowResendVerification = pathname === '/api/resend-verification' // Allow resend verification for all users
+		// Auth-Routen für spezielle Fälle erlauben (logout, verification, password-reset)
+		const allowAuthActions =
+			(isAuthRoute && isPostRequest) || isVerificationRoute || isPasswordResetRoute
 
 		const allowParticipant = pathname.startsWith('/song-choice')
 		const allowSpectatorJuror = pathname.startsWith('/rating')
 		const allowAdmin = pathname.startsWith('/admin')
 
-		let allowed = allowCommon || allowForbidden || allowRoleCounts || allowResendVerification
+		let allowed =
+			allowCommon ||
+			allowForbidden ||
+			allowRoleCounts ||
+			allowResendVerification ||
+			allowAuthActions
 		if (role === 'default')
 			allowed ||= allowCommon || allowRoleSelection // default role can access common areas + role selection
 		else if (role === 'participant') allowed ||= allowParticipant || allowCommon
@@ -141,21 +149,24 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	const response = await resolve(event)
 
-	// Sync auth cookie back to client
-	response.headers.append(
-		'set-cookie',
-		pb.authStore.exportToCookie(
-			{
-				secure: event.url.protocol === 'https:',
-				httpOnly: true,
-				sameSite: 'Lax',
-				path: '/',
-				// Enforce max 48h validity on client side
-				maxAge: SESSION_MAX_AGE
-			},
-			APP_COOKIE_KEY
+	// Sync auth cookie back to client - BUT only if still logged in
+	// (Logout clears authStore, so we don't want to re-set an empty cookie)
+	if (pb.authStore.isValid) {
+		response.headers.append(
+			'set-cookie',
+			pb.authStore.exportToCookie(
+				{
+					secure: event.url.protocol === 'https:',
+					httpOnly: true,
+					sameSite: 'Lax',
+					path: '/',
+					// Enforce max 48h validity on client side
+					maxAge: SESSION_MAX_AGE
+				},
+				APP_COOKIE_KEY
+			)
 		)
-	)
+	}
 
 	// Basic response logging (skip assets)
 	if (!isAsset) {
