@@ -1,10 +1,29 @@
-import { describe, it, expect } from 'vitest'
-import { POST } from '../../../../src/routes/auth/validate-registration-password/+server'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// Mock PocketBase before importing the module
+vi.mock('pocketbase', () => {
+	return {
+		default: vi.fn().mockImplementation(() => ({
+			collection: vi.fn().mockReturnValue({
+				authWithPassword: vi.fn().mockRejectedValue(new Error('Connection refused')),
+				getList: vi.fn().mockResolvedValue({ totalItems: 0, items: [] })
+			}),
+			authStore: { clear: vi.fn() }
+		}))
+	}
+})
+
+// Import after mocking
+const { POST } = await import('../../../../src/routes/auth/validate-registration-password/+server')
 
 describe('validate-registration-password API', () => {
 	// Note: Since the endpoint now uses its own admin-authenticated PocketBase client,
-	// we can only test the fallback behavior (default password) in unit tests.
+	// we mock PocketBase to simulate the fallback behavior (default password) in unit tests.
 	// Integration tests with a real PocketBase instance should test custom password scenarios.
+
+	beforeEach(() => {
+		vi.clearAllMocks()
+	})
 
 	it('should validate correct default password', async () => {
 		const request = new Request('http://localhost', {

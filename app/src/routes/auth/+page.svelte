@@ -68,12 +68,15 @@
 						Passwort vergessen?
 					</a>
 				</div>
-				<button type="submit" class="btn-brand">Login</button>
+				<div class="flex gap-2">
+					<button type="submit" class="btn-brand">Login</button>
+					<button type="button" class="btn-danger" onclick={toggle}>Registrieren</button>
+				</div>
 			</form>
 		</section>
 	{:else}
 		<section id="signup" class="panel panel-brand p-4 sm:p-6">
-			<h2 class="font-semibold">Sign up</h2>
+			<h2 class="font-semibold">Registrieren</h2>
 			{#if formData?.message}
 				<div class="mt-2 text-sm text-rose-200">{formData.message}</div>
 			{/if}
@@ -105,21 +108,22 @@
 					Passwort bestätigen
 					<input class="input mt-1" name="passwordConfirm" type="password" required minlength="8" />
 				</label>
-				<button type="submit" class="btn-accent">Sign up</button>
+				<button type="submit" class="btn-accent">Registrieren</button>
 			</form>
 		</section>
 	{/if}
-	<div class="flex justify-center">
-		<button
-			type="button"
-			class="text-sm hover:underline"
-			style="color: var(--color-gold-500)"
-			onclick={toggle}
-			aria-pressed={mode === 'signup'}
-		>
-			{mode === 'login' ? 'Noch nicht registriert?' : 'Schon registriert?'}
-		</button>
-	</div>
+	{#if mode === 'signup'}
+		<div class="flex justify-center">
+			<button
+				type="button"
+				class="text-sm hover:underline"
+				style="color: var(--color-gold-500)"
+				onclick={toggle}
+			>
+				Schon registriert?
+			</button>
+		</div>
+	{/if}
 </section>
 
 <script lang="ts">
