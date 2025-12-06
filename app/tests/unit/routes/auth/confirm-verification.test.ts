@@ -4,20 +4,26 @@ import { createPBMock } from '../../../utils/mocks'
 import type { TypedPocketBase } from '$lib/pocketbase-types'
 
 describe('Email Verification Load Function', () => {
-	it('should successfully verify email with valid token', async () => {
+	it('should successfully verify email with valid token and redirect to home', async () => {
 		const confirmVerification = vi.fn(async () => undefined)
-		const pb = createPBMock({ users: { confirmVerification } })
+		const authRefresh = vi.fn(async () => ({}))
+		const pb = createPBMock({ users: { confirmVerification, authRefresh } })
+		// Set authStore as valid so authRefresh is called
+		pb.authStore.isValid = true
 
 		const event = {
 			params: { token: 'valid-token' },
 			locals: { pb: pb as unknown as TypedPocketBase }
 		} as unknown as Parameters<typeof load>[0]
 
-		const result = (await load(event)) as { success: boolean; message: string }
+		// Should throw a redirect (SvelteKit uses thrown objects for redirects)
+		await expect(load(event)).rejects.toMatchObject({
+			status: 303,
+			location: '/'
+		})
 
-		expect(result.success).toBe(true)
-		expect(result.message).toContain('erfolgreich verifiziert')
 		expect(confirmVerification).toHaveBeenCalledWith('valid-token')
+		expect(authRefresh).toHaveBeenCalled()
 	})
 
 	it('should handle expired or invalid token', async () => {

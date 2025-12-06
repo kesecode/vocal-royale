@@ -14,6 +14,7 @@ type CollectionMock = {
 	delete?: (id: string) => Promise<void>
 	// auth methods for users service
 	authWithPassword?: (email: string, password: string) => Promise<Record<string, unknown>>
+	authRefresh?: () => Promise<Record<string, unknown>>
 	// email verification methods
 	requestVerification?: (email: string) => Promise<void>
 	confirmVerification?: (token: string) => Promise<void>
@@ -52,6 +53,7 @@ export function createPBMock(collections: Record<string, CollectionMock> = {}) {
 				authWithPassword: vi.fn((email: string, password: string) =>
 					svc.authWithPassword ? svc.authWithPassword(email, password) : Promise.resolve({})
 				),
+				authRefresh: vi.fn(() => (svc.authRefresh ? svc.authRefresh() : Promise.resolve({}))),
 				requestVerification: vi.fn((email: string) =>
 					svc.requestVerification ? svc.requestVerification(email) : Promise.resolve()
 				),
@@ -70,6 +72,7 @@ export function createPBMock(collections: Record<string, CollectionMock> = {}) {
 		}),
 		authStore: {
 			record: null as Record<string, unknown> | null,
+			isValid: false,
 			loadFromCookie: vi.fn(),
 			exportToCookie: vi.fn(() => 'pb_auth=stub; Path=/; HttpOnly'),
 			clear: vi.fn()
