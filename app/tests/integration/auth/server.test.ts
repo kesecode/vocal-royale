@@ -105,12 +105,21 @@ describe('auth actions', () => {
 
 	it('logout clears auth and redirects', async () => {
 		const pb = createPBMock()
+		const mockCookies = {
+			get: vi.fn(),
+			getAll: vi.fn(() => []),
+			set: vi.fn(),
+			delete: vi.fn(),
+			serialize: vi.fn()
+		}
 
 		const event = {
-			locals: { pb: pb as unknown as TypedPocketBase }
+			locals: { pb: pb as unknown as TypedPocketBase },
+			cookies: mockCookies
 		} as unknown as Parameters<typeof actions.logout>[0]
 
 		await expect(actions.logout(event)).rejects.toMatchObject({ status: 303, location: '/auth' })
 		expect(pb.authStore.clear).toHaveBeenCalled()
+		expect(mockCookies.delete).toHaveBeenCalledWith('pb_auth_aja30', { path: '/' })
 	})
 })
