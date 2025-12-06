@@ -29,7 +29,7 @@
 
 	{#snippet footer()}
 		<form method="POST" action="/auth?/logout" class="contents">
-			<button type="submit" class="btn-secondary">Abmelden</button>
+			<button type="submit" class="btn-danger">Logout</button>
 		</form>
 		<button
 			type="button"
