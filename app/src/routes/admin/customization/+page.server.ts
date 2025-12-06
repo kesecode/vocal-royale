@@ -21,19 +21,42 @@ function replacePlaceholders(text: string, appName: string, appUrl: string): str
 /**
  * Sync email templates from database to PocketBase collection settings.
  * This replaces {app_name} and {app_url} placeholders with actual values.
+ * IMPORTANT: Requires Superuser authentication - normal admin tokens cannot modify collection settings!
  */
 async function syncEmailTemplatesToCollections(pb: PocketBase): Promise<void> {
-	// 1. Get current app_settings (app_name, app_url)
+	// 1. Authenticate as Superuser (only superusers can modify collection settings!)
+	const superuserEmail = env.PB_ADMIN_EMAIL
+	const superuserPassword = env.PB_ADMIN_PASSWORD
+
+	if (!superuserEmail || !superuserPassword) {
+		console.error('[customization] PB_ADMIN_EMAIL/PASSWORD not set - cannot sync templates')
+		return
+	}
+
+	const authResponse = await fetch(`${PB_URL}/api/collections/_superusers/auth-with-password`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ identity: superuserEmail, password: superuserPassword })
+	})
+
+	if (!authResponse.ok) {
+		console.error('[customization] Superuser auth failed:', await authResponse.text())
+		return
+	}
+
+	const { token: superuserToken } = await authResponse.json()
+
+	// 2. Get current app_settings (app_name, app_url)
 	const settings = await pb.collection('app_settings').getFullList<AppSettingsResponse>()
 	const appName = settings.find((s) => s.key === 'app_name')?.value || 'Vocal Royale'
 	const appUrl = settings.find((s) => s.key === 'app_url')?.value || 'https://app.example.com'
 
-	// 2. Get active email_templates
+	// 3. Get active email_templates
 	const templates = await pb.collection('email_templates').getFullList<EmailTemplatesResponse>({
 		filter: 'is_active = true'
 	})
 
-	// 3. Replace placeholders and update PocketBase collection settings
+	// 4. Replace placeholders and update PocketBase collection settings
 	for (const collectionName of ['users', '_superusers']) {
 		const verification = templates.find(
 			(t) => t.template_type === 'verification' && t.collection_ref === collectionName
@@ -59,12 +82,12 @@ async function syncEmailTemplatesToCollections(pb: PocketBase): Promise<void> {
 				}
 			}
 
-			// Update PocketBase collection settings via API
+			// Update PocketBase collection settings via API (using Superuser token!)
 			const response = await fetch(`${PB_URL}/api/collections/${collectionName}`, {
 				method: 'PATCH',
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization: pb.authStore.token || ''
+					Authorization: superuserToken
 				},
 				body: JSON.stringify({ options })
 			})
@@ -390,10 +413,15 @@ export const actions: Actions = {
 
 		const id = formData.get('id') as string
 		const key = formData.get('key') as string
-		const value = formData.get('value') as string
+		let value = formData.get('value') as string
 
 		if (!id || !key || !value) {
 			return fail(400, { message: 'Key und Value sind erforderlich' })
+		}
+
+		// Remove trailing slash from app_url
+		if (key === 'app_url') {
+			value = value.replace(/\/+$/, '')
 		}
 
 		try {
