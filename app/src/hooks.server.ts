@@ -49,6 +49,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 		pathname === '/favicon.png'
 	const nextParam = encodeURIComponent(event.url.pathname + event.url.search)
 
+	// Spezielle Auth-Routen die auch für eingeloggte User erreichbar sein müssen
+	const isVerificationRoute = pathname.startsWith('/auth/confirm-verification/')
+	const isPasswordResetRoute = pathname.startsWith('/auth/confirm-password-reset/')
+	const isPostRequest = event.request.method === 'POST'
+
 	// Page-view logging (skip assets)
 	if (!isAsset) {
 		logger.info('HTTP request', {
@@ -63,7 +68,17 @@ export const handle: Handle = async ({ event, resolve }) => {
 		logger.debug('Guard redirect to /auth', { pathname })
 		throw redirect(303, `/auth?reason=auth_required&next=${nextParam}`)
 	}
-	if (isLoggedIn && isAuthRoute) {
+	// Eingeloggte User von /auth wegleiten - ABER:
+	// - POST-Requests durchlassen (für logout-Action)
+	// - Verification-Route durchlassen
+	// - Password-Reset-Route durchlassen
+	if (
+		isLoggedIn &&
+		isAuthRoute &&
+		!isPostRequest &&
+		!isVerificationRoute &&
+		!isPasswordResetRoute
+	) {
 		logger.debug('Guard redirect to / (already logged in)', { pathname })
 		throw redirect(303, '/')
 	}
@@ -80,8 +95,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 			pathname === '/profile' ||
 			pathname.startsWith('/profile/') ||
 			pathname === '/api/resend-verification' ||
-			pathname === '/api/role-counts' || // Allow checking role counts
-			pathname === '/forbidden'
+			pathname === '/api/role-counts' ||
+			pathname === '/forbidden' ||
+			isVerificationRoute ||
+			isPasswordResetRoute ||
+			(isAuthRoute && isPostRequest) // Logout-Action erlauben
 
 		if (!allowForUnverified) {
 			logger.debug('Guard redirect to / (email not verified)', {
