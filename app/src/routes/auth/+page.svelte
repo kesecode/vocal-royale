@@ -37,7 +37,7 @@
 					>
 						{validatingPassword ? 'Prüfe...' : 'Bestätigen'}
 					</button>
-					<button type="button" class="btn-purple" onclick={closePasswordModal}>Abbrechen</button>
+					<button type="button" class="btn-danger" onclick={closePasswordModal}>Abbrechen</button>
 				</div>
 			</form>
 		</div>
