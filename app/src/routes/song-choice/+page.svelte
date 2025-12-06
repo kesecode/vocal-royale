@@ -229,16 +229,23 @@
 					return
 				} else if (err === 'song_not_available') {
 					errors[i] = 'Song nicht verfügbar.'
+					return
 				} else if (err === 'no_lyrics') {
 					errors[i] = 'Keine Lyrics verfügbar.'
+					return
+				} else if (err === 'song_already_taken') {
+					errors[i] = 'Song bereits von jemandem gewählt!'
+					return
 				} else if (err === 'invalid_fields') {
 					errors[i] = 'Bitte Interpret und Titel ausfüllen.'
+					return
 				} else if (err === 'apple_token_missing') {
 					errors[i] = 'Server-Konfiguration fehlt (Apple Music Token).'
+					return
 				} else {
 					errors[i] = 'Konnte nicht speichern.'
+					return
 				}
-				return
 			}
 			// ok
 			savedStates[i] = true

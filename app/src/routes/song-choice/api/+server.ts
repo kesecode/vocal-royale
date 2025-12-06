@@ -225,6 +225,40 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 		)
 	}
 
+	// Check for duplicate song (same artist + title by another user)
+	try {
+		const allChoices = (await locals.pb.collection(COLLECTION).getFullList({
+			filter: `user != "${locals.user.id}"`
+		})) as SongChoicesResponse[]
+
+		const normalizedArtist = normalize(artist)
+		const normalizedTitle = normalize(songTitle)
+
+		const duplicate = allChoices.find((choice) => {
+			const choiceArtist = normalize(choice.artist ?? '')
+			const choiceTitle = normalize(choice.songTitle ?? '')
+			return choiceArtist === normalizedArtist && choiceTitle === normalizedTitle
+		})
+
+		if (duplicate) {
+			logger.warn('SongChoices duplicate detected', {
+				artist,
+				songTitle,
+				existingUserId: duplicate.user
+			})
+			return json(
+				{
+					error: 'song_already_taken',
+					details: 'Dieser Song wurde bereits von einem anderen Teilnehmer gewählt.'
+				},
+				{ status: 409 }
+			)
+		}
+	} catch (err) {
+		logger.warn('SongChoices duplicate check failed', { error: (err as Error)?.message })
+		// Continue anyway - don't block on failed duplicate check
+	}
+
 	if (VALIDATE) {
 		const verified = await verifyWithApple(artist, songTitle, fetch)
 		if (!verified.ok) {
