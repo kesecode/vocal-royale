@@ -84,7 +84,6 @@
 							<th class="table-cell">Name</th>
 							{#if activeTab === 'participants'}
 								<th class="table-cell">Künstlername</th>
-								<th class="table-cell">Status</th>
 							{/if}
 						</tr>
 					</thead>
@@ -94,7 +93,6 @@
 								<tr class="table-row-border">
 									<td class="table-cell">{u.name}</td>
 									<td class="table-cell">{u.artistName || '—'}</td>
-									<td class="table-cell">{u.eliminated ? 'ausgeschieden' : 'aktiv'}</td>
 								</tr>
 							{/each}
 						{:else if activeTab === 'jurors'}

@@ -95,21 +95,45 @@ describe('profile actions', () => {
 	it('logout clears auth and redirects', async () => {
 		const user = makeUser({ id: 'u5', role: 'participant' }) as unknown as UsersResponse
 		const pb = createPBMock()
+		const mockCookies = {
+			get: vi.fn(),
+			getAll: vi.fn(() => []),
+			set: vi.fn(),
+			delete: vi.fn(),
+			serialize: vi.fn()
+		}
 		const event = {
-			locals: { user, pb: pb as unknown as TypedPocketBase }
+			locals: { user, pb: pb as unknown as TypedPocketBase },
+			cookies: mockCookies
 		} as unknown as Parameters<typeof actions.logout>[0]
 
 		await expect(actions.logout(event)).rejects.toMatchObject({ status: 303 })
 		expect(pb.authStore.clear).toHaveBeenCalled()
+		expect(mockCookies.delete).toHaveBeenCalledWith('pb_auth_aja30', { path: '/' })
 	})
 
 	it('deleteAccount deletes user, clears auth and redirects to /auth?reason=account_deleted', async () => {
 		const user = makeUser({ id: 'del1', role: 'participant' }) as unknown as UsersResponse
 		const del = vi.fn(async () => {})
-		const pb = createPBMock({ users: { delete: del } })
+		const songChoiceDelete = vi.fn(async () => {})
+		const pb = createPBMock({
+			users: { delete: del },
+			song_choices: {
+				getFullList: vi.fn(async () => []),
+				delete: songChoiceDelete
+			}
+		})
+		const mockCookies = {
+			get: vi.fn(),
+			getAll: vi.fn(() => []),
+			set: vi.fn(),
+			delete: vi.fn(),
+			serialize: vi.fn()
+		}
 
 		const event = {
-			locals: { user, pb: pb as unknown as TypedPocketBase }
+			locals: { user, pb: pb as unknown as TypedPocketBase },
+			cookies: mockCookies
 		} as unknown as Parameters<typeof actions.deleteAccount>[0]
 
 		await expect(actions.deleteAccount(event)).rejects.toMatchObject({
@@ -118,6 +142,7 @@ describe('profile actions', () => {
 		})
 		expect(del).toHaveBeenCalledWith(user.id)
 		expect(pb.authStore.clear).toHaveBeenCalled()
+		expect(mockCookies.delete).toHaveBeenCalledWith('pb_auth_aja30', { path: '/' })
 	})
 
 	it('deleteAccount returns failure on error without clearing auth', async () => {

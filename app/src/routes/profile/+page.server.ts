@@ -4,6 +4,8 @@ import type { Actions, PageServerLoad } from './$types'
 import type { SettingsResponse, UsersResponse, UserRole } from '$lib/pocketbase-types'
 import { isDeadlinePassed } from '$lib/utils/competition-settings'
 
+const APP_COOKIE_KEY = 'pb_auth_aja30'
+
 export const load: PageServerLoad = async ({ locals }) => {
 	// Layout guard already enforces auth; just return the user.
 	if (!locals.user) {
@@ -97,18 +99,30 @@ export const actions: Actions = {
 			return fail(400, { message: 'Aktualisierung fehlgeschlagen.', variant: 'error' })
 		}
 	},
-	logout: async ({ locals }) => {
+	logout: async ({ locals, cookies }) => {
 		logger.info('Logout', { userId: locals.user?.id ?? null })
 		locals.pb.authStore.clear()
+		// Cookie manuell löschen, da redirect() die normale Response-Verarbeitung überspringt
+		cookies.delete(APP_COOKIE_KEY, { path: '/' })
 		throw redirect(303, '/auth')
 	},
 
-	deleteAccount: async ({ locals }) => {
+	deleteAccount: async ({ locals, cookies }) => {
 		if (!locals.user) {
 			throw redirect(303, '/auth')
 		}
 		const userId = locals.user.id
+
 		try {
+			// First delete all song_choices for this user (cascade)
+			const songChoices = await locals.pb.collection('song_choices').getFullList({
+				filter: `user = "${userId}"`
+			})
+			for (const choice of songChoices) {
+				await locals.pb.collection('song_choices').delete(choice.id)
+			}
+
+			// Now delete the user
 			await locals.pb.collection('users').delete(userId)
 		} catch {
 			logger.warn('Account deletion failed', { userId })
@@ -117,6 +131,8 @@ export const actions: Actions = {
 
 		logger.info('Account deleted', { userId })
 		locals.pb.authStore.clear()
+		// Cookie manuell löschen, da redirect() die normale Response-Verarbeitung überspringt
+		cookies.delete(APP_COOKIE_KEY, { path: '/' })
 		throw redirect(303, '/auth?reason=account_deleted')
 	},
 
