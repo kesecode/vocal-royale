@@ -2,6 +2,8 @@ import { fail, redirect } from '@sveltejs/kit'
 import { logger } from '$lib/server/logger'
 import type { Actions, PageServerLoad } from './$types'
 
+const APP_COOKIE_KEY = 'pb_auth_aja30'
+
 export const load: PageServerLoad = async ({ locals }) => {
 	return { user: locals.user }
 }
@@ -72,9 +74,11 @@ export const actions: Actions = {
 		throw redirect(303, next || '/')
 	},
 
-	logout: async ({ locals }) => {
+	logout: async ({ locals, cookies }) => {
 		logger.info('Logout', { userId: locals.user?.id ?? null })
 		locals.pb.authStore.clear()
+		// Cookie manuell löschen, da redirect() die normale Response-Verarbeitung überspringt
+		cookies.delete(APP_COOKIE_KEY, { path: '/' })
 		throw redirect(303, '/auth')
 	}
 }
