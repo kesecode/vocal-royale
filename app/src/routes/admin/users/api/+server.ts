@@ -129,3 +129,61 @@ export const PUT: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'update_failed' }, { status: 500 })
 	}
 }
+
+export const DELETE: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'not_authenticated' }, { status: 401 })
+	}
+	if (locals.user.role !== 'admin') {
+		return json({ error: 'forbidden' }, { status: 403 })
+	}
+
+	let payload: { userId?: string }
+	try {
+		payload = await request.json()
+	} catch {
+		return json({ error: 'invalid_json' }, { status: 400 })
+	}
+
+	const { userId } = payload
+	if (!userId) {
+		logger.warn('Admin Users DELETE invalid payload', { userId })
+		return json({ error: 'invalid_payload' }, { status: 400 })
+	}
+
+	// Prevent self-deletion
+	if (userId === locals.user.id) {
+		logger.warn('Admin Users DELETE attempted self-deletion', { userId })
+		return json({ error: 'cannot_delete_self' }, { status: 400 })
+	}
+
+	try {
+		logger.info('Admin Users DELETE - starting cascade delete', { userId })
+
+		// First, delete all song_choices for this user (cascade)
+		const songChoices = await locals.pb.collection('song_choices').getFullList({
+			filter: `user = "${userId}"`
+		})
+
+		for (const choice of songChoices) {
+			await locals.pb.collection('song_choices').delete(choice.id)
+			logger.info('Deleted song_choice', { songChoiceId: choice.id, userId })
+		}
+
+		// Now delete the user
+		await locals.pb.collection(COLLECTION).delete(userId)
+
+		logger.info('Admin Users DELETE success', {
+			userId,
+			deletedSongChoices: songChoices.length
+		})
+		return json({ ok: true, deletedSongChoices: songChoices.length })
+	} catch (e: unknown) {
+		const err = e as Error & { status?: number; message?: string }
+		logger.error('Admin Users DELETE failed', {
+			status: err?.status,
+			message: err?.message
+		})
+		return json({ error: 'delete_failed', message: err?.message }, { status: 500 })
+	}
+}
