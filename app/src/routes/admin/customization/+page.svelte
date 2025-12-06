@@ -348,7 +348,19 @@
 						</div>
 
 						{#if editingId === setting.id}
-							<form method="post" action="?/updateAppSetting" use:enhance class="space-y-3">
+							<form
+								method="post"
+								action="?/updateAppSetting"
+								use:enhance={() => {
+									updating = true
+									return async ({ update }) => {
+										await update()
+										updating = false
+										editingId = null
+									}
+								}}
+								class="space-y-3"
+							>
 								<input type="hidden" name="id" value={setting.id} />
 								<input type="hidden" name="key" value={setting.key} />
 

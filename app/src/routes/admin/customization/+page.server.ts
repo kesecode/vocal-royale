@@ -83,13 +83,14 @@ async function syncEmailTemplatesToCollections(pb: PocketBase): Promise<void> {
 			}
 
 			// Update PocketBase collection settings via API (using Superuser token!)
+			// Note: Templates must be at the top level, NOT nested in "options"
 			const response = await fetch(`${PB_URL}/api/collections/${collectionName}`, {
 				method: 'PATCH',
 				headers: {
 					'Content-Type': 'application/json',
 					Authorization: superuserToken
 				},
-				body: JSON.stringify({ options })
+				body: JSON.stringify(options)
 			})
 
 			if (!response.ok) {
