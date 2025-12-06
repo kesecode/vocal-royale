@@ -1220,12 +1220,12 @@ migrate((app) => {
       ],
       "id": "pbc_2769025244",
       "indexes": [],
-      "listRule": "@request.auth.role = 'admin'",
+      "listRule": "@request.auth.id != ''",
       "name": "settings",
       "system": false,
       "type": "base",
       "updateRule": "@request.auth.role = 'admin'",
-      "viewRule": "@request.auth.role = 'admin'"
+      "viewRule": "@request.auth.id != ''"
     },
     {
       "createRule": "@request.auth.role = 'participant'",

@@ -248,7 +248,7 @@
 				const ref = await fetch('/song-choice/api')
 				if (ref.ok) {
 					const data = await ref.json()
-					if (Array.isArray(data?.songs) && data.songs.length === 5) {
+					if (Array.isArray(data?.songs) && data.songs.length === totalSongs) {
 						type ServerSongChoice = {
 							artist?: string
 							songTitle?: string
