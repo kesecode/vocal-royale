@@ -28,18 +28,20 @@ describe('Email Templates', () => {
 			expect(result.subject).toContain('bestätigt')
 		})
 
-		it('should include recipient name in HTML body', async () => {
+		it('should include firstName and artistName in HTML body', async () => {
 			const { songConfirmationTemplate } = await import('$lib/server/email-templates')
 
 			const result = songConfirmationTemplate({
 				recipientEmail: 'test@test.com',
 				recipientName: 'Max Mustermann',
+				firstName: 'Max',
+				artistName: 'DJ Maximus',
 				artist: 'ABBA',
 				songTitle: 'Dancing Queen',
 				round: 1
 			})
 
-			expect(result.html).toContain('Max Mustermann')
+			expect(result.html).toContain('Ai Gude Max a.k.a. DJ Maximus,')
 		})
 
 		it('should include song details in HTML body', async () => {

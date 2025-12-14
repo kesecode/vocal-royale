@@ -51,7 +51,7 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
       Dein Song wurde bestätigt!
     </h2>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Ai Gude ${data.recipientName},
+      Ai Gude ${data.firstName}${data.artistName ? ` a.k.a. ${data.artistName}` : ''},
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
       Ai subbäää! Dein Song für die ${data.round}. Runde wurde bestätigt:
@@ -97,7 +97,7 @@ export function songRejectionTemplate(data: SongEmailData): { subject: string; h
       Dein Song wurde leider abgelehnt
     </h2>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Ai Gude ${data.recipientName},
+      Ai Gude ${data.firstName}${data.artistName ? ` a.k.a. ${data.artistName}` : ''},
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
       Leider ist dein Song für die ${data.round}. Runde nicht verfügbar:
