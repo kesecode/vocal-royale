@@ -7,6 +7,7 @@ export interface EmailOptions {
 	to: string
 	subject: string
 	html: string
+	appName?: string
 }
 
 export interface SongEmailData {
@@ -50,7 +51,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 	try {
 		const transport = getTransporter()
 		const fromEmail = env.SMTP_FROM || 'noreply@vocal-royale.de'
-		const fromName = env.APP_NAME || 'Vocal Royale'
+		const fromName = options.appName || 'Vocal Royale'
 		const from = `${fromName} <${fromEmail}>`
 
 		await transport.sendMail({

@@ -117,7 +117,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			emailSent = await sendEmail({
 				to: emailData.recipientEmail,
 				subject: template.subject,
-				html: template.html
+				html: template.html,
+				appName
 			})
 		}
 
@@ -203,7 +204,8 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			emailSent = await sendEmail({
 				to: emailData.recipientEmail,
 				subject: template.subject,
-				html: template.html
+				html: template.html,
+				appName
 			})
 		}
 
