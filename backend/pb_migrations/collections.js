@@ -1229,7 +1229,7 @@ migrate((app) => {
     },
     {
       "createRule": "@request.auth.role = 'participant'",
-      "deleteRule": "user = @request.auth.id",
+      "deleteRule": "user = @request.auth.id || @request.auth.role = 'admin'",
       "fields": [
         {
           "autogeneratePattern": "[a-z0-9]{15}",

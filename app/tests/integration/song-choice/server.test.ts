@@ -40,7 +40,12 @@ function makeEvent(pathname: string, opts?: MakeEventOptions) {
 								data: [
 									{
 										id: 'apple:1',
-										attributes: { artistName: 'Artist', name: 'Title', hasLyrics: true }
+										attributes: {
+											artistName: 'Artist',
+											name: 'Title',
+											hasLyrics: true,
+											hasTimeSyncedLyrics: true
+										}
 									}
 								]
 							}

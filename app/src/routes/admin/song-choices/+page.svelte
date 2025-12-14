@@ -71,11 +71,18 @@
 								</td>
 								<td class="table-cell">
 									<div class="flex gap-2">
-										{#if !choice.confirmed}
+										{#if choice.confirmed}
+											<button
+												class="btn-purple text-xs px-3 py-1.5"
+												onclick={() => openReleaseModal(choice)}
+											>
+												Freigeben
+											</button>
+										{:else}
 											<button
 												class="btn-brand text-xs px-3 py-1.5"
 												disabled={!choice.artist || !choice.songTitle}
-												onclick={() => confirmSong(choice.id)}
+												onclick={() => openConfirmModal(choice)}
 											>
 												Bestätigen
 											</button>
@@ -108,6 +115,83 @@
 	</div>
 </section>
 
+<!-- Bestätigen Modal -->
+<Modal bind:open={showConfirmModal} title="Song bestätigen" onclose={closeConfirmModal}>
+	{#if confirmChoice}
+		<div class="space-y-4">
+			<p class="text-white/90">Möchtest du folgenden Song bestätigen?</p>
+
+			<div class="rounded-lg border border-white/10 bg-white/5 p-4">
+				<div class="text-sm text-white/70">
+					{confirmChoice.expand?.user?.name || 'Unbekannt'}
+					{#if confirmChoice.expand?.user?.artistName}
+						<span class="text-white/50">
+							(a.k.a. {confirmChoice.expand.user.artistName})
+						</span>
+					{/if}
+				</div>
+				<div class="font-medium text-white">
+					{confirmChoice.artist} - {confirmChoice.songTitle}
+				</div>
+				<div class="mt-1 text-sm text-white/70">Runde {confirmChoice.round}</div>
+			</div>
+
+			<div class="rounded border border-emerald-600/40 bg-emerald-600/20 p-3">
+				<p class="text-sm text-emerald-200">
+					<strong>Info:</strong>
+					Der Teilnehmer erhält eine Bestätigungs-E-Mail und kann den Song nicht mehr ändern.
+				</p>
+			</div>
+		</div>
+	{/if}
+
+	{#snippet footer()}
+		<button class="btn-purple" onclick={closeConfirmModal}>Abbrechen</button>
+		<button class="btn-brand" onclick={executeConfirm} disabled={confirming}>
+			{confirming ? 'Wird bestätigt…' : 'Bestätigen'}
+		</button>
+	{/snippet}
+</Modal>
+
+<!-- Freigeben Modal -->
+<Modal bind:open={showReleaseModal} title="Song freigeben" onclose={closeReleaseModal}>
+	{#if releaseChoice}
+		<div class="space-y-4">
+			<p class="text-white/90">Möchtest du folgenden Song zur Neuauswahl freigeben?</p>
+
+			<div class="rounded-lg border border-white/10 bg-white/5 p-4">
+				<div class="text-sm text-white/70">
+					{releaseChoice.expand?.user?.name || 'Unbekannt'}
+					{#if releaseChoice.expand?.user?.artistName}
+						<span class="text-white/50">
+							(a.k.a. {releaseChoice.expand.user.artistName})
+						</span>
+					{/if}
+				</div>
+				<div class="font-medium text-white">
+					{releaseChoice.artist} - {releaseChoice.songTitle}
+				</div>
+				<div class="mt-1 text-sm text-white/70">Runde {releaseChoice.round}</div>
+			</div>
+
+			<div class="rounded border border-amber-600/40 bg-amber-600/20 p-3">
+				<p class="text-sm text-amber-200">
+					<strong>Hinweis:</strong>
+					Der Song wird gelöscht und der Teilnehmer kann einen neuen Song wählen (auch nach Deadline).
+					Es wird keine E-Mail gesendet.
+				</p>
+			</div>
+		</div>
+	{/if}
+
+	{#snippet footer()}
+		<button class="btn-purple" onclick={closeReleaseModal}>Abbrechen</button>
+		<button class="btn-brand" onclick={executeRelease} disabled={releasing}>
+			{releasing ? 'Wird freigegeben…' : 'Freigeben'}
+		</button>
+	{/snippet}
+</Modal>
+
 <!-- Ablehnen Modal -->
 <Modal bind:open={showRejectModal} title="Song ablehnen" onclose={closeRejectModal}>
 	{#if selectedChoice}
@@ -117,6 +201,11 @@
 			<div class="rounded-lg border border-white/10 bg-white/5 p-4">
 				<div class="text-sm text-white/70">
 					{selectedChoice.expand?.user?.name || 'Unbekannt'}
+					{#if selectedChoice.expand?.user?.artistName}
+						<span class="text-white/50">
+							(a.k.a. {selectedChoice.expand.user.artistName})
+						</span>
+					{/if}
 				</div>
 				<div class="font-medium text-white">
 					{selectedChoice.artist} - {selectedChoice.songTitle}
@@ -177,6 +266,16 @@
 	let errorMsg: string | null = $state(null)
 	let infoMsg: string | null = $state(null)
 
+	// Confirm Modal State
+	let showConfirmModal = $state(false)
+	let confirmChoice: SongChoiceWithUser | null = $state(null)
+	let confirming = $state(false)
+
+	// Release Modal State
+	let showReleaseModal = $state(false)
+	let releaseChoice: SongChoiceWithUser | null = $state(null)
+	let releasing = $state(false)
+
 	// Reject Modal State
 	let showRejectModal = $state(false)
 	let selectedChoice: SongChoiceWithUser | null = $state(null)
@@ -210,7 +309,21 @@
 		}
 	}
 
-	async function confirmSong(choiceId: string) {
+	// Confirm Modal Functions
+	function openConfirmModal(choice: SongChoiceWithUser) {
+		confirmChoice = choice
+		showConfirmModal = true
+	}
+
+	function closeConfirmModal() {
+		showConfirmModal = false
+		confirmChoice = null
+	}
+
+	async function executeConfirm() {
+		if (!confirmChoice) return
+
+		confirming = true
 		errorMsg = null
 		infoMsg = null
 
@@ -218,7 +331,7 @@
 			const res = await fetch('/admin/song-choices/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ choiceId, confirmed: true })
+				body: JSON.stringify({ choiceId: confirmChoice.id, confirmed: true })
 			})
 
 			if (!res.ok) {
@@ -233,9 +346,55 @@
 				: 'Song bestätigt (E-Mail nicht konfiguriert)'
 			setTimeout(() => (infoMsg = null), 4000)
 
+			closeConfirmModal()
 			await loadSongChoices()
 		} catch {
 			errorMsg = 'Netzwerkfehler'
+		} finally {
+			confirming = false
+		}
+	}
+
+	// Release Modal Functions
+	function openReleaseModal(choice: SongChoiceWithUser) {
+		releaseChoice = choice
+		showReleaseModal = true
+	}
+
+	function closeReleaseModal() {
+		showReleaseModal = false
+		releaseChoice = null
+	}
+
+	async function executeRelease() {
+		if (!releaseChoice) return
+
+		releasing = true
+		errorMsg = null
+		infoMsg = null
+
+		try {
+			const res = await fetch('/admin/song-choices/api', {
+				method: 'DELETE',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ choiceId: releaseChoice.id, skipEmail: true })
+			})
+
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}))
+				errorMsg = data.error || 'Freigabe fehlgeschlagen'
+				return
+			}
+
+			infoMsg = 'Song zur Neuauswahl freigegeben'
+			setTimeout(() => (infoMsg = null), 4000)
+
+			closeReleaseModal()
+			await loadSongChoices()
+		} catch {
+			errorMsg = 'Netzwerkfehler'
+		} finally {
+			releasing = false
 		}
 	}
 

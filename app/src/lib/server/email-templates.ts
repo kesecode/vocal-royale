@@ -46,8 +46,6 @@ function baseTemplate(title: string, content: string): string {
 }
 
 export function songConfirmationTemplate(data: SongEmailData): { subject: string; html: string } {
-	const appName = getAppName()
-
 	const content = `
     <h2 style="font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;">
       Dein Song wurde bestätigt!
@@ -56,7 +54,7 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
       Ai Gude ${data.recipientName},
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Gute Nachrichten! Dein Song für Runde ${data.round} wurde vom Admin bestätigt:
+      Ai subbäää! Dein Song für die ${data.round}. Runde wurde bestätigt:
     </p>
     <table cellpadding="0" cellspacing="0" style="margin: 25px 0; width: 100%;">
       <tr>
@@ -69,11 +67,10 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
       </tr>
     </table>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Du kannst dich jetzt auf deinen Auftritt vorbereiten. Viel Erfolg!
+      Und jetzt schön üben, dass es auch ja fetzt. Viel Erfolg!
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">
-      Viel Spaß beim Singen!<br/>
-      Dein ${appName} Team
+      Bis dann!<br/>
     </p>
   `
 
@@ -84,7 +81,6 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
 }
 
 export function songRejectionTemplate(data: SongEmailData): { subject: string; html: string } {
-	const appName = getAppName()
 	const appUrl = data.appUrl || getAppUrl()
 
 	const commentSection = data.comment
@@ -104,7 +100,7 @@ export function songRejectionTemplate(data: SongEmailData): { subject: string; h
       Ai Gude ${data.recipientName},
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Leider können wir deinen Song für Runde ${data.round} nicht akzeptieren:
+      Leider ist dein Song für die ${data.round}. Runde nicht verfügbar:
     </p>
     <table cellpadding="0" cellspacing="0" style="margin: 25px 0; width: 100%;">
       <tr>
@@ -130,8 +126,7 @@ export function songRejectionTemplate(data: SongEmailData): { subject: string; h
       </tr>
     </table>
     <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">
-      Bei Fragen wende dich gerne an das Orga-Team.<br/><br/>
-      Dein ${appName} Team
+      Ich drück die Daumen für deine nächste Wahl!<br/><br/>
     </p>
   `
 
