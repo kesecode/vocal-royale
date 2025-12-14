@@ -55,7 +55,7 @@ describe('Email Templates', () => {
 
 			expect(result.html).toContain('Eagles')
 			expect(result.html).toContain('Hotel California')
-			expect(result.html).toContain('Runde 3')
+			expect(result.html).toContain('3. Runde')
 		})
 
 		it('should include app name in HTML body', async () => {
@@ -122,7 +122,7 @@ describe('Email Templates', () => {
 
 			expect(result.html).toContain('Adele')
 			expect(result.html).toContain('Hello')
-			expect(result.html).toContain('Runde 4')
+			expect(result.html).toContain('4. Runde')
 		})
 
 		it('should NOT include comment section when no comment provided', async () => {
