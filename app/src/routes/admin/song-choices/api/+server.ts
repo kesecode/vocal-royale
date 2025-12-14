@@ -123,14 +123,14 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'forbidden' }, { status: 403 })
 	}
 
-	let payload: { choiceId?: string; comment?: string }
+	let payload: { choiceId?: string; comment?: string; skipEmail?: boolean }
 	try {
 		payload = await request.json()
 	} catch {
 		return json({ error: 'invalid_json' }, { status: 400 })
 	}
 
-	const { choiceId, comment } = payload
+	const { choiceId, comment, skipEmail } = payload
 	if (!choiceId) {
 		logger.warn('Admin SongChoices DELETE invalid payload', { choiceId })
 		return json({ error: 'invalid_payload' }, { status: 400 })
@@ -173,9 +173,9 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 
 		logger.info('Admin SongChoices DELETE success', { id: choiceId })
 
-		// E-Mail senden (wenn konfiguriert und User vorhanden)
+		// E-Mail senden (wenn konfiguriert, User vorhanden und nicht übersprungen)
 		let emailSent = false
-		if (isEmailConfigured() && emailData) {
+		if (!skipEmail && isEmailConfigured() && emailData) {
 			const template = songRejectionTemplate(emailData)
 			emailSent = await sendEmail({
 				to: emailData.recipientEmail,
@@ -184,7 +184,7 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			})
 		}
 
-		return json({ ok: true, deleted: choiceId, emailSent })
+		return json({ ok: true, deleted: choiceId, emailSent, skippedEmail: !!skipEmail })
 	} catch (e: unknown) {
 		const err = e as Error & { status?: number; message?: string }
 		logger.error('Admin SongChoices DELETE failed', {

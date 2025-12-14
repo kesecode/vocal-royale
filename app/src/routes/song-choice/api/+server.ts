@@ -93,7 +93,7 @@ async function verifyWithApple(
 	// Use hasTimeSyncedLyrics if available, fallback to hasLyrics
 	const attrs = candidate?.attributes
 	const hasTimeSyncedLyrics = attrs?.hasTimeSyncedLyrics
-	const hasLyrics = hasTimeSyncedLyrics !== undefined ? hasTimeSyncedLyrics : !!attrs?.hasLyrics
+	const hasLyrics = hasTimeSyncedLyrics //!== undefined ? hasTimeSyncedLyrics : !!attrs?.hasLyrics
 	logger.debug('Apple verify: lyrics check', {
 		hasTimeSyncedLyrics,
 		hasLyricsFallback: attrs?.hasLyrics,
@@ -215,17 +215,6 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 		return json({ error: 'invalid_round' }, { status: 400 })
 	}
 
-	// Check if deadline has passed
-	if (isDeadlinePassed(deadline)) {
-		logger.warn('SongChoices update prevented: deadline passed', { deadline })
-		return json(
-			{
-				error: 'deadline_exceeded',
-				details: 'Die Deadline für die Song-Auswahl ist abgelaufen.'
-			},
-			{ status: 403 }
-		)
-	}
 	if (!artist || !songTitle) {
 		logger.warn('SongChoices missing fields', { artistEmpty: !artist, songTitleEmpty: !songTitle })
 		return json(
@@ -306,11 +295,23 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 			filter: `user = "${locals.user.id}" && round = ${round}`
 		})) as ListResult<SongChoicesResponse>
 
-		if (list.items.length > 0) {
-			const rec = list.items[0]
-			// Prevent updating confirmed song choices
-			if (rec.confirmed) {
-				logger.warn('SongChoices update prevented: already confirmed', { id: rec.id, round })
+		const existingRecord = list.items.length > 0 ? list.items[0] : null
+		const deadlinePassed = isDeadlinePassed(deadline)
+
+		// Deadline logic:
+		// - No existing record: allow (late joiner or rejected song deleted)
+		// - Existing + not confirmed: allow (released by admin for editing)
+		// - Existing + confirmed: block (cannot change confirmed songs)
+		// - Deadline passed + existing + confirmed: block
+		// - Deadline passed + existing + not confirmed: allow (released for re-selection)
+
+		if (existingRecord) {
+			if (existingRecord.confirmed) {
+				// Confirmed songs cannot be changed by the user
+				logger.warn('SongChoices update prevented: already confirmed', {
+					id: existingRecord.id,
+					round
+				})
 				return json(
 					{
 						error: 'song_choice_confirmed',
@@ -320,13 +321,31 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 					{ status: 403 }
 				)
 			}
+
+			// Not confirmed: check deadline only if there's already content
+			if (deadlinePassed && existingRecord.artist && existingRecord.songTitle) {
+				logger.warn('SongChoices update prevented: deadline passed for existing song', {
+					deadline,
+					round
+				})
+				return json(
+					{
+						error: 'deadline_exceeded',
+						details: 'Die Deadline für die Song-Auswahl ist abgelaufen.'
+					},
+					{ status: 403 }
+				)
+			}
+
+			// Allowed: update existing unconfirmed record
 			const updateData: Partial<SongChoicesRecord> = { artist, songTitle: songTitle, confirmed }
 			if (payload.appleMusicSongId) updateData.appleMusicSongId = payload.appleMusicSongId
-			logger.info('SongChoices update', { id: rec.id, round })
-			const updated = await locals.pb.collection(COLLECTION).update(rec.id, updateData)
+			logger.info('SongChoices update', { id: existingRecord.id, round, deadlinePassed })
+			const updated = await locals.pb.collection(COLLECTION).update(existingRecord.id, updateData)
 			return json({ ok: true, id: updated.id })
 		}
 
+		// No existing record: always allow (late joiner or after rejection)
 		const createData: SongChoicesRecord = {
 			user: locals.user.id,
 			round,
@@ -335,7 +354,7 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 			confirmed,
 			appleMusicSongId: payload.appleMusicSongId
 		}
-		logger.info('SongChoices create', { round })
+		logger.info('SongChoices create', { round, deadlinePassed })
 		const created = await locals.pb.collection(COLLECTION).create(createData)
 		return json({ ok: true, id: created.id })
 	} catch (e: unknown) {
