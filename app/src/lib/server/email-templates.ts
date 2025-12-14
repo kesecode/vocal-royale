@@ -126,7 +126,7 @@ export function songRejectionTemplate(data: SongEmailData): { subject: string; h
       </tr>
     </table>
     <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">
-      Ich drück die Daumen für die nächste Wahl!<br/><br/>
+      Ich drück die Daumen für deine nächste Wahl!<br/><br/>
     </p>
   `
 
