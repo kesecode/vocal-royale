@@ -52,7 +52,7 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 		const transport = getTransporter()
 		const fromEmail = env.SMTP_FROM || 'noreply@vocal-royale.de'
 		const fromName = options.appName || 'Vocal Royale'
-		const from = `${fromName} <${fromEmail}>`
+		const from = `"${fromName}" <${fromEmail}>`
 
 		await transport.sendMail({
 			from,
