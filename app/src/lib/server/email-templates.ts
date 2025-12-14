@@ -1,12 +1,10 @@
 import { env } from '$env/dynamic/private'
 import type { SongEmailData } from './email'
 
-const getAppName = () => env.APP_NAME || 'Vocal Royale'
+const DEFAULT_APP_NAME = 'Vocal Royale'
 const getAppUrl = () => env.ORIGIN || 'http://localhost:3000'
 
-function baseTemplate(title: string, content: string): string {
-	const appName = getAppName()
-
+function baseTemplate(title: string, content: string, appName: string = DEFAULT_APP_NAME): string {
 	return `<!DOCTYPE html>
 <html lang="de">
 <head>
@@ -76,7 +74,7 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
 
 	return {
 		subject: `Song bestätigt: ${data.artist} - ${data.songTitle}`,
-		html: baseTemplate('Song bestätigt', content)
+		html: baseTemplate('Song bestätigt', content, data.appName || DEFAULT_APP_NAME)
 	}
 }
 
@@ -126,12 +124,12 @@ export function songRejectionTemplate(data: SongEmailData): { subject: string; h
       </tr>
     </table>
     <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">
-      Ich drück die Daumen für deine nächste Wahl!<br/><br/>
+      Sorry :-( Ich drück die Daumen für deine nächste Wahl!<br/><br/>
     </p>
   `
 
 	return {
 		subject: `Song abgelehnt: ${data.artist} - ${data.songTitle}`,
-		html: baseTemplate('Song abgelehnt', content)
+		html: baseTemplate('Song abgelehnt', content, data.appName || DEFAULT_APP_NAME)
 	}
 }
