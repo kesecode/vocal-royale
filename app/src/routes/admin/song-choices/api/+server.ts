@@ -199,23 +199,50 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 
 		// E-Mail senden (wenn konfiguriert, User vorhanden und nicht übersprungen)
 		let emailSent = false
+		logger.info('Admin SongChoices DELETE email check', {
+			skipEmail,
+			isConfigured: isEmailConfigured(),
+			hasEmailData: !!emailData,
+			recipientEmail: emailData?.recipientEmail
+		})
 		if (!skipEmail && isEmailConfigured() && emailData) {
 			const template = songRejectionTemplate(emailData)
+			logger.info('Admin SongChoices DELETE sending rejection email', {
+				to: emailData.recipientEmail,
+				subject: template.subject
+			})
 			emailSent = await sendEmail({
 				to: emailData.recipientEmail,
 				subject: template.subject,
 				html: template.html,
 				appName
 			})
+			logger.info('Admin SongChoices DELETE email result', { emailSent })
 		}
 
 		return json({ ok: true, deleted: choiceId, emailSent, skippedEmail: !!skipEmail })
 	} catch (e: unknown) {
-		const err = e as Error & { status?: number; message?: string }
-		logger.error('Admin SongChoices DELETE failed', {
-			status: err?.status,
-			message: err?.message
+		// PocketBase ClientResponseError hat 'status' direkt am Objekt
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const err = e as any
+		const status = err?.status ?? err?.response?.status ?? err?.code
+		const message = err?.message ?? err?.response?.message ?? String(err)
+
+		logger.warn('Admin SongChoices DELETE catch', {
+			choiceId,
+			status,
+			message,
+			errorType: err?.constructor?.name,
+			hasStatus: 'status' in (err || {}),
+			rawError: JSON.stringify(err, Object.getOwnPropertyNames(err || {}))
 		})
+
+		// 404 = Record existiert nicht mehr (bereits gelöscht)
+		if (status === 404) {
+			logger.info('Admin SongChoices DELETE - record already deleted', { choiceId })
+			return json({ ok: true, deleted: choiceId, alreadyDeleted: true })
+		}
+		logger.error('Admin SongChoices DELETE failed', { status, message })
 		return json({ error: 'delete_failed' }, { status: 500 })
 	}
 }
