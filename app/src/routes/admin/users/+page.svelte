@@ -125,7 +125,6 @@
 					<option value="participant">Teilnehmer</option>
 					<option value="spectator">Zuschauer</option>
 					<option value="juror">Juror</option>
-					<option value="admin">Admin</option>
 				</select>
 			</div>
 
