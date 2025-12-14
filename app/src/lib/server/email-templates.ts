@@ -54,7 +54,7 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
       Ai Gude ${data.recipientName},
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Ai subbäää! Dein Song für Runde ${data.round} wurde bestätigt:
+      Ai subbäää! Dein Song für die ${data.round}. Runde wurde bestätigt:
     </p>
     <table cellpadding="0" cellspacing="0" style="margin: 25px 0; width: 100%;">
       <tr>
@@ -67,7 +67,7 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
       </tr>
     </table>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Und jetzt schön Üben, dass es auch ja fetzt. Viel Erfolg!
+      Und jetzt schön üben, dass es auch ja fetzt. Viel Erfolg!
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin-top: 25px;">
       Bis dann!<br/>
@@ -100,7 +100,7 @@ export function songRejectionTemplate(data: SongEmailData): { subject: string; h
       Ai Gude ${data.recipientName},
     </p>
     <p style="font-size: 16px; line-height: 1.5; margin: 15px 0;">
-      Leider ist dein Song für die Runde ${data.round} nicht verfügbar:
+      Leider ist dein Song für die ${data.round}. Runde nicht verfügbar:
     </p>
     <table cellpadding="0" cellspacing="0" style="margin: 25px 0; width: 100%;">
       <tr>
