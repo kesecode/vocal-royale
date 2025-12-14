@@ -90,7 +90,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			const user = choice.expand.user
 			const emailData: SongEmailData = {
 				recipientEmail: user.email,
-				recipientName: user.name || user.artistName || 'Teilnehmer',
+				recipientName: user.firstName || user.artistName || 'Teilnehmer',
+				firstName: user.firstName || undefined,
+				artistName: user.artistName || undefined,
 				artist: choice.artist,
 				songTitle: choice.songTitle,
 				round: choice.round
@@ -159,7 +161,10 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 		const emailData: SongEmailData | null = choice.expand?.user
 			? {
 					recipientEmail: choice.expand.user.email,
-					recipientName: choice.expand.user.name || choice.expand.user.artistName || 'Teilnehmer',
+					recipientName:
+						choice.expand.user.firstName || choice.expand.user.artistName || 'Teilnehmer',
+					firstName: choice.expand.user.firstName || undefined,
+					artistName: choice.expand.user.artistName || undefined,
 					artist: choice.artist,
 					songTitle: choice.songTitle,
 					round: choice.round,

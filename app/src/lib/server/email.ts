@@ -12,6 +12,8 @@ export interface EmailOptions {
 export interface SongEmailData {
 	recipientEmail: string
 	recipientName: string
+	firstName?: string
+	artistName?: string
 	artist: string
 	songTitle: string
 	round: number
