@@ -60,7 +60,7 @@ describe('Email Templates', () => {
 			expect(result.html).toContain('3. Runde')
 		})
 
-		it('should include app name in HTML body', async () => {
+		it('should include app name from data in HTML body', async () => {
 			const { songConfirmationTemplate } = await import('$lib/server/email-templates')
 
 			const result = songConfirmationTemplate({
@@ -68,10 +68,11 @@ describe('Email Templates', () => {
 				recipientName: 'Test',
 				artist: 'Test Artist',
 				songTitle: 'Test Song',
-				round: 1
+				round: 1,
+				appName: 'Mein Vocal Royale'
 			})
 
-			expect(result.html).toContain('Test Vocal Royale')
+			expect(result.html).toContain('Mein Vocal Royale')
 		})
 
 		it('should use Comic design elements', async () => {

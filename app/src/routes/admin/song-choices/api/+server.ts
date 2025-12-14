@@ -87,6 +87,19 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// E-Mail senden (nur bei Bestätigung und wenn konfiguriert)
 		let emailSent = false
 		if (confirmed && isEmailConfigured() && choice.expand?.user) {
+			// app_name und app_url aus DB laden
+			let appName: string | undefined
+			let appUrl: string | undefined
+			try {
+				const appSettings = await locals.pb
+					.collection('app_settings')
+					.getFullList<AppSettingsResponse>()
+				appName = appSettings.find((s) => s.key === 'app_name')?.value
+				appUrl = appSettings.find((s) => s.key === 'app_url')?.value
+			} catch {
+				logger.warn('Could not load app_settings')
+			}
+
 			const user = choice.expand.user
 			const emailData: SongEmailData = {
 				recipientEmail: user.email,
@@ -95,7 +108,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 				artistName: user.artistName || undefined,
 				artist: choice.artist,
 				songTitle: choice.songTitle,
-				round: choice.round
+				round: choice.round,
+				appName,
+				appUrl
 			}
 
 			const template = songConfirmationTemplate(emailData)
@@ -146,15 +161,17 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			expand: 'user'
 		})) as SongChoicesResponse & { expand?: { user?: UsersResponse } }
 
-		// app_url aus DB laden für E-Mail-Link
+		// app_name und app_url aus DB laden für E-Mail
+		let appName: string | undefined
 		let appUrl: string | undefined
 		try {
 			const appSettings = await locals.pb
 				.collection('app_settings')
 				.getFullList<AppSettingsResponse>()
+			appName = appSettings.find((s) => s.key === 'app_name')?.value
 			appUrl = appSettings.find((s) => s.key === 'app_url')?.value
 		} catch {
-			logger.warn('Could not load app_url from app_settings')
+			logger.warn('Could not load app_settings')
 		}
 
 		// E-Mail-Daten vor dem Löschen speichern
@@ -169,6 +186,7 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 					songTitle: choice.songTitle,
 					round: choice.round,
 					comment: comment?.trim() || undefined,
+					appName,
 					appUrl
 				}
 			: null
