@@ -1,6 +1,6 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
-import type { SongChoicesResponse, UsersResponse } from '$lib/pocketbase-types'
+import type { SongChoicesResponse, UsersResponse, AppSettingsResponse } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
 import { sendEmail, isEmailConfigured, type SongEmailData } from '$lib/server/email'
 import { songConfirmationTemplate, songRejectionTemplate } from '$lib/server/email-templates'
@@ -144,6 +144,17 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			expand: 'user'
 		})) as SongChoicesResponse & { expand?: { user?: UsersResponse } }
 
+		// app_url aus DB laden für E-Mail-Link
+		let appUrl: string | undefined
+		try {
+			const appSettings = await locals.pb
+				.collection('app_settings')
+				.getFullList<AppSettingsResponse>()
+			appUrl = appSettings.find((s) => s.key === 'app_url')?.value
+		} catch {
+			logger.warn('Could not load app_url from app_settings')
+		}
+
 		// E-Mail-Daten vor dem Löschen speichern
 		const emailData: SongEmailData | null = choice.expand?.user
 			? {
@@ -152,7 +163,8 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 					artist: choice.artist,
 					songTitle: choice.songTitle,
 					round: choice.round,
-					comment: comment?.trim() || undefined
+					comment: comment?.trim() || undefined,
+					appUrl
 				}
 			: null
 

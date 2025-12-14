@@ -85,7 +85,7 @@ export function songConfirmationTemplate(data: SongEmailData): { subject: string
 
 export function songRejectionTemplate(data: SongEmailData): { subject: string; html: string } {
 	const appName = getAppName()
-	const appUrl = getAppUrl()
+	const appUrl = data.appUrl || getAppUrl()
 
 	const commentSection = data.comment
 		? `

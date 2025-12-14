@@ -16,6 +16,7 @@ export interface SongEmailData {
 	songTitle: string
 	round: number
 	comment?: string
+	appUrl?: string
 }
 
 let transporter: Transporter | null = null
