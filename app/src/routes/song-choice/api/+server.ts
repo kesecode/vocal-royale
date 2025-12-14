@@ -72,6 +72,7 @@ async function verifyWithApple(
 			artistName?: string
 			name?: string
 			hasLyrics?: boolean
+			hasTimeSyncedLyrics?: boolean
 		}
 		id?: string
 	}
@@ -89,7 +90,15 @@ async function verifyWithApple(
 			return a.includes(nArtist) && t.includes(nTitle)
 		}) || items[0]
 
-	const hasLyrics = !!candidate?.attributes?.hasLyrics
+	// Use hasTimeSyncedLyrics if available, fallback to hasLyrics
+	const attrs = candidate?.attributes
+	const hasTimeSyncedLyrics = attrs?.hasTimeSyncedLyrics
+	const hasLyrics = hasTimeSyncedLyrics !== undefined ? hasTimeSyncedLyrics : !!attrs?.hasLyrics
+	logger.debug('Apple verify: lyrics check', {
+		hasTimeSyncedLyrics,
+		hasLyricsFallback: attrs?.hasLyrics,
+		result: hasLyrics
+	})
 	if (!hasLyrics) {
 		return { ok: false, code: 'no_lyrics' }
 	}

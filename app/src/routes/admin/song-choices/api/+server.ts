@@ -1,7 +1,9 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
-import type { SongChoicesResponse } from '$lib/pocketbase-types'
+import type { SongChoicesResponse, UsersResponse } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
+import { sendEmail, isEmailConfigured, type SongEmailData } from '$lib/server/email'
+import { songConfirmationTemplate, songRejectionTemplate } from '$lib/server/email-templates'
 
 const COLLECTION = 'song_choices' as const
 const PER_PAGE = 10
@@ -70,12 +72,39 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	try {
 		logger.info('Admin SongChoices POST', { choiceId, confirmed })
 
+		// Song-Choice mit User-Expand laden (für E-Mail-Daten)
+		const choice = (await locals.pb.collection(COLLECTION).getOne(choiceId, {
+			expand: 'user'
+		})) as SongChoicesResponse & { expand?: { user?: UsersResponse } }
+
+		// Update durchführen
 		const updated = (await locals.pb.collection(COLLECTION).update(choiceId, {
 			confirmed
 		})) as SongChoicesResponse
 
 		logger.info('Admin SongChoices POST success', { id: updated.id, confirmed: updated.confirmed })
-		return json({ ok: true, choice: updated })
+
+		// E-Mail senden (nur bei Bestätigung und wenn konfiguriert)
+		let emailSent = false
+		if (confirmed && isEmailConfigured() && choice.expand?.user) {
+			const user = choice.expand.user
+			const emailData: SongEmailData = {
+				recipientEmail: user.email,
+				recipientName: user.name || user.artistName || 'Teilnehmer',
+				artist: choice.artist,
+				songTitle: choice.songTitle,
+				round: choice.round
+			}
+
+			const template = songConfirmationTemplate(emailData)
+			emailSent = await sendEmail({
+				to: emailData.recipientEmail,
+				subject: template.subject,
+				html: template.html
+			})
+		}
+
+		return json({ ok: true, choice: updated, emailSent })
 	} catch (e: unknown) {
 		const err = e as Error & { status?: number; message?: string }
 		logger.error('Admin SongChoices POST failed', {
@@ -83,5 +112,73 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			message: err?.message
 		})
 		return json({ error: 'update_failed' }, { status: 500 })
+	}
+}
+
+export const DELETE: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return json({ error: 'not_authenticated' }, { status: 401 })
+	}
+	if (locals.user.role !== 'admin') {
+		return json({ error: 'forbidden' }, { status: 403 })
+	}
+
+	let payload: { choiceId?: string; comment?: string }
+	try {
+		payload = await request.json()
+	} catch {
+		return json({ error: 'invalid_json' }, { status: 400 })
+	}
+
+	const { choiceId, comment } = payload
+	if (!choiceId) {
+		logger.warn('Admin SongChoices DELETE invalid payload', { choiceId })
+		return json({ error: 'invalid_payload' }, { status: 400 })
+	}
+
+	try {
+		logger.info('Admin SongChoices DELETE', { choiceId, hasComment: Boolean(comment) })
+
+		// Song-Choice mit User-Expand laden (für E-Mail-Daten)
+		const choice = (await locals.pb.collection(COLLECTION).getOne(choiceId, {
+			expand: 'user'
+		})) as SongChoicesResponse & { expand?: { user?: UsersResponse } }
+
+		// E-Mail-Daten vor dem Löschen speichern
+		const emailData: SongEmailData | null = choice.expand?.user
+			? {
+					recipientEmail: choice.expand.user.email,
+					recipientName: choice.expand.user.name || choice.expand.user.artistName || 'Teilnehmer',
+					artist: choice.artist,
+					songTitle: choice.songTitle,
+					round: choice.round,
+					comment: comment?.trim() || undefined
+				}
+			: null
+
+		// Song-Choice löschen
+		await locals.pb.collection(COLLECTION).delete(choiceId)
+
+		logger.info('Admin SongChoices DELETE success', { id: choiceId })
+
+		// E-Mail senden (wenn konfiguriert und User vorhanden)
+		let emailSent = false
+		if (isEmailConfigured() && emailData) {
+			const template = songRejectionTemplate(emailData)
+			emailSent = await sendEmail({
+				to: emailData.recipientEmail,
+				subject: template.subject,
+				html: template.html
+			})
+		}
+
+		return json({ ok: true, deleted: choiceId, emailSent })
+	} catch (e: unknown) {
+		const err = e as Error & { status?: number; message?: string }
+		logger.error('Admin SongChoices DELETE failed', {
+			status: err?.status,
+			message: err?.message
+		})
+		return json({ error: 'delete_failed' }, { status: 500 })
 	}
 }
