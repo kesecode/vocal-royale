@@ -19,7 +19,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		logger.info('Admin Users GET', { page, perPage: PER_PAGE })
 
 		const result = await locals.pb.collection(COLLECTION).getList(page, PER_PAGE, {
-			sort: '-created'
+			sort: '-created',
+			filter: 'role != "admin"'
 		})
 
 		logger.info('Admin Users GET success', {

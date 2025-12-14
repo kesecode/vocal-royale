@@ -93,7 +93,7 @@ async function verifyWithApple(
 	// Use hasTimeSyncedLyrics if available, fallback to hasLyrics
 	const attrs = candidate?.attributes
 	const hasTimeSyncedLyrics = attrs?.hasTimeSyncedLyrics
-	const hasLyrics = hasTimeSyncedLyrics //!== undefined ? hasTimeSyncedLyrics : !!attrs?.hasLyrics
+	const hasLyrics = hasTimeSyncedLyrics !== undefined ? hasTimeSyncedLyrics : !!attrs?.hasLyrics
 	logger.debug('Apple verify: lyrics check', {
 		hasTimeSyncedLyrics,
 		hasLyricsFallback: attrs?.hasLyrics,

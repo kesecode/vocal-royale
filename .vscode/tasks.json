@@ -4,6 +4,7 @@
   "tasks": [
     {
       "label": "compose: rebuild & up (no-cache, force-recreate)",
+      "dependsOn": ["Kill PocketBase"],
       "type": "shell",
       "command": "/bin/bash",
       "args": [
@@ -33,6 +34,17 @@
       },
       "problemMatcher": [],
       "isBackground": true
+    },
+    {
+      "label": "Kill PocketBase",
+      "type": "shell",
+      "command": "pkill -9 pocketbase || echo 'Keine PocketBase-Prozesse gefunden'",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      }
     }
   ]
 }
