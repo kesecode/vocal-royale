@@ -87,9 +87,8 @@ export type SettingsRecord = {
 export type RoundState =
 	| 'singing_phase'
 	| 'rating_phase'
-	| 'result_phase'
-	| 'publish_result'
 	| 'result_locked'
+	| 'publish_result'
 	| 'break'
 	| 'rating_refinement'
 export type CompetitionStateRecord = {

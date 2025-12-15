@@ -171,7 +171,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 		let results: ResultRow[] = []
 		let finalRankings: FinalRanking[] | null = null
 
-		// Show results ONLY in publish_result (not in result_phase - that's admin only)
+		// Show results ONLY in publish_result (result_locked is admin-only)
 		const showResults = rec.roundState === 'publish_result'
 		if (showResults) {
 			try {
@@ -181,21 +181,26 @@ export const GET: RequestHandler = async ({ locals }) => {
 					const topRanking = finalRankings[0]
 					winner = topRanking ? { ...topRanking, sum: undefined } : null
 				} else {
-					// Normal round: just show current round results
-					// Participants still in competition
-					const participants = (await locals.pb.collection('users').getFullList({
-						filter: 'role = "participant" && eliminated != true'
-					})) as UsersResponse[]
-					const participantIds = new Set(participants.map((p) => p.id))
-
-					// All ratings of the final round with author expanded
+					// Normal round: show current round results including who was eliminated
+					// Load ALL ratings this round with author expanded
 					const allRatings = (await locals.pb.collection('ratings').getFullList({
 						filter: `round = ${round}`,
 						expand: 'author'
 					})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+					// Get unique user IDs that have ratings this round
+					const ratedUserIds = new Set(allRatings.map((r) => r.ratedUser))
+
+					// Load all participants (including eliminated) to check their status
+					const allParticipants = (await locals.pb.collection('users').getFullList({
+						filter: 'role = "participant"'
+					})) as UsersResponse[]
+
+					// Filter to only those who have ratings this round
+					const participantsThisRound = allParticipants.filter((p) => ratedUserIds.has(p.id))
+
 					const grouped = new Map<string, { sum: number; count: number }>()
 					for (const r of allRatings) {
-						if (!participantIds.has(r.ratedUser)) continue
 						const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
 						const rating = Number(r.rating) || 0
 						const authorRole = r.expand?.author?.role
@@ -205,11 +210,21 @@ export const GET: RequestHandler = async ({ locals }) => {
 						g.count += weight
 						grouped.set(r.ratedUser, g)
 					}
-					results = participants.map((p) => {
+					results = participantsThisRound.map((p) => {
 						const g = grouped.get(p.id) || { sum: 0, count: 0 }
 						const avg = g.count > 0 ? g.sum / g.count : 0
 						const name = p.firstName || p.name || p.username || p.email || p.id
-						return { id: p.id, name, artistName: p.artistName, avg, sum: g.sum, count: g.count }
+						// Mark as eliminated if they were eliminated in this round
+						const eliminated = p.eliminated === true && p.eliminatedInRound === round
+						return {
+							id: p.id,
+							name,
+							artistName: p.artistName,
+							avg,
+							sum: g.sum,
+							count: g.count,
+							eliminated
+						}
 					})
 					// Sort by average descending (highest = best)
 					results.sort(

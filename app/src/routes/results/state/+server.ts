@@ -114,7 +114,7 @@ async function computeFinalRankings(
 	return rankings
 }
 
-export const GET: RequestHandler = async ({ locals }) => {
+export const GET: RequestHandler = async ({ locals, url }) => {
 	if (!locals.user) {
 		return json({ error: 'not_authenticated' }, { status: 401 })
 	}
@@ -149,9 +149,16 @@ export const GET: RequestHandler = async ({ locals }) => {
 				totalRounds
 			})
 		}
-		const round = Number(rec.round) || 1
+
+		// Support historical round query parameter for post-competition viewing
+		const queryRound = url.searchParams.get('round')
+		const currentRound = Number(rec.round) || 1
 		const finished = Boolean(rec.competitionFinished ?? false)
+
+		// Use query round if provided and competition is finished, otherwise use current round
+		const round = queryRound && finished ? Number(queryRound) : currentRound
 		const isFinale = round === totalRounds
+		const isHistoricalQuery = queryRound && finished && Number(queryRound) !== currentRound
 
 		type ResultRow = {
 			id: string
@@ -159,32 +166,40 @@ export const GET: RequestHandler = async ({ locals }) => {
 			artistName?: string
 			avg: number
 			count: number
+			eliminated?: boolean
 		}
 		let winner: ResultRow | null = null
 		let results: ResultRow[] = []
 		let finalRankings: FinalRanking[] | null = null
 
-		// Show results ONLY in publish_result (not in result_phase - that's admin only)
-		const showResults = rec.roundState === 'publish_result'
+		// Show results in publish_result OR when querying historical rounds after competition ends
+		const showResults = rec.roundState === 'publish_result' || isHistoricalQuery
 		if (showResults) {
 			try {
 				if (isFinale) {
 					finalRankings = await computeFinalRankings(locals, totalRounds)
 					winner = finalRankings[0] ?? null
 				} else {
-					// Normal round: show anonymous results (no detailed per-user ratings)
-					const participants = (await locals.pb.collection('users').getFullList({
-						filter: 'role = "participant" && eliminated != true'
-					})) as UsersResponse[]
-					const participantIds = new Set(participants.map((p) => p.id))
-
+					// Normal round: show results including who was eliminated
+					// Load ALL ratings this round with author expanded
 					const allRatings = (await locals.pb.collection('ratings').getFullList({
 						filter: `round = ${round}`,
 						expand: 'author'
 					})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+					// Get unique user IDs that have ratings this round
+					const ratedUserIds = new Set(allRatings.map((r) => r.ratedUser))
+
+					// Load all participants (including eliminated) to check their status
+					const allParticipants = (await locals.pb.collection('users').getFullList({
+						filter: 'role = "participant"'
+					})) as UsersResponse[]
+
+					// Filter to only those who have ratings this round
+					const participantsThisRound = allParticipants.filter((p) => ratedUserIds.has(p.id))
+
 					const grouped = new Map<string, { sum: number; count: number }>()
 					for (const r of allRatings) {
-						if (!participantIds.has(r.ratedUser)) continue
 						const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
 						const rating = Number(r.rating) || 0
 						const authorRole = r.expand?.author?.role
@@ -193,11 +208,13 @@ export const GET: RequestHandler = async ({ locals }) => {
 						g.count += weight
 						grouped.set(r.ratedUser, g)
 					}
-					results = participants.map((p) => {
+					results = participantsThisRound.map((p) => {
 						const g = grouped.get(p.id) || { sum: 0, count: 0 }
 						const avg = g.count > 0 ? g.sum / g.count : 0
 						const name = p.firstName || p.name || p.username || p.email || p.id
-						return { id: p.id, name, artistName: p.artistName, avg, count: g.count }
+						// Mark as eliminated if they were eliminated in this round
+						const eliminated = p.eliminated === true && p.eliminatedInRound === round
+						return { id: p.id, name, artistName: p.artistName, avg, count: g.count, eliminated }
 					})
 					results.sort(
 						(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0

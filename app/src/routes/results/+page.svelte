@@ -4,11 +4,12 @@
 	<!-- Progress with dynamic rounds -->
 	<div class="panel panel-accent p-3 sm:p-4">
 		<ProgressRounds
-			{activeRound}
-			{currentRound}
+			onSelect={handleRoundSelect}
+			activeRound={competitionStarted ? activeRound : 0}
+			currentRound={competitionStarted ? currentRound : 0}
 			total={totalRounds}
 			labels={roundLabels}
-			disabled={true}
+			disabled={!competitionFinished}
 		/>
 	</div>
 
@@ -103,11 +104,6 @@
 						<p class="text-sm text-white/80">Zeit zum Durchatmen - gleich geht's weiter!</p>
 					</div>
 				{:else if roundState === 'result_locked'}
-					<div class="px-2 py-3 space-y-2">
-						<p class="text-lg font-semibold">Ergebnis wird vorbereitet...</p>
-						<p class="text-sm text-white/80">Noch einen Moment Geduld!</p>
-					</div>
-				{:else if roundState === 'result_phase'}
 					<div class="px-2 py-3 space-y-2">
 						<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
 						<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
@@ -213,7 +209,9 @@
 									</thead>
 									<tbody>
 										{#each results as r, i (r.id)}
-											<tr class="border-t border-[#333]/40 align-middle">
+											<tr
+												class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''}`}
+											>
 												<td class="p-2 sm:p-3 font-bold">{i + 1}</td>
 												<td class="p-2 sm:p-3">
 													<div class="font-medium">{r.artistName || r.name}</div>
@@ -281,6 +279,7 @@
 		artistName?: string
 		avg?: number
 		count?: number
+		eliminated?: boolean
 	}
 	let results: ResultRow[] = []
 	type FinalRankingRow = {
@@ -296,6 +295,27 @@
 
 	let pollingInterval: ReturnType<typeof setInterval> | null = null
 	const POLLING_INTERVAL_MS = 5000
+
+	async function handleRoundSelect(round: number) {
+		if (!competitionFinished) return
+		currentRound = round
+		await fetchHistoricalResults(round)
+	}
+
+	async function fetchHistoricalResults(round: number) {
+		loading = true
+		try {
+			const res = await fetch(`/results/state?round=${round}`)
+			if (!res.ok) return
+			const data = await res.json()
+			results = Array.isArray(data?.results) ? data.results : []
+			finalRankings = Array.isArray(data?.finalRankings) ? data.finalRankings : []
+		} catch {
+			// ignore
+		} finally {
+			loading = false
+		}
+	}
 
 	async function fetchCompetitionState() {
 		loading = true
@@ -313,7 +333,6 @@
 				rs === 'singing_phase' ||
 				rs === 'rating_phase' ||
 				rs === 'rating_refinement' ||
-				rs === 'result_phase' ||
 				rs === 'publish_result' ||
 				rs === 'result_locked' ||
 				rs === 'break'

@@ -270,7 +270,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		}
 	}
 
-	// Load results if in result_phase or publish_result
+	// Load results if in result_locked or publish_result
 	type ResultRow = {
 		id: string
 		name: string | null
@@ -287,7 +287,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	let finalRankings: FinalRanking[] | null = null
 
 	const roundState = state?.roundState
-	if (roundState === 'result_phase' || roundState === 'publish_result') {
+	if (roundState === 'result_locked' || roundState === 'publish_result') {
 		try {
 			const round = Number(state?.round ?? 1) || 1
 			const settings = await getCompetitionSettings(locals)
@@ -439,7 +439,6 @@ type AdminAction =
 	| 'activate_rating_refinement'
 	| 'finalize_ratings'
 	| 'publish_results'
-	| 'show_results'
 	| 'resolve_tie'
 	| 'start_next_round'
 	| 'reset_game'
@@ -450,7 +449,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		return json({ error: 'forbidden' }, { status: 403 })
 	}
 
-	type Payload = { action?: AdminAction; survivorId?: string }
+	type Payload = { action?: AdminAction; survivorId?: string; tieSurvivors?: string[] }
 	let payload: Payload
 	try {
 		payload = await request.json()
@@ -677,33 +676,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		}
 
 		if (action === 'finalize_ratings') {
-			const updated = await upsertState(locals, { roundState: 'result_locked' })
-			logger.info('Admin API: finalize_ratings -> result_locked')
-			const active = await getActiveParticipant(locals)
-			return json({
-				ok: true,
-				state: updated,
-				activeParticipant: active
-					? {
-							id: active.id,
-							name: toName(active),
-							firstName: active.firstName,
-							lastName: active.lastName,
-							artistName: active.artistName
-						}
-					: null
-			})
-		}
-
-		if (action === 'publish_results') {
-			const updated = await upsertState(locals, { roundState: 'publish_result' })
-			logger.info('Admin API: publish_results -> publish_result')
-			return json({ ok: true, state: updated })
-		}
-
-		if (action === 'show_results') {
 			const state = await getLatestState(locals)
 			const round = Number(state?.round ?? 1) || 1
+
 			// Fetch active participants (non-eliminated)
 			const participants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
 				filter: 'role = "participant" && eliminated != true'
@@ -776,13 +751,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			// Check for tie at elimination boundary
 			let hasTie = false
 			let tiedParticipantIds: string[] = []
+			let tiedAvg: number | null = null
 			if (eliminateCount > 0 && eliminateCount < rows.length) {
 				// Last participant to be eliminated vs first to survive
 				const lastEliminated = rows[eliminateCount - 1]
 				const firstSurvivor = rows[eliminateCount]
 				if (roundAvg(lastEliminated.avg) === roundAvg(firstSurvivor.avg)) {
 					hasTie = true
-					const tiedAvg = roundAvg(lastEliminated.avg)
+					tiedAvg = roundAvg(lastEliminated.avg)
 					// Find ALL participants with this tied average
 					tiedParticipantIds = rows.filter((r) => roundAvg(r.avg) === tiedAvg).map((r) => r.id)
 					// Mark them as tied
@@ -792,6 +768,14 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 						}
 					}
 				}
+			}
+
+			// Calculate how many survivors needed from tie
+			let neededSurvivorsFromTie = 0
+			if (hasTie && tiedAvg !== null) {
+				const survivorCount = rows.length - eliminateCount
+				const aboveTie = rows.filter((r) => roundAvg(r.avg) > tiedAvg!)
+				neededSurvivorsFromTie = survivorCount - aboveTie.length
 			}
 
 			// Only eliminate if there's no tie
@@ -809,9 +793,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				}
 			}
 
-			// Switch to result_phase; finalize competition on finale round (only if no tie)
+			// Set result_locked; finalize competition on finale round (only if no tie)
 			const updated = await upsertState(locals, {
-				roundState: 'result_phase',
+				roundState: 'result_locked',
 				...(round === settings.totalRounds && !hasTie ? { competitionFinished: true } : {})
 			})
 
@@ -830,7 +814,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				finalRankings = await computeFinalRankings(locals, round)
 			}
 
-			logger.info('Admin API: show_results', {
+			logger.info('Admin API: finalize_ratings -> result_locked', {
 				round,
 				eliminateCount,
 				participants: rows.length,
@@ -846,12 +830,24 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				hasTie,
 				tiedParticipantIds,
 				eliminateCount,
+				neededSurvivorsFromTie,
 				finalRankings
 			})
 		}
 
+		if (action === 'publish_results') {
+			const updated = await upsertState(locals, { roundState: 'publish_result' })
+			logger.info('Admin API: publish_results -> publish_result')
+			return json({ ok: true, state: updated })
+		}
+
 		if (action === 'resolve_tie') {
 			const survivorId = payload.survivorId
+			// Get existing safe survivors from frontend state
+			const existingSurvivors: string[] = Array.isArray(payload.tieSurvivors)
+				? payload.tieSurvivors
+				: []
+
 			if (!survivorId) {
 				return json({ error: 'missing_survivor_id' }, { status: 400 })
 			}
@@ -898,6 +894,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				sum: number
 				count: number
 				eliminated: boolean
+				isTied?: boolean
+				isSafe?: boolean
 			}
 			const rows: Row[] = participants.map((p) => {
 				const g = grouped.get(p.id) || { sum: 0, count: 0 }
@@ -930,35 +928,92 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			if (!survivorRow) {
 				return json({ error: 'survivor_not_found' }, { status: 400 })
 			}
-			const survivorAvg = roundAvg(survivorRow.avg)
 
-			// Find all tied participants (same rounded avg as survivor)
-			const tiedIds = rows.filter((r) => roundAvg(r.avg) === survivorAvg).map((r) => r.id)
+			// Add new survivor to the list of safe participants
+			const newSurvivors = [...new Set([...existingSurvivors, survivorId])]
 
-			// Eliminate tied participants except survivor
-			const toEliminateFromTie = tiedIds.filter((id) => id !== survivorId)
+			// Determine the tie boundary: find the avg at the elimination cutoff
+			// Participants are sorted ascending by avg (lowest first = to be eliminated)
+			// The tie occurs when lastEliminated.avg === firstSurvivor.avg
+			const survivorCount = rows.length - eliminateCount
 
-			// Also eliminate anyone with lower avg than the survivor (they were supposed to be eliminated anyway)
-			const lowerAvgIds = rows
-				.filter((r) => roundAvg(r.avg) < survivorAvg)
-				.map((r) => r.id)
-				.filter((id) => !toEliminateFromTie.includes(id))
+			// Find the tied average (at the elimination boundary)
+			let tiedAvg: number | null = null
+			if (eliminateCount > 0 && eliminateCount < rows.length) {
+				const lastEliminated = rows[eliminateCount - 1]
+				const firstSurvivor = rows[eliminateCount]
+				if (roundAvg(lastEliminated.avg) === roundAvg(firstSurvivor.avg)) {
+					tiedAvg = roundAvg(lastEliminated.avg)
+				}
+			}
 
-			const allToEliminate = [...toEliminateFromTie, ...lowerAvgIds]
+			// If no tie exists at the boundary, this shouldn't have been called
+			// But handle gracefully by checking survivor's avg
+			if (tiedAvg === null) {
+				tiedAvg = roundAvg(survivorRow.avg)
+			}
 
-			if (allToEliminate.length > 0) {
-				await Promise.all(
-					allToEliminate.map((id) =>
-						locals.pb
-							.collection(USERS_COLLECTION)
-							.update(id, { eliminated: true, eliminatedInRound: round })
+			// Find all participants in the tie (same avg as the boundary)
+			const tiedParticipants = rows.filter((r) => roundAvg(r.avg) === tiedAvg)
+			const tiedIds = tiedParticipants.map((r) => r.id)
+
+			// Find participants clearly above the tie (they definitely survive)
+			const aboveTie = rows.filter((r) => roundAvg(r.avg) > tiedAvg!)
+			// Find participants clearly below the tie (they definitely get eliminated)
+			const belowTie = rows.filter((r) => roundAvg(r.avg) < tiedAvg!)
+
+			// How many from the tie need to survive?
+			const neededSurvivorsFromTie = survivorCount - aboveTie.length
+
+			// How many from the tie have been marked safe so far?
+			const safeFromTie = newSurvivors.filter((id) => tiedIds.includes(id))
+
+			// Mark rows with isTied and isSafe flags
+			for (const row of rows) {
+				if (tiedIds.includes(row.id)) {
+					row.isTied = true
+					row.isSafe = safeFromTie.includes(row.id)
+				}
+			}
+
+			// Check if we have enough survivors from the tie
+			const hasTie = safeFromTie.length < neededSurvivorsFromTie
+
+			if (!hasTie) {
+				// Enough survivors selected - eliminate the rest
+				const toEliminateFromTie = tiedIds.filter((id) => !newSurvivors.includes(id))
+				const toEliminateBelow = belowTie.map((r) => r.id)
+				const allToEliminate = [...toEliminateFromTie, ...toEliminateBelow]
+
+				if (allToEliminate.length > 0) {
+					await Promise.all(
+						allToEliminate.map((id) =>
+							locals.pb
+								.collection(USERS_COLLECTION)
+								.update(id, { eliminated: true, eliminatedInRound: round })
+						)
 					)
-				)
-				for (const row of rows) {
-					if (allToEliminate.includes(row.id)) {
-						row.eliminated = true
+					for (const row of rows) {
+						if (allToEliminate.includes(row.id)) {
+							row.eliminated = true
+						}
 					}
 				}
+
+				logger.info('Admin API: resolve_tie - tie resolved', {
+					round,
+					survivorId,
+					totalSurvivors: newSurvivors,
+					eliminated: allToEliminate
+				})
+			} else {
+				logger.info('Admin API: resolve_tie - still in tie', {
+					round,
+					survivorId,
+					safeSoFar: safeFromTie,
+					neededFromTie: neededSurvivorsFromTie,
+					remainingToSelect: neededSurvivorsFromTie - safeFromTie.length
+				})
 			}
 
 			// Winner convenience
@@ -969,20 +1024,16 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 						(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
 					)[0] ?? null
 
-			logger.info('Admin API: resolve_tie', {
-				round,
-				survivorId,
-				eliminatedFromTie: toEliminateFromTie,
-				eliminatedLowerAvg: lowerAvgIds
-			})
-
 			return json({
 				ok: true,
 				results: rows,
 				winner,
-				hasTie: false,
-				tiedParticipantIds: [],
-				eliminateCount
+				hasTie,
+				tiedParticipantIds: tiedIds,
+				tieSurvivors: newSurvivors,
+				eliminateCount,
+				neededSurvivorsFromTie,
+				remainingToSelect: hasTie ? neededSurvivorsFromTie - safeFromTie.length : 0
 			})
 		}
 

@@ -95,13 +95,7 @@
 					</button>
 				{/if}
 
-				{#if competitionState?.competitionStarted && competitionState?.roundState === 'result_locked'}
-					<button class="btn-brand" onclick={showResults}>
-						{isFinaleRound ? 'Sieger anzeigen' : 'Ergebnis anzeigen'}
-					</button>
-				{/if}
-
-				{#if competitionState?.roundState === 'result_phase'}
+				{#if competitionState?.roundState === 'result_locked'}
 					<button
 						class="btn-brand"
 						onclick={() => doAction('publish_results')}
@@ -153,7 +147,7 @@
 		</div>
 	</div>
 
-	{#if competitionState?.roundState === 'result_phase' || competitionState?.roundState === 'publish_result'}
+	{#if competitionState?.roundState === 'result_locked' || competitionState?.roundState === 'publish_result'}
 		<div class="panel panel-accent overflow-hidden p-0">
 			<div class="flex-between table-header-border padding-responsive py-3">
 				<div class="font-semibold">{isFinaleRound ? 'Finale' : 'Ergebnis'}</div>
@@ -203,11 +197,15 @@
 							</div>
 						{/if}
 					{:else}
-						<div class="text-sm text-white/80">
-							Ergebnis nicht geladen. Bitte "Sieger anzeigen" klicken.
-						</div>
+						<div class="text-sm text-white/80">Ergebnis wird geladen...</div>
 					{/if}
 				{:else if results}
+					{#if hasTie}
+						<div class="mb-3 p-3 rounded border border-amber-500/40 bg-amber-500/10 text-sm">
+							<strong>Patt-Situation:</strong>
+							Noch {remainingToSelect} Teilnehmer auswählen, die weiterkommen.
+						</div>
+					{/if}
 					<div class="overflow-auto max-h-[50vh]">
 						<table class="w-full text-sm">
 							<thead class="sticky top-0">
@@ -216,14 +214,14 @@
 									<th class="p-2 sm:p-3">Bewertung</th>
 									<th class="p-2 sm:p-3">Stimmen</th>
 									{#if hasTie}
-										<th class="p-2 sm:p-3">Aktion</th>
+										<th class="p-2 sm:p-3">Status</th>
 									{/if}
 								</tr>
 							</thead>
 							<tbody>
 								{#each results.slice().sort((a, b) => b.avg - a.avg) as r (r.id)}
 									<tr
-										class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''} ${r.isTied ? 'bg-yellow-500/20' : ''}`}
+										class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''} ${r.isTied && !r.isSafe ? 'bg-yellow-500/20' : ''} ${r.isSafe ? 'bg-emerald-500/20' : ''}`}
 									>
 										<td class="p-2 sm:p-3">
 											<div class="font-medium">{r.name}</div>
@@ -235,8 +233,13 @@
 										<td class="p-2 sm:p-3">{r.count}</td>
 										{#if hasTie}
 											<td class="p-2 sm:p-3">
-												{#if r.isTied}
-													<button class="btn-brand text-xs" onclick={() => resolveTie(r.id)}>
+												{#if r.isSafe}
+													<span class="text-xs text-emerald-300 font-medium">Sicher</span>
+												{:else if r.isTied}
+													<button
+														class="btn-brand text-xs"
+														onclick={() => openTieConfirmModal(r.id)}
+													>
 														Kommt weiter
 													</button>
 												{/if}
@@ -248,9 +251,7 @@
 						</table>
 					</div>
 				{:else}
-					<div class="text-sm text-white/80">
-						Ergebnis nicht geladen. Bitte "Ergebnis anzeigen" klicken.
-					</div>
+					<div class="text-sm text-white/80">Ergebnis wird geladen...</div>
 				{/if}
 			</div>
 		</div>
@@ -281,6 +282,22 @@
 		{/if}
 		{#snippet footer()}
 			<button class="btn-brand" onclick={closeMissingRatingsModal}>Schließen</button>
+		{/snippet}
+	</Modal>
+
+	<Modal bind:open={showTieConfirmModal} title="Patt auflösen" onclose={closeTieConfirmModal}>
+		<div class="space-y-3">
+			<p class="text-white/90">
+				Möchtest du <strong class="text-white">{pendingParticipantName}</strong>
+				als Weiterkommer auswählen?
+			</p>
+			<p class="text-sm text-white/70">
+				Noch {remainingToSelect} Teilnehmer müssen ausgewählt werden.
+			</p>
+		</div>
+		{#snippet footer()}
+			<button class="btn-accent" onclick={closeTieConfirmModal}>Abbrechen</button>
+			<button class="btn-brand" onclick={confirmResolveTie}>Bestätigen</button>
 		{/snippet}
 	</Modal>
 </section>
@@ -321,8 +338,7 @@
 		singing_phase: 'Gesangsphase',
 		rating_phase: 'Bewertungsphase',
 		rating_refinement: 'Bewertung überarbeiten',
-		result_locked: 'Ergebnis gesperrt',
-		result_phase: 'Ergebnisphase',
+		result_locked: 'Ergebnis bereit',
 		publish_result: 'Ergebnis veröffentlicht',
 		break: 'Pause'
 	}
@@ -344,10 +360,17 @@
 		count: number
 		eliminated: boolean
 		isTied?: boolean
+		isSafe?: boolean
 	}
 	let results: ResultRow[] | null = $state(null)
 	let winner: ResultRow | null = $state(null)
 	let hasTie: boolean = $state(false)
+
+	// Tie resolution state
+	let tieSurvivors: string[] = $state([])
+	let showTieConfirmModal: boolean = $state(false)
+	let pendingTieSurvivor: string | null = $state(null)
+	let remainingToSelect: number = $state(0)
 
 	// Load settings and state on mount
 	onMount(async () => {
@@ -362,7 +385,7 @@
 		} catch (error) {
 			console.error('Error loading competition settings:', error)
 		}
-		// Load current state (including results if in result_phase or publish_result)
+		// Load current state (including results if in result_locked or publish_result)
 		await reloadState()
 	})
 
@@ -426,7 +449,10 @@
 			if (data?.state) competitionState = data.state
 			if ('activeParticipant' in data) active = data.activeParticipant
 			// Reset visible results when leaving results phase
-			if (competitionState?.roundState !== 'result_phase') {
+			if (
+				competitionState?.roundState !== 'result_locked' &&
+				competitionState?.roundState !== 'publish_result'
+			) {
 				results = null
 				winner = null
 				hasTie = false
@@ -440,7 +466,19 @@
 				infoMsg = 'Nächster Teilnehmer gesetzt.'
 				await reloadState()
 			}
-			if (action === 'finalize_ratings') infoMsg = 'Bewertungen abgeschlossen.'
+			if (action === 'finalize_ratings') {
+				// Load results from response
+				results = Array.isArray(data?.results) ? data.results : null
+				winner = data?.winner ?? null
+				hasTie = Boolean(data?.hasTie)
+				tieSurvivors = []
+				if (hasTie) {
+					remainingToSelect = Number(data?.neededSurvivorsFromTie ?? 0)
+					infoMsg = `Patt-Situation! Bitte ${remainingToSelect} Teilnehmer auswählen, die weiterkommen.`
+				} else {
+					infoMsg = 'Bewertungen abgeschlossen.'
+				}
+			}
 			if (action === 'reset_game') {
 				infoMsg = 'Spiel zurückgesetzt.'
 				activeSongChoice = null
@@ -450,40 +488,37 @@
 		}
 	}
 
-	async function showResults() {
-		errorMsg = null
-		infoMsg = null
-		try {
-			const res = await fetch('/admin/api', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ action: 'show_results' })
-			})
-			if (!res.ok) {
-				errorMsg = 'Ergebnis anzeigen fehlgeschlagen.'
-				return
-			}
-			const data = await res.json()
-			competitionState = data?.state ?? competitionState
-			results = Array.isArray(data?.results) ? data.results : null
-			winner = data?.winner ?? null
-			hasTie = Boolean(data?.hasTie)
-			if (hasTie) {
-				infoMsg = 'Patt-Situation! Bitte wählen Sie, wer weiterkommt.'
-			}
-		} catch {
-			errorMsg = 'Netzwerkfehler.'
-		}
+	function openTieConfirmModal(survivorId: string) {
+		pendingTieSurvivor = survivorId
+		showTieConfirmModal = true
 	}
 
-	async function resolveTie(survivorId: string) {
+	function closeTieConfirmModal() {
+		showTieConfirmModal = false
+		pendingTieSurvivor = null
+	}
+
+	// Get name of pending survivor for modal display
+	const pendingParticipantName = $derived.by(() => {
+		if (!pendingTieSurvivor || !results) return '—'
+		const found = results.find((r: ResultRow) => r.id === pendingTieSurvivor)
+		return found?.name ?? '—'
+	})
+
+	async function confirmResolveTie() {
+		if (!pendingTieSurvivor) return
 		errorMsg = null
 		infoMsg = null
+		closeTieConfirmModal()
 		try {
 			const res = await fetch('/admin/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ action: 'resolve_tie', survivorId })
+				body: JSON.stringify({
+					action: 'resolve_tie',
+					survivorId: pendingTieSurvivor,
+					tieSurvivors
+				})
 			})
 			if (!res.ok) {
 				errorMsg = 'Patt auflösen fehlgeschlagen.'
@@ -492,8 +527,15 @@
 			const data = await res.json()
 			results = Array.isArray(data?.results) ? data.results : null
 			winner = data?.winner ?? null
-			hasTie = false
-			infoMsg = 'Patt aufgelöst!'
+			hasTie = Boolean(data?.hasTie)
+			tieSurvivors = Array.isArray(data?.tieSurvivors) ? data.tieSurvivors : []
+			remainingToSelect = Number(data?.remainingToSelect ?? 0)
+
+			if (hasTie) {
+				infoMsg = `Noch ${remainingToSelect} Teilnehmer auswählen.`
+			} else {
+				infoMsg = 'Patt aufgelöst!'
+			}
 		} catch {
 			errorMsg = 'Netzwerkfehler.'
 		}
@@ -519,6 +561,8 @@
 			results = null
 			winner = null
 			hasTie = false
+			tieSurvivors = []
+			remainingToSelect = 0
 			infoMsg = 'Nächste Runde gestartet.'
 			// Reload to get updated song choice
 			await reloadState()
@@ -562,11 +606,15 @@
 			if (res.ok) {
 				const data = await res.json()
 				activeSongChoice = data?.activeSongChoice ?? null
-				// Load results if in result_phase or publish_result
+				// Load results if in result_locked or publish_result
 				if (data?.results) {
 					results = data.results
 					winner = data.winner ?? null
 					hasTie = Boolean(data.hasTie)
+					// Update tie resolution state
+					if (data.hasTie) {
+						remainingToSelect = Number(data?.neededSurvivorsFromTie ?? data?.remainingToSelect ?? 0)
+					}
 				}
 				// Update state if provided
 				if (data?.state) {
@@ -612,6 +660,8 @@
 			results = null
 			winner = null
 			hasTie = false
+			tieSurvivors = []
+			remainingToSelect = 0
 			infoMsg = 'Spiel zurückgesetzt.'
 		} catch {
 			errorMsg = 'Netzwerkfehler.'

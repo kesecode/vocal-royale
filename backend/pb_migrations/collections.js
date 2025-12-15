@@ -924,7 +924,6 @@ migrate((app) => {
             "singing_phase",
             "rating_phase",
             "result_locked",
-            "result_phase",
             "publish_result",
             "break",
             "rating_refinement"
