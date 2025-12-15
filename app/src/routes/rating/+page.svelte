@@ -34,13 +34,32 @@
 	{:else}
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
-				<div class="font-semibold">Runde {currentRound}</div>
-				{#if loading}
-					<div class="text-xs text-white/80">Laden…</div>
-				{/if}
-				{#if loadError}
-					<div class="text-xs text-rose-200">{loadError}</div>
-				{/if}
+				<div class="flex items-center gap-3">
+					<span class="font-semibold">Runde {currentRound}</span>
+					{#if canRate}
+						<span
+							class="inline-flex items-center border-2 border-[#333] bg-green-500 px-2 py-0.5 text-xs font-bold text-black"
+							style="border-radius: 10px 6px 6px 12px/6px 12px 8px 8px; box-shadow: 3px 3px 0 rgba(22, 101, 52, 0.6);"
+						>
+							Bewertung geöffnet
+						</span>
+					{:else}
+						<span
+							class="inline-flex items-center border-2 border-[#333] bg-orange-500 px-2 py-0.5 text-xs font-bold text-black"
+							style="border-radius: 6px 10px 8px 10px/8px 10px 6px 12px; box-shadow: 3px 3px 0 rgba(194, 65, 12, 0.6);"
+						>
+							Bewertung geschlossen
+						</span>
+					{/if}
+				</div>
+				<div class="flex items-center gap-2">
+					{#if loading}
+						<div class="text-xs text-white/80">Laden…</div>
+					{/if}
+					{#if loadError}
+						<div class="text-xs text-rose-200">{loadError}</div>
+					{/if}
+				</div>
 			</div>
 
 			<div class="p-2 sm:p-4">
@@ -179,6 +198,21 @@
 							</thead>
 							<tbody>
 								{#each participants as p (p.id)}
+									{@const rating = ratings[p.id]}
+									{@const displayValue = rating
+										? userRole === 'juror' &&
+											rating.performanceRating &&
+											rating.vocalRating &&
+											rating.difficultyRating
+											? Math.round(
+													((rating.performanceRating +
+														rating.vocalRating +
+														rating.difficultyRating) /
+														3) *
+														2
+												) / 2
+											: rating.rating || 0
+										: 0}
 									<tr
 										class="border-t border-[#333]/40 align-middle hover:bg-white/5 sm:cursor-default cursor-pointer"
 										on:click={() => canRate && openOverlay(p)}
@@ -193,7 +227,7 @@
 											{/if}
 										</td>
 										<td class="p-2 sm:p-3">
-											<StarRating editable={false} value={getDisplayRating(p.id)} />
+											<StarRating editable={false} value={displayValue} />
 										</td>
 										{#if showActions}
 											<td class="hidden sm:table-cell p-2 sm:p-3">
@@ -303,9 +337,6 @@
 				{#if !canRate}
 					<span class="ml-2 text-xs text-white/80">Bewertungen sind derzeit geschlossen.</span>
 				{/if}
-				{#if ratings[selected.id]?.saved}
-					<span class="ml-2 text-xs">Gespeichert!</span>
-				{/if}
 			{/if}
 		{/snippet}
 	</Modal>
@@ -314,7 +345,7 @@
 <!-- styles removed; centralized in app.css -->
 
 <script lang="ts">
-	import { onMount } from 'svelte'
+	import { onMount, onDestroy } from 'svelte'
 	import type { RoundState } from '$lib/pocketbase-types'
 	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
 	import StarRating from '$lib/components/StarRating.svelte'
@@ -383,10 +414,11 @@
 	}
 	let activeParticipantInfo: ActiveParticipantInfo | null = null
 	let activeSongChoice: SongChoice | null = null
-	$: canRate = roundState === 'rating_phase' || roundState === 'break'
+	let pollingInterval: ReturnType<typeof setInterval> | null = null
+	const POLLING_INTERVAL_MS = 5000
+	$: canRate = roundState === 'rating_phase' || roundState === 'rating_refinement'
 	$: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null
-	let showActions = false
-	$: showActions = canRate && roundState !== 'rating_phase'
+	$: showActions = canRate
 	$: if (activeParticipant && !ratings[activeParticipant.id]) {
 		ratings[activeParticipant.id] = {
 			rating: 0,
@@ -471,7 +503,9 @@
 			if (
 				rs === 'singing_phase' ||
 				rs === 'rating_phase' ||
+				rs === 'rating_refinement' ||
 				rs === 'result_phase' ||
+				rs === 'publish_result' ||
 				rs === 'result_locked' ||
 				rs === 'break'
 			) {
@@ -487,11 +521,79 @@
 		}
 	}
 
+	async function pollForChanges() {
+		try {
+			const res = await fetch('/rating/state')
+			if (!res.ok) return
+
+			const data = await res.json()
+			const newRound = Number(data?.round) || 1
+			const newRoundState = data?.roundState as RoundState | undefined
+			const newCompetitionFinished = Boolean(data?.competitionFinished ?? false)
+
+			const roundChanged = newRound !== activeRound
+			const stateChanged =
+				newRoundState &&
+				newRoundState !== roundState &&
+				[
+					'singing_phase',
+					'rating_phase',
+					'rating_refinement',
+					'result_phase',
+					'publish_result',
+					'result_locked',
+					'break'
+				].includes(newRoundState)
+			const finishedChanged = newCompetitionFinished !== competitionFinished
+
+			if (roundChanged || stateChanged || finishedChanged) {
+				if (roundChanged) {
+					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
+					currentRound = activeRound
+					// Reload participants when round changes
+					await fetchRound(currentRound)
+				}
+				if (stateChanged && newRoundState) {
+					roundState = newRoundState
+				}
+				if (finishedChanged) {
+					competitionFinished = newCompetitionFinished
+				}
+				// Update winner
+				winner = data?.winner ?? null
+				// Update active participant info
+				activeParticipantInfo = data?.activeParticipantInfo ?? null
+				activeSongChoice = data?.activeSongChoice ?? null
+				const ap = data?.activeParticipant
+				activeParticipantId = typeof ap === 'string' && ap ? ap : null
+			}
+		} catch {
+			// Silently ignore polling errors
+		}
+	}
+
+	function startPolling() {
+		if (pollingInterval) return
+		pollingInterval = setInterval(pollForChanges, POLLING_INTERVAL_MS)
+	}
+
+	function stopPolling() {
+		if (pollingInterval) {
+			clearInterval(pollingInterval)
+			pollingInterval = null
+		}
+	}
+
 	onMount(async () => {
 		await fetchCompetitionState()
 		if (!competitionFinished) {
 			await fetchRound(currentRound)
 		}
+		startPolling()
+	})
+
+	onDestroy(() => {
+		stopPolling()
 	})
 
 	function setRound(r: number) {
@@ -545,24 +647,6 @@
 		}
 		const avg = (entry.performanceRating + entry.vocalRating + entry.difficultyRating) / 3
 		return Math.round(avg * 2) / 2 // Runde auf halbe Sterne
-	}
-
-	function getDisplayRating(userId: string): number {
-		const entry = ratings[userId]
-		if (!entry) return 0
-
-		// Für Juroren: Zeige Durchschnitt aus den 3 Ratings, falls verfügbar
-		if (
-			userRole === 'juror' &&
-			entry.performanceRating &&
-			entry.vocalRating &&
-			entry.difficultyRating
-		) {
-			return calculateJurorAverage(userId)
-		}
-
-		// Für Spectators oder wenn kein Juroren-Rating: Zeige normales Rating
-		return entry.rating || 0
 	}
 
 	async function save(ratedUserId: string) {
@@ -652,11 +736,9 @@
 			// Tabelle aktualisieren durch reaktive Zustandsänderung
 			ratings = { ...ratings }
 
-			// Modal schließen bei erfolgreichem Speichern
+			// Modal direkt schließen bei erfolgreichem Speichern
 			if (selected && selected.id === ratedUserId) {
-				setTimeout(() => {
-					closeOverlay()
-				}, 500) // Kurz warten damit der User das "Gespeichert!" sieht
+				closeOverlay()
 			}
 
 			setTimeout(() => (entry.saved = false), 1500)
