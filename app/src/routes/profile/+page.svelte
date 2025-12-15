@@ -3,7 +3,7 @@
 	<div class="panel panel-accent space-y-4 p-4 sm:p-6">
 		<p class="text-sm text-white/80">Hallo {user?.firstName || user?.name || user?.username}!</p>
 		{#if user?.artistName}
-			<p class="text-sm text-white/70">a.k.a. {user.artistName}</p>
+			<p class="text-sm text-white/70">{user.artistName}</p>
 		{/if}
 
 		{#if formData?.message}
@@ -35,6 +35,8 @@
 					<button
 						type="button"
 						class="btn-accent"
+						disabled={competitionStarted &&
+							(user?.role === 'participant' || user?.role === 'juror')}
 						onclick={() => {
 							showArtist = true
 							showPwd = false
@@ -50,7 +52,8 @@
 					<button
 						type="button"
 						class="btn-accent"
-						disabled={deadlinePassed}
+						disabled={deadlinePassed ||
+							(competitionStarted && (user?.role === 'participant' || user?.role === 'juror'))}
 						onclick={() => {
 							showRole = true
 							showPwd = false
@@ -63,6 +66,12 @@
 					>
 						Rolle ändern
 					</button>
+					{#if competitionStarted}
+						<p class="text-xs text-amber-300 w-full">
+							Teilnehmer- und Juror-Rollen sowie Künstlername sind während des laufenden Wettbewerbs
+							gesperrt.
+						</p>
+					{/if}
 					{#if deadlinePassed}
 						<p class="text-xs text-rose-300 w-full">
 							Rollenwechsel nach Deadline nicht mehr möglich
@@ -77,6 +86,7 @@
 				<form
 					method="post"
 					action="?/deleteAccount"
+					class="flex items-center gap-2"
 					onsubmit={(e) => {
 						e.preventDefault()
 						if (confirm('Bist du sicher? Dieser Vorgang kann nicht rückgängig gemacht werden.')) {
@@ -85,7 +95,12 @@
 					}}
 				>
 					{#if user?.role !== 'admin'}
-						<button type="submit" class="btn-danger">Konto löschen</button>
+						<button type="submit" class="btn-danger" disabled={competitionStarted}>
+							Konto löschen
+						</button>
+						{#if competitionStarted}
+							<span class="text-xs text-amber-300">Löschen während des Wettbewerbs gesperrt.</span>
+						{/if}
 					{/if}
 				</form>
 			</div>
@@ -348,7 +363,15 @@
 					>
 						Zurück
 					</button>
-					<button type="submit" class="btn-brand" disabled={!selectedRole || deadlinePassed}>
+					<button
+						type="submit"
+						class="btn-brand"
+						disabled={!selectedRole ||
+							deadlinePassed ||
+							(competitionStarted &&
+								(selectedRole === 'participant' || selectedRole === 'juror') &&
+								selectedRole !== user?.role)}
+					>
 						Rolle ändern
 					</button>
 				</div>
@@ -384,6 +407,7 @@
 			? isDeadlinePassed(data.competitionSettings.songChoiceDeadline)
 			: false
 	)
+	const competitionStarted = $derived(Boolean(data.competitionState?.competitionStarted))
 
 	// Local reactive counters that won't be overwritten by server updates
 	let localCurrentParticipants = $state(data.currentParticipants || 0)
@@ -421,8 +445,12 @@
 		Math.max(0, (data.maxParticipants || 0) - localCurrentParticipants)
 	)
 	const remainingJurors = $derived(Math.max(0, (data.maxJurors || 0) - localCurrentJurors))
-	const canSelectParticipant = $derived(remainingParticipants > 0 || user?.role === 'participant')
-	const canSelectJuror = $derived(remainingJurors > 0 || user?.role === 'juror')
+	const canSelectParticipant = $derived(
+		!competitionStarted && (remainingParticipants > 0 || user?.role === 'participant')
+	)
+	const canSelectJuror = $derived(
+		!competitionStarted && (remainingJurors > 0 || user?.role === 'juror')
+	)
 
 	let formData = $derived(
 		(props as { form?: { message?: string; variant?: 'success' | 'error' } }).form

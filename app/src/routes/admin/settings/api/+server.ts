@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
+import { getLatestCompetitionState, isCompetitionStarted } from '$lib/server/competition-state'
 
 export const GET: RequestHandler = async ({ locals }) => {
 	const pb = locals.pb
@@ -20,6 +21,19 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	const pb = locals.pb
+
+	// Block settings changes during competition
+	try {
+		const state = await getLatestCompetitionState(pb)
+		if (isCompetitionStarted(state)) {
+			return json(
+				{ error: 'Einstellungen können während des laufenden Wettbewerbs nicht geändert werden.' },
+				{ status: 400 }
+			)
+		}
+	} catch {
+		return json({ error: 'Fehler beim Prüfen des Wettbewerbsstatus' }, { status: 500 })
+	}
 
 	try {
 		const body = await request.json()

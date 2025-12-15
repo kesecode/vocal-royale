@@ -15,11 +15,14 @@ export const load = (async ({ fetch }) => {
 		throw new Error('Failed to fetch users')
 	}
 	const data: UsersListResponse = await res.json()
+	const stateRes = await fetch('/admin/api')
+	const stateData = stateRes.ok ? await stateRes.json() : null
 	return {
 		users: data.items,
 		page: data.page,
 		perPage: data.perPage,
 		totalItems: data.totalItems,
-		totalPages: data.totalPages
+		totalPages: data.totalPages,
+		competitionState: stateData?.state ?? null
 	}
 }) satisfies PageServerLoad

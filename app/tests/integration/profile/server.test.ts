@@ -145,6 +145,27 @@ describe('profile actions', () => {
 		expect(mockCookies.delete).toHaveBeenCalledWith('pb_auth_aja30', { path: '/' })
 	})
 
+	it('deleteAccount blocks when competition started', async () => {
+		const user = makeUser({ id: 'del3', role: 'participant' }) as unknown as UsersResponse
+		const pb = createPBMock({
+			competition_state: {
+				getList: async () => ({
+					items: [{ id: 'state1', competitionStarted: true, roundState: 'singing_phase', round: 1 }]
+				})
+			}
+		})
+		const event = {
+			locals: { user, pb: pb as unknown as TypedPocketBase }
+		} as unknown as Parameters<typeof actions.deleteAccount>[0]
+
+		const res = (await actions.deleteAccount(event)) as unknown
+		const failRes = res as { status: number; data?: { message?: string } }
+		expect(failRes.status).toBe(403)
+		expect(failRes.data?.message).toBe(
+			'Konto kann während des laufenden Wettbewerbs nicht gelöscht werden.'
+		)
+	})
+
 	it('deleteAccount returns failure on error without clearing auth', async () => {
 		const user = makeUser({ id: 'del2', role: 'participant' }) as unknown as UsersResponse
 		const del = vi.fn(async () => {

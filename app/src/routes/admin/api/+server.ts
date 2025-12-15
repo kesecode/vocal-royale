@@ -1,31 +1,27 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
-import type { ListResult } from 'pocketbase'
 import type {
 	CompetitionStateRecord,
 	CompetitionStateResponse,
 	RatingsResponse,
 	UsersResponse,
-	SettingsResponse
+	SettingsResponse,
+	SongChoicesResponse
 } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
-import { parseSettings, parseEliminationPattern } from '$lib/utils/competition-settings'
+import {
+	parseSettings,
+	parseEliminationPattern,
+	calculateTotalSongs
+} from '$lib/utils/competition-settings'
+import { getLatestCompetitionState } from '$lib/server/competition-state'
 
 const STATE_COLLECTION = 'competition_state' as const
 const USERS_COLLECTION = 'users' as const
 const RATINGS_COLLECTION = 'ratings' as const
 
 async function getLatestState(locals: App.Locals): Promise<CompetitionStateResponse | null> {
-	try {
-		const list = (await locals.pb.collection(STATE_COLLECTION).getList(1, 1, {
-			sort: '-updated'
-		})) as ListResult<CompetitionStateResponse>
-		return list.items[0] ?? null
-	} catch (e: unknown) {
-		const err = e as Error & { status?: number }
-		if (err?.status === 404) return null
-		throw e
-	}
+	return getLatestCompetitionState(locals.pb)
 }
 
 async function getCompetitionSettings(locals: App.Locals) {
@@ -93,15 +89,21 @@ async function getActiveParticipant(locals: App.Locals): Promise<UsersResponse |
 	}
 }
 
+type MissingVoter = {
+	id: string
+	name: string
+	role: string
+}
+
 async function computeMissingRatings(
 	locals: App.Locals,
 	round: number,
 	activeParticipantId: string
-): Promise<{ missingCount: number; expectedCount: number }> {
+): Promise<{ missingCount: number; expectedCount: number; missingVoters: MissingVoter[] }> {
+	// Only consider checked-in voters (non-checked-in users can't rate anyway)
 	const voters = (await locals.pb.collection(USERS_COLLECTION).getFullList({
-		filter: 'role = "spectator" || role = "juror"'
+		filter: '(role = "spectator" || role = "juror") && checkedIn = true'
 	})) as UsersResponse[]
-	const expectedIds = new Set(voters.map((u) => u.id))
 
 	const roundNum = Number(round) || 1
 	const existing = (await locals.pb.collection(RATINGS_COLLECTION).getFullList({
@@ -109,11 +111,24 @@ async function computeMissingRatings(
 	})) as RatingsResponse[]
 	const authors = new Set(existing.map((r) => r.author))
 
-	let missing = 0
-	for (const id of expectedIds) {
-		if (!authors.has(id)) missing++
+	const missingVoters: MissingVoter[] = []
+	for (const voter of voters) {
+		if (!authors.has(voter.id)) {
+			// Build full name from firstName + lastName, fallback to other fields
+			let fullName = ''
+			if (voter.firstName && voter.lastName) {
+				fullName = `${voter.firstName} ${voter.lastName}`
+			} else {
+				fullName = voter.firstName || voter.name || voter.username || voter.email || voter.id
+			}
+			missingVoters.push({
+				id: voter.id,
+				name: fullName,
+				role: voter.role || 'unknown'
+			})
+		}
 	}
-	return { missingCount: missing, expectedCount: expectedIds.size }
+	return { missingCount: missingVoters.length, expectedCount: voters.length, missingVoters }
 }
 
 function toName(u: UsersResponse | null | undefined): string | null {
@@ -121,12 +136,266 @@ function toName(u: UsersResponse | null | undefined): string | null {
 	return u.firstName || u.name || u.username || u.email || u.id
 }
 
-export const GET: RequestHandler = async ({ locals }) => {
+type FinalRanking = {
+	rank: number
+	id: string
+	name: string | null
+	artistName?: string
+	eliminatedInRound: number | null // null = Finalist
+	avg: number
+	count: number
+}
+
+async function computeFinalRankings(
+	locals: App.Locals,
+	finalRound: number
+): Promise<FinalRanking[]> {
+	// 1. Load ALL participants (including eliminated)
+	const allParticipants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+		filter: 'role = "participant"'
+	})) as UsersResponse[]
+
+	// 2. Load ALL ratings for all rounds (with author for juror weighting)
+	const allRatings = (await locals.pb.collection(RATINGS_COLLECTION).getFullList({
+		expand: 'author'
+	})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+	// 3. Sum ALL ratings per user (across all rounds) for total score
+	const totalRatingsByUser = new Map<string, { sum: number; count: number }>()
+	const lastRoundByUser = new Map<string, number>()
+	for (const r of allRatings) {
+		const rating = Number(r.rating) || 0
+		const authorRole = r.expand?.author?.role
+		const weight = authorRole === 'juror' ? 2 : 1
+		// Aggregate ALL ratings for each user
+		const g = totalRatingsByUser.get(r.ratedUser) || { sum: 0, count: 0 }
+		g.sum += rating * weight
+		g.count += weight
+		totalRatingsByUser.set(r.ratedUser, g)
+		// Track highest round with ratings for each user
+		const currentLast = lastRoundByUser.get(r.ratedUser) || 0
+		if (r.round > currentLast) {
+			lastRoundByUser.set(r.ratedUser, r.round)
+		}
+	}
+
+	// 4. Build ranking data for each participant using ALL ratings
+	const rankings: FinalRanking[] = allParticipants.map((p) => {
+		// Use ALL ratings across all rounds
+		const g = totalRatingsByUser.get(p.id) || { sum: 0, count: 0 }
+		const avg = g.count > 0 ? g.sum / g.count : 0
+
+		// Determine eliminatedInRound: if not set but participant didn't reach finale, use lastRoundWithRatings
+		const lastRoundWithRatings = lastRoundByUser.get(p.id) || finalRound
+		const isFinalist = !p.eliminated || lastRoundWithRatings === finalRound
+		const eliminatedInRound = p.eliminatedInRound ?? (isFinalist ? null : lastRoundWithRatings)
+
+		return {
+			rank: 0, // Will be set after sorting
+			id: p.id,
+			name: toName(p),
+			artistName: p.artistName,
+			eliminatedInRound,
+			avg,
+			count: g.count
+		}
+	})
+
+	// 5. Sort: Primary by eliminatedInRound DESC (null = finalist = best), Secondary by avg DESC
+	rankings.sort((a, b) => {
+		// Finalists (null) come first, then highest round number
+		const roundA = a.eliminatedInRound ?? finalRound + 1 // null = finalist, treated as highest
+		const roundB = b.eliminatedInRound ?? finalRound + 1
+		if (roundB !== roundA) {
+			return roundB - roundA // Higher round = better
+		}
+		// Within same round, higher avg is better
+		if (b.avg !== a.avg) {
+			return b.avg - a.avg
+		}
+		// Tiebreaker: more votes is better
+		if (b.count !== a.count) {
+			return b.count - a.count
+		}
+		// Final tiebreaker: alphabetical
+		return a.name?.localeCompare(b.name || '') || 0
+	})
+
+	// 6. Assign ranks
+	rankings.forEach((r, i) => {
+		r.rank = i + 1
+	})
+
+	return rankings
+}
+
+export const GET: RequestHandler = async ({ locals, url }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
 		return json({ error: 'forbidden' }, { status: 403 })
 	}
+
+	// Handle missing ratings query
+	if (url.searchParams.get('missing_ratings') === '1') {
+		const state = await getLatestState(locals)
+		const active = await getActiveParticipant(locals)
+		if (!state || !active) {
+			return json({ missingVoters: [], missingCount: 0, expectedCount: 0 })
+		}
+		const round = Number(state.round) || 1
+		const result = await computeMissingRatings(locals, round, active.id)
+		return json(result)
+	}
+
 	const state = await getLatestState(locals)
 	const active = await getActiveParticipant(locals)
+
+	// Load song choice for active participant in current round
+	let activeSongChoice: { artist: string; songTitle: string; appleMusicSongId?: string } | null =
+		null
+	if (active && state) {
+		try {
+			const round = Number(state.round) || 1
+			const choices = (await locals.pb.collection('song_choices').getFullList({
+				filter: `user = "${active.id}" && round = ${round}`
+			})) as SongChoicesResponse[]
+			if (choices.length > 0) {
+				activeSongChoice = {
+					artist: choices[0].artist,
+					songTitle: choices[0].songTitle,
+					appleMusicSongId: choices[0].appleMusicSongId || undefined
+				}
+			}
+		} catch (error) {
+			logger.warn('Failed to load song choice for active participant', { error })
+		}
+	}
+
+	// Load results if in result_phase or publish_result
+	type ResultRow = {
+		id: string
+		name: string | null
+		artistName?: string
+		avg: number
+		sum: number
+		count: number
+		eliminated: boolean
+		isTied?: boolean
+	}
+	let results: ResultRow[] | null = null
+	let winner: ResultRow | null = null
+	let hasTie = false
+	let finalRankings: FinalRanking[] | null = null
+
+	const roundState = state?.roundState
+	if (roundState === 'result_phase' || roundState === 'publish_result') {
+		try {
+			const round = Number(state?.round ?? 1) || 1
+			const settings = await getCompetitionSettings(locals)
+			const isFinale = round === settings.totalRounds
+
+			// In finale, compute full rankings with all participants
+			if (isFinale) {
+				finalRankings = await computeFinalRankings(locals, round)
+				// Convert finalRankings to results format for admin display
+				results = finalRankings.map((r) => ({
+					id: r.id,
+					name: r.name,
+					artistName: r.artistName,
+					avg: r.avg,
+					sum: 0,
+					count: r.count,
+					eliminated: r.eliminatedInRound !== null
+				}))
+				// Set winner from final rankings (first place)
+				if (finalRankings.length > 0) {
+					const first = finalRankings[0]
+					winner = {
+						id: first.id,
+						name: first.name,
+						artistName: first.artistName,
+						avg: first.avg,
+						sum: 0,
+						count: first.count,
+						eliminated: false
+					}
+				}
+			} else {
+				// Normal round: only show current participants
+				const participants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+					filter: 'role = "participant" && eliminated != true'
+				})) as UsersResponse[]
+				const participantIds = new Set(participants.map((p) => p.id))
+
+				const allRatings = (await locals.pb.collection(RATINGS_COLLECTION).getFullList({
+					filter: `round = ${round}`,
+					expand: 'author'
+				})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+				const grouped = new Map<string, { sum: number; count: number }>()
+				for (const r of allRatings) {
+					if (!participantIds.has(r.ratedUser)) continue
+					const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
+					const rating = Number(r.rating) || 0
+					const authorRole = r.expand?.author?.role
+					const weight = authorRole === 'juror' ? 2 : 1
+					g.sum += rating * weight
+					g.count += weight
+					grouped.set(r.ratedUser, g)
+				}
+
+				const rows: ResultRow[] = participants.map((p) => {
+					const g = grouped.get(p.id) || { sum: 0, count: 0 }
+					const avg = g.count > 0 ? g.sum / g.count : 0
+					return {
+						id: p.id,
+						name: toName(p),
+						artistName: p.artistName,
+						avg,
+						sum: g.sum,
+						count: g.count,
+						eliminated: false
+					}
+				})
+
+				// Sort descending by average (highest = best)
+				rows.sort(
+					(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
+				)
+
+				// Check for tie (only relevant if not yet resolved)
+				const currentRound = Number(state?.round ?? 1) || 1
+				let eliminateCount = 0
+				if (currentRound >= 1 && currentRound < settings.totalRounds) {
+					const pattern = parseEliminationPattern(settings.roundEliminationPattern)
+					eliminateCount = Math.max(0, Number(pattern?.[currentRound - 1] ?? 0))
+				}
+				eliminateCount = Math.min(eliminateCount, Math.max(rows.length - 1, 0))
+
+				const roundAvg = (avg: number) => Math.round(avg * 100) / 100
+				// Sort ascending for tie check (lowest = worst)
+				const sortedAsc = rows.slice().sort((a, b) => a.avg - b.avg)
+				if (eliminateCount > 0 && eliminateCount < sortedAsc.length) {
+					const lastEliminated = sortedAsc[eliminateCount - 1]
+					const firstSurvivor = sortedAsc[eliminateCount]
+					if (roundAvg(lastEliminated.avg) === roundAvg(firstSurvivor.avg)) {
+						hasTie = true
+						const tiedAvg = roundAvg(lastEliminated.avg)
+						for (const row of rows) {
+							if (roundAvg(row.avg) === tiedAvg) {
+								row.isTied = true
+							}
+						}
+					}
+				}
+
+				results = rows
+				winner = rows[0] ?? null
+			}
+		} catch (error) {
+			logger.warn('Failed to load results', { error })
+		}
+	}
+
 	return json({
 		state: state
 			? {
@@ -148,10 +417,18 @@ export const GET: RequestHandler = async ({ locals }) => {
 			? {
 					id: active.id,
 					name: toName(active),
+					firstName: active.firstName,
+					lastName: active.lastName,
 					artistName: active.artistName,
 					sangThisRound: !!active.sangThisRound
 				}
-			: null
+			: null,
+		activeSongChoice,
+		results,
+		winner,
+		hasTie,
+		finalRankings,
+		isProduction: process.env.NODE_ENV === 'production'
 	})
 }
 
@@ -159,17 +436,21 @@ type AdminAction =
 	| 'start_competition'
 	| 'activate_rating_phase'
 	| 'next_participant'
+	| 'activate_rating_refinement'
 	| 'finalize_ratings'
+	| 'publish_results'
 	| 'show_results'
+	| 'resolve_tie'
 	| 'start_next_round'
 	| 'reset_game'
+	| 'reroll_participant'
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
 		return json({ error: 'forbidden' }, { status: 403 })
 	}
 
-	type Payload = { action?: AdminAction }
+	type Payload = { action?: AdminAction; survivorId?: string }
 	let payload: Payload
 	try {
 		payload = await request.json()
@@ -183,11 +464,75 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 	try {
 		if (action === 'start_competition') {
+			const currentState = await getLatestState(locals)
+			if (currentState?.competitionStarted) {
+				return json({ error: 'competition_already_started' }, { status: 400 })
+			}
+
+			const settings = await getCompetitionSettings(locals)
+			const requiredSongs = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
+
+			const participants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+				filter: 'role = "participant" && eliminated != true'
+			})) as UsersResponse[]
+
+			if (participants.length === 0) {
+				return json({ error: 'no_participants_available' }, { status: 400 })
+			}
+
+			const jurors = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+				filter: 'role = "juror"'
+			})) as UsersResponse[]
+
+			const missingParticipantCheckins = participants.filter((p) => !p.checkedIn)
+			const missingJurorCheckins = jurors.filter((j) => !j.checkedIn)
+			if (missingParticipantCheckins.length || missingJurorCheckins.length) {
+				return json(
+					{
+						error: 'missing_checkins',
+						missingParticipants: missingParticipantCheckins.map((p) => p.id),
+						missingJurors: missingJurorCheckins.map((j) => j.id)
+					},
+					{ status: 400 }
+				)
+			}
+
+			const allChoices = (await locals.pb
+				.collection('song_choices')
+				.getFullList()) as SongChoicesResponse[]
+			const participantsMissingSongs = participants.filter((participant) => {
+				const confirmedRounds = new Set<number>()
+				for (const choice of allChoices) {
+					if (choice.user !== participant.id) continue
+					const roundNum = Number(choice.round) || 0
+					if (
+						roundNum >= 1 &&
+						choice.confirmed &&
+						(choice.artist?.trim() ?? '') &&
+						(choice.songTitle?.trim() ?? '')
+					) {
+						confirmedRounds.add(roundNum)
+					}
+				}
+				for (let round = 1; round <= requiredSongs; round++) {
+					if (!confirmedRounds.has(round)) return true
+				}
+				return false
+			})
+
+			if (participantsMissingSongs.length > 0) {
+				return json(
+					{
+						error: 'missing_song_choices',
+						requiredSongs,
+						missingParticipants: participantsMissingSongs.map((p) => p.id)
+					},
+					{ status: 400 }
+				)
+			}
+
 			// Reset sangThisRound for all participants to ensure fresh round start
 			try {
-				const participants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
-					filter: 'role = "participant"'
-				})) as UsersResponse[]
 				await Promise.all(
 					participants.map((p) =>
 						locals.pb.collection(USERS_COLLECTION).update(p.id, { sangThisRound: false })
@@ -209,7 +554,13 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				ok: true,
 				state: updated,
 				activeParticipant: active
-					? { id: active.id, name: toName(active), artistName: active.artistName }
+					? {
+							id: active.id,
+							name: toName(active),
+							firstName: active.firstName,
+							lastName: active.lastName,
+							artistName: active.artistName
+						}
 					: null
 			})
 		}
@@ -252,6 +603,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				activeParticipant: {
 					id: active.id,
 					name: toName(active),
+					firstName: active.firstName,
+					lastName: active.lastName,
 					artistName: active.artistName,
 					sangThisRound: true
 				}
@@ -294,7 +647,32 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			return json({
 				ok: true,
 				state: updated,
-				activeParticipant: { id: picked.id, name: toName(picked), artistName: picked.artistName }
+				activeParticipant: {
+					id: picked.id,
+					name: toName(picked),
+					firstName: picked.firstName,
+					lastName: picked.lastName,
+					artistName: picked.artistName
+				}
+			})
+		}
+
+		if (action === 'activate_rating_refinement') {
+			const updated = await upsertState(locals, { roundState: 'rating_refinement' })
+			logger.info('Admin API: activate_rating_refinement -> rating_refinement')
+			const active = await getActiveParticipant(locals)
+			return json({
+				ok: true,
+				state: updated,
+				activeParticipant: active
+					? {
+							id: active.id,
+							name: toName(active),
+							firstName: active.firstName,
+							lastName: active.lastName,
+							artistName: active.artistName
+						}
+					: null
 			})
 		}
 
@@ -306,9 +684,21 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				ok: true,
 				state: updated,
 				activeParticipant: active
-					? { id: active.id, name: toName(active), artistName: active.artistName }
+					? {
+							id: active.id,
+							name: toName(active),
+							firstName: active.firstName,
+							lastName: active.lastName,
+							artistName: active.artistName
+						}
 					: null
 			})
+		}
+
+		if (action === 'publish_results') {
+			const updated = await upsertState(locals, { roundState: 'publish_result' })
+			logger.info('Admin API: publish_results -> publish_result')
+			return json({ ok: true, state: updated })
 		}
 
 		if (action === 'show_results') {
@@ -320,16 +710,23 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			})) as UsersResponse[]
 			const participantIds = new Set(participants.map((p) => p.id))
 
-			// Fetch all ratings this round
+			// Fetch all ratings this round with author relation expanded
 			const allRatings = (await locals.pb.collection(RATINGS_COLLECTION).getFullList({
-				filter: `round = ${round}`
-			})) as RatingsResponse[]
+				filter: `round = ${round}`,
+				expand: 'author'
+			})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+			// Build user role map for weighting (juror = 2x weight)
 			const grouped = new Map<string, { sum: number; count: number }>()
 			for (const r of allRatings) {
 				if (!participantIds.has(r.ratedUser)) continue
 				const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
-				g.sum += Number(r.rating) || 0
-				g.count += 1
+				const rating = Number(r.rating) || 0
+				const authorRole = r.expand?.author?.role
+				// Juror votes count double
+				const weight = authorRole === 'juror' ? 2 : 1
+				g.sum += rating * weight
+				g.count += weight
 				grouped.set(r.ratedUser, g)
 			}
 
@@ -341,6 +738,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				sum: number
 				count: number
 				eliminated: boolean
+				isTied?: boolean
 			}
 			const rows: Row[] = participants.map((p) => {
 				const g = grouped.get(p.id) || { sum: 0, count: 0 }
@@ -372,21 +770,49 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			// Ensure at least one participant remains
 			eliminateCount = Math.min(eliminateCount, Math.max(rows.length - 1, 0))
 
-			// Mark eliminated and persist
-			const toEliminate = rows.slice(0, eliminateCount)
-			if (toEliminate.length > 0) {
-				await Promise.all(
-					toEliminate.map((r) =>
-						locals.pb.collection(USERS_COLLECTION).update(r.id, { eliminated: true })
-					)
-				)
-				for (const r of toEliminate) r.eliminated = true
+			// Helper to round avg to 2 decimal places for comparison
+			const roundAvg = (avg: number) => Math.round(avg * 100) / 100
+
+			// Check for tie at elimination boundary
+			let hasTie = false
+			let tiedParticipantIds: string[] = []
+			if (eliminateCount > 0 && eliminateCount < rows.length) {
+				// Last participant to be eliminated vs first to survive
+				const lastEliminated = rows[eliminateCount - 1]
+				const firstSurvivor = rows[eliminateCount]
+				if (roundAvg(lastEliminated.avg) === roundAvg(firstSurvivor.avg)) {
+					hasTie = true
+					const tiedAvg = roundAvg(lastEliminated.avg)
+					// Find ALL participants with this tied average
+					tiedParticipantIds = rows.filter((r) => roundAvg(r.avg) === tiedAvg).map((r) => r.id)
+					// Mark them as tied
+					for (const row of rows) {
+						if (tiedParticipantIds.includes(row.id)) {
+							row.isTied = true
+						}
+					}
+				}
 			}
 
-			// Switch to result_phase; finalize competition on finale round
+			// Only eliminate if there's no tie
+			if (!hasTie) {
+				const toEliminate = rows.slice(0, eliminateCount)
+				if (toEliminate.length > 0) {
+					await Promise.all(
+						toEliminate.map((r) =>
+							locals.pb
+								.collection(USERS_COLLECTION)
+								.update(r.id, { eliminated: true, eliminatedInRound: round })
+						)
+					)
+					for (const r of toEliminate) r.eliminated = true
+				}
+			}
+
+			// Switch to result_phase; finalize competition on finale round (only if no tie)
 			const updated = await upsertState(locals, {
 				roundState: 'result_phase',
-				...(round === settings.totalRounds ? { competitionFinished: true } : {})
+				...(round === settings.totalRounds && !hasTie ? { competitionFinished: true } : {})
 			})
 
 			// Winner convenience
@@ -397,13 +823,167 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 						(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
 					)[0] ?? null
 
+			// In finale, compute full rankings
+			const isFinale = round === settings.totalRounds
+			let finalRankings: FinalRanking[] | null = null
+			if (isFinale) {
+				finalRankings = await computeFinalRankings(locals, round)
+			}
+
 			logger.info('Admin API: show_results', {
 				round,
 				eliminateCount,
 				participants: rows.length,
-				competitionFinished: round === settings.totalRounds
+				hasTie,
+				tiedParticipantIds,
+				competitionFinished: round === settings.totalRounds && !hasTie
 			})
-			return json({ ok: true, state: updated, results: rows, winner })
+			return json({
+				ok: true,
+				state: updated,
+				results: rows,
+				winner,
+				hasTie,
+				tiedParticipantIds,
+				eliminateCount,
+				finalRankings
+			})
+		}
+
+		if (action === 'resolve_tie') {
+			const survivorId = payload.survivorId
+			if (!survivorId) {
+				return json({ error: 'missing_survivor_id' }, { status: 400 })
+			}
+
+			const state = await getLatestState(locals)
+			const round = Number(state?.round ?? 1) || 1
+			const settings = await getCompetitionSettings(locals)
+
+			// Get current participants
+			const participants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+				filter: 'role = "participant" && eliminated != true'
+			})) as UsersResponse[]
+			const participantIds = new Set(participants.map((p) => p.id))
+
+			// Verify survivor is a valid participant
+			if (!participantIds.has(survivorId)) {
+				return json({ error: 'invalid_survivor' }, { status: 400 })
+			}
+
+			// Fetch all ratings this round with author relation expanded
+			const allRatings = (await locals.pb.collection(RATINGS_COLLECTION).getFullList({
+				filter: `round = ${round}`,
+				expand: 'author'
+			})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+			// Calculate averages
+			const grouped = new Map<string, { sum: number; count: number }>()
+			for (const r of allRatings) {
+				if (!participantIds.has(r.ratedUser)) continue
+				const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
+				const rating = Number(r.rating) || 0
+				const authorRole = r.expand?.author?.role
+				const weight = authorRole === 'juror' ? 2 : 1
+				g.sum += rating * weight
+				g.count += weight
+				grouped.set(r.ratedUser, g)
+			}
+
+			type Row = {
+				id: string
+				name: string | null
+				artistName?: string
+				avg: number
+				sum: number
+				count: number
+				eliminated: boolean
+			}
+			const rows: Row[] = participants.map((p) => {
+				const g = grouped.get(p.id) || { sum: 0, count: 0 }
+				const avg = g.count > 0 ? g.sum / g.count : 0
+				return {
+					id: p.id,
+					name: toName(p),
+					artistName: p.artistName,
+					avg,
+					sum: g.sum,
+					count: g.count,
+					eliminated: false
+				}
+			})
+
+			// Sort ascending by average (lowest = worst)
+			rows.sort((a, b) => a.avg - b.avg || a.name?.localeCompare(b.name || '') || 0)
+
+			// Get elimination count
+			let eliminateCount = 0
+			if (round >= 1 && round < settings.totalRounds) {
+				const pattern = parseEliminationPattern(settings.roundEliminationPattern)
+				eliminateCount = Math.max(0, Number(pattern?.[round - 1] ?? 0))
+			}
+			eliminateCount = Math.min(eliminateCount, Math.max(rows.length - 1, 0))
+
+			// Round avg to 2 decimal places
+			const roundAvg = (avg: number) => Math.round(avg * 100) / 100
+			const survivorRow = rows.find((r) => r.id === survivorId)
+			if (!survivorRow) {
+				return json({ error: 'survivor_not_found' }, { status: 400 })
+			}
+			const survivorAvg = roundAvg(survivorRow.avg)
+
+			// Find all tied participants (same rounded avg as survivor)
+			const tiedIds = rows.filter((r) => roundAvg(r.avg) === survivorAvg).map((r) => r.id)
+
+			// Eliminate tied participants except survivor
+			const toEliminateFromTie = tiedIds.filter((id) => id !== survivorId)
+
+			// Also eliminate anyone with lower avg than the survivor (they were supposed to be eliminated anyway)
+			const lowerAvgIds = rows
+				.filter((r) => roundAvg(r.avg) < survivorAvg)
+				.map((r) => r.id)
+				.filter((id) => !toEliminateFromTie.includes(id))
+
+			const allToEliminate = [...toEliminateFromTie, ...lowerAvgIds]
+
+			if (allToEliminate.length > 0) {
+				await Promise.all(
+					allToEliminate.map((id) =>
+						locals.pb
+							.collection(USERS_COLLECTION)
+							.update(id, { eliminated: true, eliminatedInRound: round })
+					)
+				)
+				for (const row of rows) {
+					if (allToEliminate.includes(row.id)) {
+						row.eliminated = true
+					}
+				}
+			}
+
+			// Winner convenience
+			const winner =
+				rows
+					.slice()
+					.sort(
+						(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
+					)[0] ?? null
+
+			logger.info('Admin API: resolve_tie', {
+				round,
+				survivorId,
+				eliminatedFromTie: toEliminateFromTie,
+				eliminatedLowerAvg: lowerAvgIds
+			})
+
+			return json({
+				ok: true,
+				results: rows,
+				winner,
+				hasTie: false,
+				tiedParticipantIds: [],
+				eliminateCount
+			})
 		}
 
 		if (action === 'start_next_round') {
@@ -444,12 +1024,48 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				ok: true,
 				state: updated,
 				activeParticipant: picked
-					? { id: picked.id, name: toName(picked), artistName: picked.artistName }
+					? {
+							id: picked.id,
+							name: toName(picked),
+							firstName: picked.firstName,
+							lastName: picked.lastName,
+							artistName: picked.artistName
+						}
 					: null
 			})
 		}
 
+		if (action === 'reroll_participant') {
+			const state = await getLatestState(locals)
+			if (!state?.competitionStarted || state?.roundState !== 'singing_phase') {
+				return json({ error: 'reroll_not_allowed' }, { status: 400 })
+			}
+			const picked = await pickRandomEligibleParticipant(locals)
+			if (!picked) {
+				return json({ error: 'no_participants_available' }, { status: 400 })
+			}
+			const updated = await upsertState(locals, { activeParticipant: picked.id })
+			logger.info('Admin API: reroll_participant', { activeParticipant: picked.id })
+			return json({
+				ok: true,
+				state: updated,
+				activeParticipant: {
+					id: picked.id,
+					name: toName(picked),
+					firstName: picked.firstName,
+					lastName: picked.lastName,
+					artistName: picked.artistName
+				}
+			})
+		}
+
 		if (action === 'reset_game') {
+			// Block reset in production
+			if (process.env.NODE_ENV === 'production') {
+				logger.warn('Admin API: reset_game blocked in production')
+				return json({ error: 'reset_blocked_in_production' }, { status: 403 })
+			}
+
 			// Reset all participants
 			try {
 				const participants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
@@ -459,7 +1075,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 					participants.map((p) =>
 						locals.pb
 							.collection(USERS_COLLECTION)
-							.update(p.id, { eliminated: false, sangThisRound: false })
+							.update(p.id, { eliminated: false, eliminatedInRound: null, sangThisRound: false })
 					)
 				)
 			} catch (err) {

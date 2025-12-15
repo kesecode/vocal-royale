@@ -4,6 +4,7 @@ import type { SongChoicesResponse, UsersResponse, AppSettingsResponse } from '$l
 import { logger } from '$lib/server/logger'
 import { sendEmail, isEmailConfigured, type SongEmailData } from '$lib/server/email'
 import { songConfirmationTemplate, songRejectionTemplate } from '$lib/server/email-templates'
+import { getLatestCompetitionState, isCompetitionStarted } from '$lib/server/competition-state'
 
 const COLLECTION = 'song_choices' as const
 const PER_PAGE = 10
@@ -54,6 +55,18 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 	if (locals.user.role !== 'admin') {
 		return json({ error: 'forbidden' }, { status: 403 })
+	}
+
+	try {
+		const state = await getLatestCompetitionState(locals.pb)
+		if (isCompetitionStarted(state)) {
+			return json({ error: 'competition_started' }, { status: 400 })
+		}
+	} catch (error) {
+		logger.error('Admin SongChoices POST state check failed', {
+			message: (error as Error)?.message
+		})
+		return json({ error: 'state_check_failed' }, { status: 500 })
 	}
 
 	let payload: { choiceId?: string; confirmed?: boolean }
@@ -139,6 +152,18 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 	}
 	if (locals.user.role !== 'admin') {
 		return json({ error: 'forbidden' }, { status: 403 })
+	}
+
+	try {
+		const state = await getLatestCompetitionState(locals.pb)
+		if (isCompetitionStarted(state)) {
+			return json({ error: 'competition_started' }, { status: 400 })
+		}
+	} catch (error) {
+		logger.error('Admin SongChoices DELETE state check failed', {
+			message: (error as Error)?.message
+		})
+		return json({ error: 'state_check_failed' }, { status: 500 })
 	}
 
 	let payload: { choiceId?: string; comment?: string; skipEmail?: boolean }

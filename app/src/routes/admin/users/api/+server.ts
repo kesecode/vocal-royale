@@ -1,7 +1,12 @@
 import type { RequestHandler } from './$types'
 import { json } from '@sveltejs/kit'
-import type { UsersResponse } from '$lib/pocketbase-types'
+import type { CompetitionStateResponse, UsersResponse } from '$lib/pocketbase-types'
 import { logger } from '$lib/server/logger'
+import {
+	getLatestCompetitionState,
+	isBetweenRounds,
+	isCompetitionStarted
+} from '$lib/server/competition-state'
 
 const COLLECTION = 'users' as const
 const PER_PAGE = 10
@@ -67,6 +72,18 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'invalid_payload' }, { status: 400 })
 	}
 
+	let competitionState: CompetitionStateResponse | null = null
+	try {
+		competitionState = await getLatestCompetitionState(locals.pb)
+	} catch (error) {
+		logger.error('Admin Users PATCH state check failed', { message: (error as Error)?.message })
+		return json({ error: 'state_check_failed' }, { status: 500 })
+	}
+
+	if (isCompetitionStarted(competitionState) && !isBetweenRounds(competitionState)) {
+		return json({ error: 'checkin_not_allowed' }, { status: 400 })
+	}
+
 	try {
 		logger.info('Admin Users PATCH (check-in toggle)', { userId, checkedIn })
 
@@ -102,10 +119,27 @@ export const PUT: RequestHandler = async ({ request, locals }) => {
 	}
 
 	const { userId, role } = payload
-	const validRoles = ['default', 'participant', 'spectator', 'juror', 'admin']
+	// Default-Rolle ist nicht erlaubt für Rollenänderungen durch Admin
+	const validRoles = ['participant', 'spectator', 'juror']
 	if (!userId || !role || !validRoles.includes(role)) {
 		logger.warn('Admin Users PUT invalid payload', { userId, role })
+		if (role === 'default') {
+			return json({ error: 'invalid_role' }, { status: 400 })
+		}
 		return json({ error: 'invalid_payload' }, { status: 400 })
+	}
+
+	let competitionState: CompetitionStateResponse | null = null
+	try {
+		competitionState = await getLatestCompetitionState(locals.pb)
+	} catch (error) {
+		logger.error('Admin Users PUT state check failed', { message: (error as Error)?.message })
+		return json({ error: 'state_check_failed' }, { status: 500 })
+	}
+
+	// ALLE Rollen-Änderungen während des laufenden Wettbewerbs sperren
+	if (isCompetitionStarted(competitionState)) {
+		return json({ error: 'role_locked' }, { status: 400 })
 	}
 
 	try {

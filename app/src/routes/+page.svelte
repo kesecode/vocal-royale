@@ -14,12 +14,13 @@
 					<div class="text-lg font-semibold">Sieger: {data.winner.name}</div>
 					{#if data.winner.avg !== undefined}
 						<div class="text-sm text-white/80">
-							Ø Bewertung: {data.winner.avg.toFixed(2)}{#if data.winner.count}
-								(Stimmen: {data.winner.count}){/if}
+							Bewertung: Ø {data.winner.avg.toFixed(2)}{#if data.winner.count}
+								({data.winner.count} Stimmen){/if}
 						</div>
 					{/if}
 				{:else}
-					<div class="text-sm text-white/80">Der Sieger wird geladen…</div>
+					<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
+					<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
 				{/if}
 			</div>
 		</div>

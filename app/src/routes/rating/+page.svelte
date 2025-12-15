@@ -45,17 +45,48 @@
 
 			<div class="p-2 sm:p-4">
 				{#if roundState === 'singing_phase'}
-					<p class="px-2 py-3 text-sm text-white/80">Enjoy the show!</p>
+					<div class="px-2 py-3 space-y-2">
+						{#if activeParticipantInfo}
+							<p class="text-sm text-white/60 mb-2">Jetzt auf der Bühne:</p>
+							<div>
+								{#if activeParticipantInfo.artistName}
+									<div class="text-lg font-semibold">{activeParticipantInfo.artistName}</div>
+									<div class="text-sm text-white/70">
+										{activeParticipantInfo.firstName || activeParticipantInfo.name}
+									</div>
+								{:else}
+									<div class="text-lg font-semibold">
+										{activeParticipantInfo.firstName || activeParticipantInfo.name}
+									</div>
+								{/if}
+							</div>
+							{#if activeSongChoice}
+								<div class="text-sm text-white/80 mt-2">
+									<span class="text-white/60">singt:</span>
+									<span class="font-medium">{activeSongChoice.songTitle}</span>
+									<span class="text-white/60">von</span>
+									<span>{activeSongChoice.artist}</span>
+								</div>
+							{/if}
+						{:else}
+							<p class="text-sm text-white/80">Warten auf den nächsten Auftritt...</p>
+						{/if}
+						<p class="text-sm text-white/60 italic mt-3">Enjoy the show!</p>
+					</div>
 				{:else if roundState === 'rating_phase'}
 					{#if activeParticipant}
 						<div class="space-y-3">
 							<div>
 								<div class="text-sm text-white/60">Runde {currentRound}</div>
-								<div class="text-lg font-semibold">
-									{activeParticipant.firstName || activeParticipant.name}
-								</div>
 								{#if activeParticipant.artistName}
-									<div class="text-xs text-white/70">a.k.a. {activeParticipant.artistName}</div>
+									<div class="text-lg font-semibold">{activeParticipant.artistName}</div>
+									<div class="text-xs text-white/70">
+										{activeParticipant.firstName || activeParticipant.name}
+									</div>
+								{:else}
+									<div class="text-lg font-semibold">
+										{activeParticipant.firstName || activeParticipant.name}
+									</div>
 								{/if}
 							</div>
 							{#if userRole === 'juror'}
@@ -154,9 +185,11 @@
 										class:cursor-not-allowed={!canRate}
 									>
 										<td class="p-2 sm:p-3">
-											<div class="font-medium">{p.firstName || p.name}</div>
 											{#if p.artistName}
-												<div class="text-xs text-white/70">a.k.a. {p.artistName}</div>
+												<div class="font-medium">{p.artistName}</div>
+												<div class="text-xs text-white/70">{p.firstName || p.name}</div>
+											{:else}
+												<div class="font-medium">{p.firstName || p.name}</div>
 											{/if}
 										</td>
 										<td class="p-2 sm:p-3">
@@ -197,7 +230,7 @@
 					<div class="text-sm text-white/60">Runde {currentRound}</div>
 					<div class="text-lg font-semibold">{selected.firstName || selected.name}</div>
 					{#if selected.artistName}
-						<div class="text-xs text-white/70">a.k.a. {selected.artistName}</div>
+						<div class="text-xs text-white/70">{selected.artistName}</div>
 					{/if}
 				</div>
 				{#if userRole === 'juror'}
@@ -337,6 +370,19 @@
 	} | null
 	let winner: Winner = null
 	let userRole: string = 'spectator'
+	type ActiveParticipantInfo = {
+		id: string
+		name: string
+		firstName?: string
+		artistName?: string
+	}
+	type SongChoice = {
+		artist: string
+		songTitle: string
+		appleMusicSongId?: string
+	}
+	let activeParticipantInfo: ActiveParticipantInfo | null = null
+	let activeSongChoice: SongChoice | null = null
 	$: canRate = roundState === 'rating_phase' || roundState === 'break'
 	$: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null
 	let showActions = false
@@ -433,6 +479,9 @@
 			}
 			const ap = data?.activeParticipant
 			activeParticipantId = typeof ap === 'string' && ap ? ap : null
+			// Extract active participant info and song choice from state response
+			activeParticipantInfo = data?.activeParticipantInfo ?? null
+			activeSongChoice = data?.activeSongChoice ?? null
 		} catch {
 			// ignore; keep defaults
 		}

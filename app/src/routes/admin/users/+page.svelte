@@ -20,6 +20,13 @@
 				<div class="text-sm text-emerald-200">{infoMsg}</div>
 			</div>
 		{/if}
+		{#if checkInLocked}
+			<div class="p-3 sm:p-4">
+				<div class="text-sm text-amber-200">
+					Check-ins können nur in Pausen zwischen den Runden geändert werden.
+				</div>
+			</div>
+		{/if}
 
 		<div class="overflow-x-auto">
 			<table class="w-full text-sm">
@@ -45,7 +52,7 @@
 									<div class="font-medium">{user.name || 'Unbekannt'}</div>
 									{#if user.artistName}
 										<div class="text-xs text-white/70">
-											a.k.a. {user.artistName}
+											{user.artistName}
 										</div>
 									{/if}
 								</td>
@@ -67,12 +74,20 @@
 											class="btn-brand text-xs px-3 py-1.5"
 											class:bg-emerald-600={user.checkedIn}
 											class:hover:bg-emerald-700={user.checkedIn}
+											disabled={checkInLocked}
+											title={checkInLocked
+												? 'Nur zwischen den Runden veränderbar'
+												: 'Check-in Status umschalten'}
 											onclick={() => toggleCheckIn(user.id, !user.checkedIn)}
 										>
 											{user.checkedIn ? 'Auschecken' : 'Einchecken'}
 										</button>
 										<button
 											class="btn-purple text-xs px-3 py-1.5"
+											disabled={rolesLocked}
+											title={rolesLocked
+												? 'Rollen-Änderungen während des Wettbewerbs gesperrt'
+												: 'Rolle ändern'}
 											onclick={() => openRoleChangeModal(user)}
 										>
 											Rolle ändern
@@ -121,7 +136,6 @@
 					bind:value={newRole}
 					class="w-full px-3 py-2 bg-[#0a0a0a] border border-[#333]/60 rounded focus:outline-none focus:border-brand"
 				>
-					<option value="default">Standard</option>
 					<option value="participant">Teilnehmer</option>
 					<option value="spectator">Zuschauer</option>
 					<option value="juror">Juror</option>
@@ -161,10 +175,17 @@
 	let infoMsg: string | null = $state(null)
 	let showRoleModal = $state(false)
 	let selectedUser: UsersResponse | null = $state(null)
-	let newRole: UserRole = $state('default')
+	let newRole: UserRole = $state('spectator')
+	let competitionState = $state(data.competitionState || null)
+	const checkInLocked = $derived(
+		Boolean(competitionState?.competitionStarted) &&
+			competitionState?.roundState !== 'break' &&
+			competitionState?.roundState !== 'result_phase'
+	)
+	const rolesLocked = $derived(Boolean(competitionState?.competitionStarted))
 
 	onMount(() => {
-		// Initial data already loaded from server
+		refreshCompetitionState()
 	})
 
 	async function loadUsers() {
@@ -183,6 +204,7 @@
 			users = apiData.items || []
 			currentPage = apiData.page || 1
 			totalPages = apiData.totalPages || 1
+			await refreshCompetitionState()
 		} catch {
 			errorMsg = 'Netzwerkfehler beim Laden'
 		} finally {
@@ -190,27 +212,46 @@
 		}
 	}
 
+	async function refreshCompetitionState() {
+		try {
+			const res = await fetch('/admin/api')
+			if (!res.ok) return
+			const apiData = await res.json()
+			competitionState = apiData?.state || competitionState
+		} catch (error) {
+			console.error('Failed to refresh competition state', error)
+		}
+	}
+
 	async function toggleCheckIn(userId: string, checkedIn: boolean) {
 		errorMsg = null
 		infoMsg = null
+
+		if (checkInLocked) {
+			errorMsg = 'Check-in nur zwischen den Runden möglich.'
+			return
+		}
 
 		try {
 			const res = await fetch('/admin/users/api', {
 				method: 'PATCH',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ userId, checkedIn: checkedIn })
+				body: JSON.stringify({ userId, checkedIn })
 			})
 
 			if (!res.ok) {
 				const apiData = await res.json().catch(() => ({}))
-				errorMsg = apiData.error || 'Aktion fehlgeschlagen'
+				if (apiData.error === 'checkin_not_allowed') {
+					errorMsg = 'Check-in nur zwischen den Runden möglich.'
+				} else {
+					errorMsg = apiData.error || 'Aktion fehlgeschlagen'
+				}
 				return
 			}
 
 			infoMsg = checkedIn ? 'Benutzer eingecheckt' : 'Benutzer ausgecheckt'
 			setTimeout(() => (infoMsg = null), 3000)
 
-			// Reload current page
 			await loadUsers()
 		} catch {
 			errorMsg = 'Netzwerkfehler'
@@ -218,15 +259,17 @@
 	}
 
 	function openRoleChangeModal(user: UsersResponse) {
+		if (rolesLocked) return
 		selectedUser = user
-		newRole = user.role
+		// Default-Rolle kann nicht gewählt werden, daher spectator als Fallback
+		newRole = user.role === 'default' ? 'spectator' : user.role
 		showRoleModal = true
 	}
 
 	function closeRoleChangeModal() {
 		showRoleModal = false
 		selectedUser = null
-		newRole = 'default'
+		newRole = 'spectator'
 	}
 
 	async function changeUserRole() {
@@ -244,7 +287,13 @@
 
 			if (!res.ok) {
 				const apiData = await res.json().catch(() => ({}))
-				errorMsg = apiData.error || 'Rollenänderung fehlgeschlagen'
+				if (apiData.error === 'role_locked') {
+					errorMsg = 'Rollen-Änderungen sind während des Wettbewerbs gesperrt.'
+				} else if (apiData.error === 'invalid_role') {
+					errorMsg = 'Diese Rolle ist nicht zulässig.'
+				} else {
+					errorMsg = apiData.error || 'Rollenänderung fehlgeschlagen'
+				}
 				return
 			}
 
@@ -253,7 +302,6 @@
 
 			closeRoleChangeModal()
 
-			// Reload current page
 			await loadUsers()
 		} catch {
 			errorMsg = 'Netzwerkfehler'

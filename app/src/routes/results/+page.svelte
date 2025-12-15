@@ -1,0 +1,418 @@
+<section class="section space-y-5">
+	<h1 class="font-display text-2xl tracking-tight sm:text-3xl">Ergebnisse</h1>
+
+	<!-- Progress with dynamic rounds -->
+	<div class="panel panel-accent p-3 sm:p-4">
+		<ProgressRounds
+			{activeRound}
+			{currentRound}
+			total={totalRounds}
+			labels={roundLabels}
+			disabled={true}
+		/>
+	</div>
+
+	{#if !competitionStarted}
+		<div class="panel panel-brand overflow-hidden p-0">
+			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
+				<div class="font-semibold">Wettbewerb</div>
+			</div>
+			<div class="p-3 sm:p-4">
+				<p class="text-lg font-semibold">Noch ist nichts los hier!</p>
+				<p class="text-sm text-white/80 mt-2">
+					Die Veranstaltung hat noch nicht begonnen - lehn dich zuruck und warte auf den Start!
+				</p>
+			</div>
+		</div>
+	{:else if competitionFinished}
+		<div class="panel panel-brand overflow-hidden p-0">
+			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
+				<div class="font-semibold">Wettbewerb beendet</div>
+			</div>
+			<div class="p-3 sm:p-4">
+				{#if roundState === 'publish_result' && finalRankings.length > 0}
+					<div class="text-lg font-semibold mb-4">Das war's - hier ist die Gesamtplatzierung!</div>
+					<div class="overflow-auto max-h-[50vh]">
+						<table class="w-full text-sm">
+							<thead class="sticky top-0">
+								<tr class="text-left text-white/90">
+									<th class="p-2 sm:p-3">#</th>
+									<th class="p-2 sm:p-3">Teilnehmer</th>
+									<th class="p-2 sm:p-3">Runde</th>
+									<th class="p-2 sm:p-3">Bewertung</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each finalRankings as r (r.id)}
+									<tr class="border-t border-[#333]/40 align-middle">
+										<td class="p-2 sm:p-3 font-bold">
+											{#if r.rank === 1}
+												<span title="1. Platz">&#x1F947;</span>
+											{:else if r.rank === 2}
+												<span title="2. Platz">&#x1F948;</span>
+											{:else if r.rank === 3}
+												<span title="3. Platz">&#x1F949;</span>
+											{:else}
+												{r.rank}
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3">
+											{#if r.artistName}
+												<div class="font-medium">{r.artistName}</div>
+												<div class="text-xs text-white/70">{r.name}</div>
+											{:else}
+												<div class="font-medium">{r.name}</div>
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3 text-white/80">
+											{#if r.eliminatedInRound === null}
+												<span class="text-amber-400 font-medium">Finale</span>
+											{:else}
+												Runde {r.eliminatedInRound}
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3 font-semibold">
+											{r.avg !== undefined ? `Ø ${r.avg.toFixed(2)}` : '-'}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else}
+					<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
+					<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
+				{/if}
+			</div>
+		</div>
+	{:else}
+		<div class="panel panel-brand overflow-hidden p-0">
+			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
+				<div class="flex items-center gap-4">
+					<span class="font-semibold">{isFinaleRound ? 'Finale' : `Runde ${currentRound}`}</span>
+				</div>
+				{#if loading}
+					<div class="text-xs text-white/80">Laden...</div>
+				{/if}
+			</div>
+
+			<div class="p-2 sm:p-4">
+				{#if roundState === 'break'}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-lg font-semibold">Kurze Pause!</p>
+						<p class="text-sm text-white/80">Zeit zum Durchatmen - gleich geht's weiter!</p>
+					</div>
+				{:else if roundState === 'result_locked'}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-lg font-semibold">Ergebnis wird vorbereitet...</p>
+						<p class="text-sm text-white/80">Noch einen Moment Geduld!</p>
+					</div>
+				{:else if roundState === 'result_phase'}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
+						<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
+					</div>
+				{:else if roundState === 'singing_phase'}
+					<div class="px-2 py-3 space-y-2">
+						{#if activeParticipantInfo}
+							<p class="text-sm text-white/60 mb-2">Jetzt auf der Bühne:</p>
+							<div>
+								<div class="text-lg font-semibold">
+									{activeParticipantInfo.artistName ||
+										activeParticipantInfo.firstName ||
+										activeParticipantInfo.name}
+								</div>
+								{#if activeParticipantInfo.artistName && (activeParticipantInfo.firstName || activeParticipantInfo.name)}
+									<div class="text-sm text-white/70">
+										{activeParticipantInfo.firstName || activeParticipantInfo.name}
+									</div>
+								{/if}
+							</div>
+							{#if activeSongChoice}
+								<div class="text-sm text-white/80 mt-2">
+									<span class="text-white/60">singt:</span>
+									<span class="font-medium">{activeSongChoice.songTitle}</span>
+									<span class="text-white/60">von</span>
+									<span>{activeSongChoice.artist}</span>
+								</div>
+							{/if}
+						{:else}
+							<p class="text-sm text-white/80">Warten auf den nachsten Auftritt...</p>
+						{/if}
+						<p class="text-sm text-white/60 italic mt-3">Enjoy the show!</p>
+					</div>
+				{:else if roundState === 'rating_phase'}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-lg font-semibold">Es wird gerade bewertet!</p>
+						<p class="text-sm text-white/80">Das Publikum und die Jury geben ihre Stimmen ab.</p>
+					</div>
+				{:else if roundState === 'rating_refinement'}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-lg font-semibold">Die Bewertungen werden uberarbeitet!</p>
+						<p class="text-sm text-white/80">Die Jury macht letzte Anpassungen.</p>
+					</div>
+				{:else if roundState === 'publish_result'}
+					<div class="px-2 py-3 space-y-4">
+						{#if isFinaleRound && finalRankings.length > 0}
+							<div class="text-lg font-semibold">Die Gesamtplatzierung steht fest!</div>
+							<div class="overflow-auto max-h-[50vh]">
+								<table class="w-full text-sm">
+									<thead class="sticky top-0">
+										<tr class="text-left text-white/90">
+											<th class="p-2 sm:p-3">#</th>
+											<th class="p-2 sm:p-3">Teilnehmer</th>
+											<th class="p-2 sm:p-3">Runde</th>
+											<th class="p-2 sm:p-3">Bewertung</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each finalRankings as r (r.id)}
+											<tr class="border-t border-[#333]/40 align-middle">
+												<td class="p-2 sm:p-3 font-bold">
+													{#if r.rank === 1}
+														<span title="1. Platz">&#x1F947;</span>
+													{:else if r.rank === 2}
+														<span title="2. Platz">&#x1F948;</span>
+													{:else if r.rank === 3}
+														<span title="3. Platz">&#x1F949;</span>
+													{:else}
+														{r.rank}
+													{/if}
+												</td>
+												<td class="p-2 sm:p-3">
+													<div class="font-medium">{r.artistName || r.name}</div>
+													{#if r.artistName && r.name}
+														<div class="text-xs text-white/70">{r.name}</div>
+													{/if}
+												</td>
+												<td class="p-2 sm:p-3 text-white/80">
+													{#if r.eliminatedInRound === null}
+														<span class="text-amber-400 font-medium">Finale</span>
+													{:else}
+														Runde {r.eliminatedInRound}
+													{/if}
+												</td>
+												<td class="p-2 sm:p-3 font-semibold">
+													{r.avg !== undefined ? `Ø ${r.avg.toFixed(2)}` : '-'}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						{:else if results.length > 0}
+							<div class="text-lg font-semibold">Ergebnisse Runde {currentRound}</div>
+							<div class="overflow-auto max-h-[50vh]">
+								<table class="w-full text-sm">
+									<thead class="sticky top-0">
+										<tr class="text-left text-white/90">
+											<th class="p-2 sm:p-3">#</th>
+											<th class="p-2 sm:p-3">Teilnehmer</th>
+											<th class="p-2 sm:p-3">Bewertung</th>
+										</tr>
+									</thead>
+									<tbody>
+										{#each results as r, i (r.id)}
+											<tr class="border-t border-[#333]/40 align-middle">
+												<td class="p-2 sm:p-3 font-bold">{i + 1}</td>
+												<td class="p-2 sm:p-3">
+													<div class="font-medium">{r.artistName || r.name}</div>
+													{#if r.artistName && r.name}
+														<div class="text-xs text-white/70">{r.name}</div>
+													{/if}
+												</td>
+												<td class="p-2 sm:p-3 font-semibold">
+													{r.avg !== undefined ? `Ø ${r.avg.toFixed(2)}` : '-'}
+												</td>
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						{:else}
+							<p class="text-sm text-white/80">Ergebnisse werden geladen...</p>
+						{/if}
+					</div>
+				{:else}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-sm text-white/80">Warten auf Updates...</p>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
+</section>
+
+<script lang="ts">
+	import { onMount, onDestroy } from 'svelte'
+	import type { RoundState } from '$lib/pocketbase-types'
+	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
+	import { getSongLabels, parseSettings, DEFAULT_SETTINGS } from '$lib/utils/competition-settings'
+
+	export let data
+
+	// Competition settings
+	const settings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
+	const totalRounds = settings.totalRounds
+	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
+
+	// Computed value for finale round
+	$: isFinaleRound = currentRound === totalRounds
+
+	let activeRound = 1
+	let currentRound = 1
+	let loading = false
+	let roundState: RoundState = 'result_locked'
+	let competitionStarted = false
+	let competitionFinished = false
+
+	let activeParticipantInfo: {
+		id: string
+		name: string
+		firstName?: string
+		artistName?: string
+	} | null = null
+	let activeSongChoice: { artist: string; songTitle: string; appleMusicSongId?: string } | null =
+		null
+
+	type ResultRow = {
+		id: string
+		name: string | null
+		artistName?: string
+		avg?: number
+		count?: number
+	}
+	let results: ResultRow[] = []
+	type FinalRankingRow = {
+		rank: number
+		id: string
+		name: string | null
+		artistName?: string
+		eliminatedInRound: number | null
+		avg: number
+		count: number
+	}
+	let finalRankings: FinalRankingRow[] = []
+
+	let pollingInterval: ReturnType<typeof setInterval> | null = null
+	const POLLING_INTERVAL_MS = 5000
+
+	async function fetchCompetitionState() {
+		loading = true
+		try {
+			const res = await fetch('/results/state')
+			if (!res.ok) return
+			const data = await res.json()
+			const r = Number(data?.round) || 1
+			activeRound = Math.min(Math.max(r, 1), totalRounds)
+			currentRound = activeRound
+			competitionStarted = Boolean(data?.competitionStarted ?? false)
+			competitionFinished = Boolean(data?.competitionFinished ?? false)
+			const rs = data?.roundState as RoundState | undefined
+			if (
+				rs === 'singing_phase' ||
+				rs === 'rating_phase' ||
+				rs === 'rating_refinement' ||
+				rs === 'result_phase' ||
+				rs === 'publish_result' ||
+				rs === 'result_locked' ||
+				rs === 'break'
+			) {
+				roundState = rs
+			}
+			// Ergebnisse NUR bei publish_result setzen
+			if (rs === 'publish_result') {
+				results = Array.isArray(data?.results) ? data.results : []
+				finalRankings = Array.isArray(data?.finalRankings) ? data.finalRankings : []
+			} else {
+				results = []
+				finalRankings = []
+			}
+			activeParticipantInfo = data?.activeParticipantInfo ?? null
+			activeSongChoice = data?.activeSongChoice ?? null
+		} catch {
+			// ignore; keep defaults
+		} finally {
+			loading = false
+		}
+	}
+
+	async function pollForChanges() {
+		try {
+			const res = await fetch('/results/state')
+			if (!res.ok) return
+
+			const data = await res.json()
+			const newRound = Number(data?.round) || 1
+			const newRoundState = data?.roundState as RoundState | undefined
+			const newCompetitionStarted = Boolean(data?.competitionStarted ?? false)
+			const newCompetitionFinished = Boolean(data?.competitionFinished ?? false)
+
+			const roundChanged = newRound !== activeRound
+			const stateChanged =
+				newRoundState &&
+				newRoundState !== roundState &&
+				[
+					'singing_phase',
+					'rating_phase',
+					'rating_refinement',
+					'result_phase',
+					'publish_result',
+					'result_locked',
+					'break'
+				].includes(newRoundState)
+			const startedChanged = newCompetitionStarted !== competitionStarted
+			const finishedChanged = newCompetitionFinished !== competitionFinished
+
+			if (roundChanged || stateChanged || startedChanged || finishedChanged) {
+				if (roundChanged) {
+					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
+					currentRound = activeRound
+				}
+				if (stateChanged && newRoundState) {
+					roundState = newRoundState
+				}
+				if (startedChanged) {
+					competitionStarted = newCompetitionStarted
+				}
+				if (finishedChanged) {
+					competitionFinished = newCompetitionFinished
+				}
+				// Ergebnisse NUR bei publish_result setzen
+				if (newRoundState === 'publish_result') {
+					results = Array.isArray(data?.results) ? data.results : []
+					finalRankings = Array.isArray(data?.finalRankings) ? data.finalRankings : []
+				} else if (stateChanged) {
+					results = []
+					finalRankings = []
+				}
+				// Update active participant info
+				activeParticipantInfo = data?.activeParticipantInfo ?? null
+				activeSongChoice = data?.activeSongChoice ?? null
+			}
+		} catch {
+			// Silently ignore polling errors
+		}
+	}
+
+	function startPolling() {
+		if (pollingInterval) return
+		pollingInterval = setInterval(pollForChanges, POLLING_INTERVAL_MS)
+	}
+
+	function stopPolling() {
+		if (pollingInterval) {
+			clearInterval(pollingInterval)
+			pollingInterval = null
+		}
+	}
+
+	onMount(async () => {
+		await fetchCompetitionState()
+		startPolling()
+	})
+
+	onDestroy(() => {
+		stopPolling()
+	})
+</script>

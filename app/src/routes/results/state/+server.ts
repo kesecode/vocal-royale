@@ -31,7 +31,7 @@ type FinalRanking = {
 	id: string
 	name: string | null
 	artistName?: string
-	eliminatedInRound: number | null // null = Finalist
+	eliminatedInRound: number | null
 	avg: number
 	count: number
 }
@@ -44,17 +44,15 @@ async function computeFinalRankings(
 	locals: App.Locals,
 	finalRound: number
 ): Promise<FinalRanking[]> {
-	// 1. Load ALL participants (including eliminated)
 	const allParticipants = (await locals.pb.collection('users').getFullList({
 		filter: 'role = "participant"'
 	})) as UsersResponse[]
 
-	// 2. Load ALL ratings for all rounds (with author for juror weighting)
 	const allRatings = (await locals.pb.collection('ratings').getFullList({
 		expand: 'author'
 	})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
 
-	// 3. Sum ALL ratings per user (across all rounds) for total score
+	// Sum ALL ratings per user (across all rounds) for total score
 	const totalRatingsByUser = new Map<string, { sum: number; count: number }>()
 	const lastRoundByUser = new Map<string, number>()
 	for (const r of allRatings) {
@@ -73,7 +71,6 @@ async function computeFinalRankings(
 		}
 	}
 
-	// 4. Build ranking data for each participant using ALL ratings
 	const rankings: FinalRanking[] = allParticipants.map((p) => {
 		// Use ALL ratings across all rounds
 		const g = totalRatingsByUser.get(p.id) || { sum: 0, count: 0 }
@@ -95,7 +92,6 @@ async function computeFinalRankings(
 		}
 	})
 
-	// 5. Sort: Primary by eliminatedInRound DESC (null = finalist = best), Secondary by avg DESC
 	rankings.sort((a, b) => {
 		const roundA = a.eliminatedInRound ?? finalRound + 1
 		const roundB = b.eliminatedInRound ?? finalRound + 1
@@ -111,7 +107,6 @@ async function computeFinalRankings(
 		return a.name?.localeCompare(b.name || '') || 0
 	})
 
-	// 6. Assign ranks
 	rankings.forEach((r, i) => {
 		r.rank = i + 1
 	})
@@ -163,9 +158,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 			name: string | null
 			artistName?: string
 			avg: number
-			sum?: number
 			count: number
-			eliminated?: boolean
 		}
 		let winner: ResultRow | null = null
 		let results: ResultRow[] = []
@@ -175,20 +168,16 @@ export const GET: RequestHandler = async ({ locals }) => {
 		const showResults = rec.roundState === 'publish_result'
 		if (showResults) {
 			try {
-				// In finale, compute full rankings for all participants
 				if (isFinale) {
 					finalRankings = await computeFinalRankings(locals, totalRounds)
-					const topRanking = finalRankings[0]
-					winner = topRanking ? { ...topRanking, sum: undefined } : null
+					winner = finalRankings[0] ?? null
 				} else {
-					// Normal round: just show current round results
-					// Participants still in competition
+					// Normal round: show anonymous results (no detailed per-user ratings)
 					const participants = (await locals.pb.collection('users').getFullList({
 						filter: 'role = "participant" && eliminated != true'
 					})) as UsersResponse[]
 					const participantIds = new Set(participants.map((p) => p.id))
 
-					// All ratings of the final round with author expanded
 					const allRatings = (await locals.pb.collection('ratings').getFullList({
 						filter: `round = ${round}`,
 						expand: 'author'
@@ -199,7 +188,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 						const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
 						const rating = Number(r.rating) || 0
 						const authorRole = r.expand?.author?.role
-						// Juror votes count double
 						const weight = authorRole === 'juror' ? 2 : 1
 						g.sum += rating * weight
 						g.count += weight
@@ -209,9 +197,8 @@ export const GET: RequestHandler = async ({ locals }) => {
 						const g = grouped.get(p.id) || { sum: 0, count: 0 }
 						const avg = g.count > 0 ? g.sum / g.count : 0
 						const name = p.firstName || p.name || p.username || p.email || p.id
-						return { id: p.id, name, artistName: p.artistName, avg, sum: g.sum, count: g.count }
+						return { id: p.id, name, artistName: p.artistName, avg, count: g.count }
 					})
-					// Sort by average descending (highest = best)
 					results.sort(
 						(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
 					)
@@ -238,7 +225,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 					artistName: user.artistName
 				}
 
-				// Fetch song choice for this participant in current round
 				const songChoices = (await locals.pb.collection('song_choices').getFullList({
 					filter: `user = "${rec.activeParticipant}" && round = ${round}`
 				})) as SongChoicesResponse[]
@@ -257,7 +243,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 			}
 		}
 
-		logger.info('CompetitionState GET', {
+		logger.info('Results state GET', {
 			round: rec.round,
 			state: rec.roundState,
 			started: rec.competitionStarted,
@@ -280,7 +266,6 @@ export const GET: RequestHandler = async ({ locals }) => {
 		})
 	} catch (e: unknown) {
 		const err = e as Error & { status?: number; url?: string; data?: unknown; message?: string }
-		// If the collection doesn't exist yet, return safe defaults without error noise
 		if (err?.status === 404) {
 			logger.info('CompetitionState collection missing, returning defaults')
 			return json({
@@ -291,7 +276,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 				activeParticipant: null
 			})
 		}
-		logger.error('CompetitionState GET failed', {
+		logger.error('Results state GET failed', {
 			status: err?.status,
 			message: err?.message,
 			url: err?.url,

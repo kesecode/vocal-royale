@@ -782,6 +782,18 @@ migrate((app) => {
         },
         {
           "hidden": false,
+          "id": "number1234567891",
+          "name": "eliminatedInRound",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "number",
+          "min": 1,
+          "max": 10,
+          "noDecimal": true
+        },
+        {
+          "hidden": false,
           "id": "autodate2990389176",
           "name": "created",
           "onCreate": true,
@@ -850,7 +862,7 @@ migrate((app) => {
       },
       "system": false,
       "type": "auth",
-      "updateRule": "id = @request.auth.id",
+      "updateRule": "id = @request.auth.id || @request.auth.role = 'admin'",
       "verificationTemplate": {
         "body": "<!DOCTYPE html>\n<html lang=\"de\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <meta name=\"color-scheme\" content=\"light only\">\n  <meta name=\"supported-color-schemes\" content=\"light only\">\n  <title>E-Mail verifizieren - {app_name}</title>\n  <link href=\"https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@400;600&display=swap\" rel=\"stylesheet\">\n</head>\n<body style=\"margin: 0; padding: 0; background-color: #b82015; font-family: 'Fredoka', Arial, sans-serif;\">\n  <table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"background-image: radial-gradient(#a11b11 1.2px, transparent 1.2px); background-size: 12px 12px;\">\n    <tr>\n      <td align=\"center\" style=\"padding: 40px 20px;\">\n        <table width=\"600\" cellpadding=\"0\" cellspacing=\"0\" style=\"max-width: 600px;\">\n          <tr>\n            <td align=\"center\" style=\"padding-bottom: 30px;\">\n              <h1 style=\"font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: #ffcc00; margin: 0; text-shadow: 3px 3px 0 #000;\">{app_name}</h1>\n            </td>\n          </tr>\n          <tr>\n            <td style=\"background-color: #5e0e79; border: 2px solid #333; border-radius: 10px; box-shadow: 4px 4px 0 #2a0436; padding: 30px; color: white;\">\n              <h2 style=\"font-family: 'Fredoka', Arial, sans-serif; font-size: 24px; margin-top: 0; color: #ffcc00;\">Willkommen bei {app_name}</h2>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Ai Gude,</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin: 15px 0;\">Vielen Dank, dass du dich bei {app_name} angemeldet hast! Klicke auf den Button unten, um deine E-Mail-Adresse zu verifizieren:</p>\n              <table cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 25px 0;\">\n                <tr>\n                  <td align=\"center\" style=\"background-color: #ffcc00; border: 2px solid #333; border-radius: 12px; box-shadow: 4px 4px 0 #cc9900;\">\n                    <a href=\"{app_url}/auth/confirm-verification/{TOKEN}\" style=\"display: inline-block; padding: 12px 24px; color: #161616; text-decoration: none; font-weight: 600; font-size: 16px;\">E-Mail verifizieren</a>\n                  </td>\n                </tr>\n              </table>\n              <p style=\"font-size: 14px; line-height: 1.5; margin: 15px 0; color: #cccccc;\">Der Link ist 72 Stunden gültig.</p>\n              <p style=\"font-size: 16px; line-height: 1.5; margin-top: 25px;\">Wir freuen uns auf deine Teilnahme!<br/>Dein {app_name} Team</p>\n            </td>\n          </tr>\n          <tr>\n            <td align=\"center\" style=\"padding-top: 30px; color: #b3b3b3; font-size: 12px;\">\n              © 2025 David Weppler\n            </td>\n          </tr>\n        </table>\n      </td>\n    </tr>\n  </table>\n</body>\n</html>",
         "subject": "E-Mail verifizieren - {app_name}"
@@ -913,7 +925,9 @@ migrate((app) => {
             "rating_phase",
             "result_locked",
             "result_phase",
-            "break"
+            "publish_result",
+            "break",
+            "rating_refinement"
           ]
         },
         {
@@ -961,7 +975,7 @@ migrate((app) => {
       ],
       "id": "pbc_3454597180",
       "indexes": [],
-      "listRule": "@request.auth.role = 'admin'",
+      "listRule": "@request.auth.role != 'default'",
       "name": "competition_state",
       "system": false,
       "type": "base",
@@ -1093,7 +1107,7 @@ migrate((app) => {
       "name": "ratings",
       "system": false,
       "type": "base",
-      "updateRule": "id = @request.auth.id",
+      "updateRule": "author = @request.auth.id",
       "viewRule": "@request.auth.id != ''"
     },
     {
@@ -1220,12 +1234,12 @@ migrate((app) => {
       ],
       "id": "pbc_2769025244",
       "indexes": [],
-      "listRule": "@request.auth.id != ''",
+      "listRule": "@request.auth.role != 'default'",
       "name": "settings",
       "system": false,
       "type": "base",
       "updateRule": "@request.auth.role = 'admin'",
-      "viewRule": "@request.auth.id != ''"
+      "viewRule": "@request.auth.role != 'default'"
     },
     {
       "createRule": "@request.auth.role = 'participant'",
@@ -1346,12 +1360,12 @@ migrate((app) => {
       "indexes": [
         "CREATE UNIQUE INDEX `idx_song_choices_user_round` ON `song_choices` (\n  `user`,\n  `round`\n)"
       ],
-      "listRule": "@request.auth.id != ''",
+      "listRule": "(user = @request.auth.id || @request.auth.role = 'admin') && @request.auth.role != 'default'",
       "name": "song_choices",
       "system": false,
       "type": "base",
       "updateRule": "user = @request.auth.id || @request.auth.role = 'admin'",
-      "viewRule": "@request.auth.id != ''"
+      "viewRule": "(user = @request.auth.id || @request.auth.role = 'admin') && @request.auth.role != 'default'"
     },
     {
       "id": "pbc_email_templates",

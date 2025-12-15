@@ -14,6 +14,9 @@
         "--",
         "--host"
       ],
+      "env": {
+        "NODE_ENV": "test"
+      },
       "preLaunchTask": "Start PocketBase",
       "console": "integratedTerminal",
       "autoAttachChildProcesses": true,

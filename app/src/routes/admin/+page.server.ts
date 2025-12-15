@@ -4,6 +4,8 @@ import type { CompetitionStateResponse, UsersResponse } from '$lib/pocketbase-ty
 type AdminResponse = {
 	state: CompetitionStateResponse | null
 	activeParticipant: UsersResponse | null
+	activeSongChoice: { artist: string; songTitle: string; appleMusicSongId?: string } | null
+	isProduction: boolean
 }
 
 export const load = (async ({ fetch }) => {
@@ -14,6 +16,9 @@ export const load = (async ({ fetch }) => {
 	const data: AdminResponse = await res.json()
 	return {
 		competitionState: data.state,
-		activeUser: data.activeParticipant
+		activeUser: data.activeParticipant,
+		activeSongChoice: data.activeSongChoice,
+		isTestEnv: process.env.NODE_ENV === 'test',
+		isProduction: data.isProduction
 	}
 }) satisfies PageServerLoad

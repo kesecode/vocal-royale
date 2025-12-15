@@ -14,6 +14,7 @@ import {
 	parseSettings,
 	isDeadlinePassed
 } from '$lib/utils/competition-settings'
+import { getLatestCompetitionState, isCompetitionStarted } from '$lib/server/competition-state'
 
 const COLLECTION = 'song_choices' as const
 const VALIDATE = (env.SONG_CHOICE_VALIDATE ?? 'true') === 'true'
@@ -179,6 +180,18 @@ export const POST: RequestHandler = async ({ request, locals, fetch }) => {
 	}
 	if (locals.user.role !== 'participant') {
 		return json({ error: 'forbidden' }, { status: 403 })
+	}
+
+	try {
+		const state = await getLatestCompetitionState(locals.pb)
+		if (isCompetitionStarted(state)) {
+			return json({ error: 'competition_started' }, { status: 403 })
+		}
+	} catch (error) {
+		logger.error('SongChoices POST: failed to check competition state', {
+			message: (error as Error)?.message
+		})
+		return json({ error: 'state_check_failed' }, { status: 500 })
 	}
 
 	let payload: SongChoicePayload

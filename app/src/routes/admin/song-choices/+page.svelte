@@ -4,7 +4,7 @@
 	<div class="panel-table">
 		<div class="flex-between table-header-border padding-responsive py-3">
 			<div class="font-semibold">Song-Auswahl aller Teilnehmer</div>
-			{#if loading}
+			{#if loading || stateLoading}
 				<div class="text-xs text-muted">Laden…</div>
 			{/if}
 		</div>
@@ -18,6 +18,13 @@
 		{#if infoMsg}
 			<div class="p-3 sm:p-4">
 				<div class="text-sm text-emerald-200">{infoMsg}</div>
+			</div>
+		{/if}
+		{#if competitionStarted}
+			<div class="p-3 sm:p-4">
+				<div class="text-sm text-amber-200">
+					Wettbewerb läuft – Song-Änderungen und Freigaben sind gesperrt.
+				</div>
 			</div>
 		{/if}
 
@@ -47,7 +54,7 @@
 										<div class="font-medium">{choice.expand.user.name || 'Unbekannt'}</div>
 										{#if choice.expand.user.artistName}
 											<div class="text-xs text-white/70">
-												a.k.a. {choice.expand.user.artistName}
+												{choice.expand.user.artistName}
 											</div>
 										{/if}
 									{:else}
@@ -74,6 +81,7 @@
 										{#if choice.confirmed}
 											<button
 												class="btn-purple text-xs px-3 py-1.5"
+												disabled={actionsDisabled}
 												onclick={() => openReleaseModal(choice)}
 											>
 												Freigeben
@@ -81,7 +89,7 @@
 										{:else}
 											<button
 												class="btn-brand text-xs px-3 py-1.5"
-												disabled={!choice.artist || !choice.songTitle}
+												disabled={!choice.artist || !choice.songTitle || actionsDisabled}
 												onclick={() => openConfirmModal(choice)}
 											>
 												Bestätigen
@@ -89,7 +97,7 @@
 										{/if}
 										<button
 											class="btn-danger text-xs px-3 py-1.5"
-											disabled={!choice.artist || !choice.songTitle}
+											disabled={!choice.artist || !choice.songTitle || actionsDisabled}
 											onclick={() => openRejectModal(choice)}
 										>
 											Ablehnen
@@ -126,7 +134,7 @@
 					{confirmChoice.expand?.user?.name || 'Unbekannt'}
 					{#if confirmChoice.expand?.user?.artistName}
 						<span class="text-white/50">
-							(a.k.a. {confirmChoice.expand.user.artistName})
+							({confirmChoice.expand.user.artistName})
 						</span>
 					{/if}
 				</div>
@@ -147,7 +155,7 @@
 
 	{#snippet footer()}
 		<button class="btn-purple" onclick={closeConfirmModal}>Abbrechen</button>
-		<button class="btn-brand" onclick={executeConfirm} disabled={confirming}>
+		<button class="btn-brand" onclick={executeConfirm} disabled={confirming || competitionStarted}>
 			{confirming ? 'Wird bestätigt…' : 'Bestätigen'}
 		</button>
 	{/snippet}
@@ -164,7 +172,7 @@
 					{releaseChoice.expand?.user?.name || 'Unbekannt'}
 					{#if releaseChoice.expand?.user?.artistName}
 						<span class="text-white/50">
-							(a.k.a. {releaseChoice.expand.user.artistName})
+							({releaseChoice.expand.user.artistName})
 						</span>
 					{/if}
 				</div>
@@ -186,7 +194,7 @@
 
 	{#snippet footer()}
 		<button class="btn-purple" onclick={closeReleaseModal}>Abbrechen</button>
-		<button class="btn-brand" onclick={executeRelease} disabled={releasing}>
+		<button class="btn-brand" onclick={executeRelease} disabled={releasing || competitionStarted}>
 			{releasing ? 'Wird freigegeben…' : 'Freigeben'}
 		</button>
 	{/snippet}
@@ -203,7 +211,7 @@
 					{selectedChoice.expand?.user?.name || 'Unbekannt'}
 					{#if selectedChoice.expand?.user?.artistName}
 						<span class="text-white/50">
-							(a.k.a. {selectedChoice.expand.user.artistName})
+							({selectedChoice.expand.user.artistName})
 						</span>
 					{/if}
 				</div>
@@ -241,7 +249,7 @@
 
 	{#snippet footer()}
 		<button class="btn-purple" onclick={closeRejectModal}>Abbrechen</button>
-		<button class="btn-danger" onclick={rejectSong} disabled={rejecting}>
+		<button class="btn-danger" onclick={rejectSong} disabled={rejecting || competitionStarted}>
 			{rejecting ? 'Wird abgelehnt…' : 'Ablehnen'}
 		</button>
 	{/snippet}
@@ -265,6 +273,9 @@
 	let loading = $state(false)
 	let errorMsg: string | null = $state(null)
 	let infoMsg: string | null = $state(null)
+	let competitionStarted = $state(false)
+	let stateLoading = $state(false)
+	const actionsDisabled = $derived(competitionStarted)
 
 	// Confirm Modal State
 	let showConfirmModal = $state(false)
@@ -284,6 +295,7 @@
 
 	onMount(() => {
 		loadSongChoices()
+		loadCompetitionState()
 	})
 
 	async function loadSongChoices() {
@@ -309,6 +321,20 @@
 		}
 	}
 
+	async function loadCompetitionState() {
+		stateLoading = true
+		try {
+			const res = await fetch('/admin/api')
+			if (!res.ok) return
+			const data = await res.json()
+			competitionStarted = Boolean(data?.state?.competitionStarted)
+		} catch (error) {
+			console.error('Competition state fetch failed', error)
+		} finally {
+			stateLoading = false
+		}
+	}
+
 	// Confirm Modal Functions
 	function openConfirmModal(choice: SongChoiceWithUser) {
 		confirmChoice = choice
@@ -322,6 +348,11 @@
 
 	async function executeConfirm() {
 		if (!confirmChoice) return
+
+		if (competitionStarted) {
+			errorMsg = 'Wettbewerb läuft – Änderungen gesperrt.'
+			return
+		}
 
 		confirming = true
 		errorMsg = null
@@ -369,6 +400,11 @@
 	async function executeRelease() {
 		if (!releaseChoice) return
 
+		if (competitionStarted) {
+			errorMsg = 'Wettbewerb läuft – Änderungen gesperrt.'
+			return
+		}
+
 		releasing = true
 		errorMsg = null
 		infoMsg = null
@@ -412,6 +448,11 @@
 
 	async function rejectSong() {
 		if (!selectedChoice) return
+
+		if (competitionStarted) {
+			errorMsg = 'Wettbewerb läuft – Änderungen gesperrt.'
+			return
+		}
 
 		rejecting = true
 		errorMsg = null
