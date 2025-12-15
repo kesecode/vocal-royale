@@ -79,10 +79,9 @@ async function computeFinalRankings(
 		const g = totalRatingsByUser.get(p.id) || { sum: 0, count: 0 }
 		const avg = g.count > 0 ? g.sum / g.count : 0
 
-		// Determine eliminatedInRound: if not set but participant didn't reach finale, use lastRoundWithRatings
+		// Determine eliminatedInRound from p.round (which stores elimination round when eliminated)
 		const lastRoundWithRatings = lastRoundByUser.get(p.id) || finalRound
-		const isFinalist = !p.eliminated || lastRoundWithRatings === finalRound
-		const eliminatedInRound = p.eliminatedInRound ?? (isFinalist ? null : lastRoundWithRatings)
+		const eliminatedInRound = p.eliminated ? (p.round ?? lastRoundWithRatings) : null
 
 		return {
 			rank: 0,
@@ -215,7 +214,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 						const avg = g.count > 0 ? g.sum / g.count : 0
 						const name = p.firstName || p.name || p.username || p.email || p.id
 						// Mark as eliminated if they were eliminated in this round
-						const eliminated = p.eliminated === true && p.eliminatedInRound === round
+						const eliminated = p.eliminated === true && p.round === round
 						return {
 							id: p.id,
 							name,

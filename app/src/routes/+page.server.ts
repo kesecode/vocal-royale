@@ -111,9 +111,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 					const avg = g.count > 0 ? g.sum / g.count : 0
 					const name = p.firstName || p.name || p.username || p.email || p.id
 					const lastRoundWithRatings = lastRoundByUser.get(p.id) || finalRound
-					const isFinalist = !p.eliminated || lastRoundWithRatings === finalRound
-					const eliminatedInRound =
-						p.eliminatedInRound ?? (isFinalist ? null : lastRoundWithRatings)
+					const eliminatedInRound = p.eliminated ? (p.round ?? lastRoundWithRatings) : null
 					return {
 						id: p.id,
 						name,

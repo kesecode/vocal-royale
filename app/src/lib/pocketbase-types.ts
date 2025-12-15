@@ -56,9 +56,9 @@ export type UsersRecord = {
 	artistName: string
 	role: UserRole
 	eliminated?: boolean // eliminated from competition
-	eliminatedInRound?: number // round in which participant was eliminated (for final rankings)
 	sangThisRound?: boolean // performed in the current round
 	checkedIn?: boolean // checked in by admin
+	round?: number // current round of the participant (synced with competition state)
 }
 
 export type RatingsRecord = {

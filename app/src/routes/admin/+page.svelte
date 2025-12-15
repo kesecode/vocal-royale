@@ -203,7 +203,7 @@
 					{#if hasTie}
 						<div class="mb-3 p-3 rounded border border-amber-500/40 bg-amber-500/10 text-sm">
 							<strong>Patt-Situation:</strong>
-							Noch {remainingToSelect} Teilnehmer auswählen, die weiterkommen.
+							Noch {remainingToEliminate} Teilnehmer eliminieren.
 						</div>
 					{/if}
 					<div class="overflow-auto max-h-[50vh]">
@@ -221,7 +221,7 @@
 							<tbody>
 								{#each results.slice().sort((a, b) => b.avg - a.avg) as r (r.id)}
 									<tr
-										class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''} ${r.isTied && !r.isSafe ? 'bg-yellow-500/20' : ''} ${r.isSafe ? 'bg-emerald-500/20' : ''}`}
+										class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''}`}
 									>
 										<td class="p-2 sm:p-3">
 											<div class="font-medium">{r.name}</div>
@@ -233,14 +233,12 @@
 										<td class="p-2 sm:p-3">{r.count}</td>
 										{#if hasTie}
 											<td class="p-2 sm:p-3">
-												{#if r.isSafe}
-													<span class="text-xs text-emerald-300 font-medium">Sicher</span>
-												{:else if r.isTied}
+												{#if r.isTied && !r.eliminated}
 													<button
-														class="btn-brand text-xs"
-														onclick={() => openTieConfirmModal(r.id)}
+														class="btn-danger text-xs"
+														onclick={() => openEliminateModal(r.id)}
 													>
-														Kommt weiter
+														Eliminieren
 													</button>
 												{/if}
 											</td>
@@ -285,19 +283,23 @@
 		{/snippet}
 	</Modal>
 
-	<Modal bind:open={showTieConfirmModal} title="Patt auflösen" onclose={closeTieConfirmModal}>
+	<Modal
+		bind:open={showEliminateModal}
+		title="Teilnehmer eliminieren"
+		onclose={closeEliminateModal}
+	>
 		<div class="space-y-3">
 			<p class="text-white/90">
 				Möchtest du <strong class="text-white">{pendingParticipantName}</strong>
-				als Weiterkommer auswählen?
+				eliminieren?
 			</p>
 			<p class="text-sm text-white/70">
-				Noch {remainingToSelect} Teilnehmer müssen ausgewählt werden.
+				Noch {remainingToEliminate} Teilnehmer müssen eliminiert werden.
 			</p>
 		</div>
 		{#snippet footer()}
-			<button class="btn-accent" onclick={closeTieConfirmModal}>Abbrechen</button>
-			<button class="btn-brand" onclick={confirmResolveTie}>Bestätigen</button>
+			<button class="btn-accent" onclick={closeEliminateModal}>Abbrechen</button>
+			<button class="btn-danger" onclick={confirmEliminate}>Eliminieren</button>
 		{/snippet}
 	</Modal>
 </section>
@@ -360,17 +362,15 @@
 		count: number
 		eliminated: boolean
 		isTied?: boolean
-		isSafe?: boolean
 	}
 	let results: ResultRow[] | null = $state(null)
 	let winner: ResultRow | null = $state(null)
 	let hasTie: boolean = $state(false)
 
-	// Tie resolution state
-	let tieSurvivors: string[] = $state([])
-	let showTieConfirmModal: boolean = $state(false)
-	let pendingTieSurvivor: string | null = $state(null)
-	let remainingToSelect: number = $state(0)
+	// Tie elimination state
+	let showEliminateModal: boolean = $state(false)
+	let pendingEliminateId: string | null = $state(null)
+	let remainingToEliminate: number = $state(0)
 
 	// Load settings and state on mount
 	onMount(async () => {
@@ -471,10 +471,9 @@
 				results = Array.isArray(data?.results) ? data.results : null
 				winner = data?.winner ?? null
 				hasTie = Boolean(data?.hasTie)
-				tieSurvivors = []
+				remainingToEliminate = Number(data?.remainingToEliminate ?? 0)
 				if (hasTie) {
-					remainingToSelect = Number(data?.neededSurvivorsFromTie ?? 0)
-					infoMsg = `Patt-Situation! Bitte ${remainingToSelect} Teilnehmer auswählen, die weiterkommen.`
+					infoMsg = `Patt-Situation! Bitte ${remainingToEliminate} Teilnehmer eliminieren.`
 				} else {
 					infoMsg = 'Bewertungen abgeschlossen.'
 				}
@@ -488,51 +487,49 @@
 		}
 	}
 
-	function openTieConfirmModal(survivorId: string) {
-		pendingTieSurvivor = survivorId
-		showTieConfirmModal = true
+	function openEliminateModal(eliminateId: string) {
+		pendingEliminateId = eliminateId
+		showEliminateModal = true
 	}
 
-	function closeTieConfirmModal() {
-		showTieConfirmModal = false
-		pendingTieSurvivor = null
+	function closeEliminateModal() {
+		showEliminateModal = false
+		pendingEliminateId = null
 	}
 
-	// Get name of pending survivor for modal display
+	// Get name of pending participant for modal display
 	const pendingParticipantName = $derived.by(() => {
-		if (!pendingTieSurvivor || !results) return '—'
-		const found = results.find((r: ResultRow) => r.id === pendingTieSurvivor)
+		if (!pendingEliminateId || !results) return '—'
+		const found = results.find((r: ResultRow) => r.id === pendingEliminateId)
 		return found?.name ?? '—'
 	})
 
-	async function confirmResolveTie() {
-		if (!pendingTieSurvivor) return
+	async function confirmEliminate() {
+		if (!pendingEliminateId) return
 		errorMsg = null
 		infoMsg = null
-		closeTieConfirmModal()
+		closeEliminateModal()
 		try {
 			const res = await fetch('/admin/api', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
-					action: 'resolve_tie',
-					survivorId: pendingTieSurvivor,
-					tieSurvivors
+					action: 'eliminate_from_tie',
+					eliminateId: pendingEliminateId
 				})
 			})
 			if (!res.ok) {
-				errorMsg = 'Patt auflösen fehlgeschlagen.'
+				errorMsg = 'Eliminieren fehlgeschlagen.'
 				return
 			}
 			const data = await res.json()
 			results = Array.isArray(data?.results) ? data.results : null
 			winner = data?.winner ?? null
 			hasTie = Boolean(data?.hasTie)
-			tieSurvivors = Array.isArray(data?.tieSurvivors) ? data.tieSurvivors : []
-			remainingToSelect = Number(data?.remainingToSelect ?? 0)
+			remainingToEliminate = Number(data?.remainingToEliminate ?? 0)
 
 			if (hasTie) {
-				infoMsg = `Noch ${remainingToSelect} Teilnehmer auswählen.`
+				infoMsg = `Noch ${remainingToEliminate} Teilnehmer eliminieren.`
 			} else {
 				infoMsg = 'Patt aufgelöst!'
 			}
@@ -561,8 +558,7 @@
 			results = null
 			winner = null
 			hasTie = false
-			tieSurvivors = []
-			remainingToSelect = 0
+			remainingToEliminate = 0
 			infoMsg = 'Nächste Runde gestartet.'
 			// Reload to get updated song choice
 			await reloadState()
@@ -611,10 +607,7 @@
 					results = data.results
 					winner = data.winner ?? null
 					hasTie = Boolean(data.hasTie)
-					// Update tie resolution state
-					if (data.hasTie) {
-						remainingToSelect = Number(data?.neededSurvivorsFromTie ?? data?.remainingToSelect ?? 0)
-					}
+					remainingToEliminate = Number(data?.remainingToEliminate ?? 0)
 				}
 				// Update state if provided
 				if (data?.state) {
@@ -660,8 +653,7 @@
 			results = null
 			winner = null
 			hasTie = false
-			tieSurvivors = []
-			remainingToSelect = 0
+			remainingToEliminate = 0
 			infoMsg = 'Spiel zurückgesetzt.'
 		} catch {
 			errorMsg = 'Netzwerkfehler.'
