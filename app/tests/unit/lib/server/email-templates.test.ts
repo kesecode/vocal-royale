@@ -418,7 +418,7 @@ describe('Email Templates', () => {
 				totalJurors: 3
 			})
 
-			expect(result.html).toContain('unter 15 Teilnehmern erreicht')
+			expect(result.html).toContain('unter 15 Teilnehmer*innen erreicht')
 		})
 	})
 
