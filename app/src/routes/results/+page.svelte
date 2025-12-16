@@ -300,7 +300,7 @@
 	let finalRankings: FinalRankingRow[] = []
 
 	let pollingInterval: ReturnType<typeof setInterval> | null = null
-	const POLLING_INTERVAL_MS = 5000
+	const POLLING_INTERVAL_MS = 2000
 
 	async function handleRoundSelect(round: number) {
 		if (!competitionFinished) return
@@ -374,6 +374,8 @@
 			const newCompetitionStarted = Boolean(data?.competitionStarted ?? false)
 			const newCompetitionFinished = Boolean(data?.competitionFinished ?? false)
 			const newIsBreak = Boolean(data?.break ?? false)
+			const newActiveParticipantId = data?.activeParticipantInfo?.id ?? null
+			const currentActiveParticipantId = activeParticipantInfo?.id ?? null
 
 			const roundChanged = newRound !== activeRound
 			const stateChanged =
@@ -391,8 +393,16 @@
 			const startedChanged = newCompetitionStarted !== competitionStarted
 			const finishedChanged = newCompetitionFinished !== competitionFinished
 			const breakChanged = newIsBreak !== isBreak
+			const participantChanged = newActiveParticipantId !== currentActiveParticipantId
 
-			if (roundChanged || stateChanged || startedChanged || finishedChanged || breakChanged) {
+			if (
+				roundChanged ||
+				stateChanged ||
+				startedChanged ||
+				finishedChanged ||
+				breakChanged ||
+				participantChanged
+			) {
 				if (roundChanged) {
 					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
 					currentRound = activeRound

@@ -164,7 +164,7 @@
 						<div class="text-lg font-semibold mb-2">
 							🏆 Sieger: {winner.name}
 							{#if winner.artistName}
-								<span class="text-white/70">{winner.artistName}</span>
+								<span class="text-white/70">a.k.a. {winner.artistName}</span>
 							{/if}
 						</div>
 						<div class="text-sm text-white/80 mb-4">

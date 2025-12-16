@@ -49,20 +49,22 @@
 			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="flex items-center gap-3">
 					<span class="font-semibold">Runde {currentRound}</span>
-					{#if canRate}
-						<span
-							class="inline-flex items-center border-2 border-[#333] bg-green-500 px-2 py-0.5 text-xs font-bold text-black"
-							style="border-radius: 10px 6px 6px 12px/6px 12px 8px 8px; box-shadow: 3px 3px 0 rgba(22, 101, 52, 0.6);"
-						>
-							Bewertung geöffnet
-						</span>
-					{:else}
-						<span
-							class="inline-flex items-center border-2 border-[#333] bg-orange-500 px-2 py-0.5 text-xs font-bold text-black"
-							style="border-radius: 6px 10px 8px 10px/8px 10px 6px 12px; box-shadow: 3px 3px 0 rgba(194, 65, 12, 0.6);"
-						>
-							Bewertung geschlossen
-						</span>
+					{#if showRatingBadge}
+						{#if canRate}
+							<span
+								class="inline-flex items-center border-2 border-[#333] bg-green-500 px-2 py-0.5 text-xs font-bold text-black"
+								style="border-radius: 10px 6px 6px 12px/6px 12px 8px 8px; box-shadow: 3px 3px 0 rgba(22, 101, 52, 0.6);"
+							>
+								Bewertung geöffnet
+							</span>
+						{:else}
+							<span
+								class="inline-flex items-center border-2 border-[#333] bg-orange-500 px-2 py-0.5 text-xs font-bold text-black"
+								style="border-radius: 6px 10px 8px 10px/8px 10px 6px 12px; box-shadow: 3px 3px 0 rgba(194, 65, 12, 0.6);"
+							>
+								Bewertung geschlossen
+							</span>
+						{/if}
 					{/if}
 				</div>
 				<div class="flex items-center gap-2">
@@ -549,8 +551,14 @@
 	let activeParticipantInfo: ActiveParticipantInfo | null = null
 	let activeSongChoice: SongChoice | null = null
 	let pollingInterval: ReturnType<typeof setInterval> | null = null
-	const POLLING_INTERVAL_MS = 5000
+	const POLLING_INTERVAL_MS = 2000
 	$: canRate = roundState === 'rating_phase' || roundState === 'rating_refinement'
+	$: showRatingBadge =
+		!isBreak &&
+		roundState !== 'singing_phase' &&
+		roundState !== 'break' &&
+		roundState !== 'result_locked' &&
+		roundState !== 'publish_result'
 	$: activeParticipant = participants.find((p) => p.id === activeParticipantId) ?? null
 	$: showActions = canRate
 	$: if (activeParticipant && !ratings[activeParticipant.id]) {
@@ -676,6 +684,10 @@
 			const newCompetitionStarted = Boolean(data?.competitionStarted ?? false)
 			const newCompetitionFinished = Boolean(data?.competitionFinished ?? false)
 			const newIsBreak = Boolean(data?.break ?? false)
+			const newActiveParticipantId =
+				typeof data?.activeParticipant === 'string' && data.activeParticipant
+					? data.activeParticipant
+					: null
 
 			const roundChanged = newRound !== activeRound
 			const stateChanged =
@@ -693,8 +705,16 @@
 			const startedChanged = newCompetitionStarted !== competitionStarted
 			const finishedChanged = newCompetitionFinished !== competitionFinished
 			const breakChanged = newIsBreak !== isBreak
+			const participantChanged = newActiveParticipantId !== activeParticipantId
 
-			if (roundChanged || stateChanged || startedChanged || finishedChanged || breakChanged) {
+			if (
+				roundChanged ||
+				stateChanged ||
+				startedChanged ||
+				finishedChanged ||
+				breakChanged ||
+				participantChanged
+			) {
 				if (roundChanged) {
 					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
 					currentRound = activeRound
