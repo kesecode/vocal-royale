@@ -66,23 +66,34 @@ export function isCertificateServiceConfigured(): boolean {
 // ============================================================================
 
 /**
- * Parse the certificate prompt template from environment
+ * Get the system prompt from environment variable
  * Converts escaped \n to actual newlines
  */
-function getCertificatePromptTemplate(): string {
+function getSystemPrompt(): string {
 	const template = env.CERTIFICATE_PROMPT || ''
 	return template.replace(/\\n/g, '\n')
 }
 
 /**
- * Call OpenAI API to generate personalized certificate text
+ * Default system prompt if CERTIFICATE_PROMPT is not set
  */
-async function generateCertificateText(prompt: string): Promise<ChatGPTResponse> {
+const DEFAULT_SYSTEM_PROMPT =
+	'Du bist ein freundlicher Moderator eines Gesangswettbewerbs. ' +
+	'Schreibe einen persoenlichen, motivierenden Text (max 500 Zeichen) basierend auf den Teilnehmerdaten. ' +
+	'Antworte immer auf Deutsch.'
+
+/**
+ * Call OpenAI API to generate personalized certificate text
+ * @param userData - The participant's song data and ratings as user message
+ */
+async function generateCertificateText(userData: string): Promise<ChatGPTResponse> {
 	const apiKey = env.OPENAI_API_KEY
 
 	if (!apiKey) {
 		return { text: '', success: false, error: 'api_key_missing' }
 	}
+
+	const systemPrompt = getSystemPrompt() || DEFAULT_SYSTEM_PROMPT
 
 	try {
 		const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -92,20 +103,19 @@ async function generateCertificateText(prompt: string): Promise<ChatGPTResponse>
 				Authorization: `Bearer ${apiKey}`
 			},
 			body: JSON.stringify({
-				model: 'gpt-4o-mini',
+				model: 'gpt-5.2-2025-12-11',
 				messages: [
 					{
 						role: 'system',
-						content:
-							'Du bist ein freundlicher Moderator eines Gesangswettbewerbs. Antworte immer auf Deutsch.'
+						content: systemPrompt
 					},
 					{
 						role: 'user',
-						content: prompt
+						content: userData
 					}
 				],
-				max_tokens: 300,
-				temperature: 0.7
+				max_completion_tokens: 3000,
+				temperature: 0.8
 			})
 		})
 
@@ -128,7 +138,7 @@ async function generateCertificateText(prompt: string): Promise<ChatGPTResponse>
 		const text = data.choices?.[0]?.message?.content?.trim() || ''
 
 		// Truncate to 500 chars if needed
-		const truncatedText = text.length > 500 ? text.substring(0, 497) + '...' : text
+		const truncatedText = text.length > 800 ? text.substring(0, 797) + '...' : text
 
 		logger.info('OpenAI certificate text generated', {
 			charCount: truncatedText.length
@@ -152,15 +162,10 @@ async function generateCertificateText(prompt: string): Promise<ChatGPTResponse>
 // ============================================================================
 
 /**
- * Build the formatted prompt string for ChatGPT based on participant data
+ * Build the user data string for ChatGPT based on participant data
+ * This will be sent as the user message, while CERTIFICATE_PROMPT is the system message
  */
-function buildChatGPTPrompt(data: ParticipantCertificateData, totalParticipants: number): string {
-	const template = getCertificatePromptTemplate()
-
-	if (!template) {
-		return `Schreibe einen persoenlichen, motivierenden Text (max 500 Zeichen) fuer ${data.name} (${data.artistName || data.name}), Platz ${data.placement} von ${totalParticipants}.`
-	}
-
+function buildUserData(data: ParticipantCertificateData, totalParticipants: number): string {
 	// Build header with participant info
 	const headerLines: string[] = [
 		`Anzahl der Teilnehmer: ${totalParticipants}`,
@@ -203,11 +208,8 @@ function buildChatGPTPrompt(data: ParticipantCertificateData, totalParticipants:
 		return lines.join('\n')
 	})
 
-	// Combine header and songs into songsData
-	const songsData = [...headerLines, '', ...songBlocks].join('\n')
-
-	// Replace placeholder
-	return template.replace('{songsData}', songsData)
+	// Combine header and songs into user data
+	return [...headerLines, '', ...songBlocks].join('\n')
 }
 
 /**
@@ -307,6 +309,8 @@ function aggregateParticipantData(
 async function sendCertificateEmail(
 	data: ParticipantCertificateData,
 	totalParticipants: number,
+	totalVoters: number,
+	totalJurors: number,
 	appName?: string,
 	appUrl?: string
 ): Promise<CertificateResult> {
@@ -314,8 +318,9 @@ async function sendCertificateEmail(
 	let chatGptGenerated = false
 
 	// Generate personalized text with ChatGPT
-	const prompt = buildChatGPTPrompt(data, totalParticipants)
-	const result = await generateCertificateText(prompt)
+	// System prompt comes from CERTIFICATE_PROMPT env var, user data contains participant info
+	const userData = buildUserData(data, totalParticipants)
+	const result = await generateCertificateText(userData)
 
 	if (result.success) {
 		personalizedText = result.text
@@ -339,6 +344,8 @@ async function sendCertificateEmail(
 		totalParticipants,
 		totalScore: data.totalScore,
 		personalizedText,
+		totalVoters,
+		totalJurors,
 		appName,
 		appUrl
 	})
@@ -416,6 +423,23 @@ export async function sendAllCertificateEmails(
 	const totalParticipants = rankings.length
 	const results: CertificateResult[] = []
 
+	// Calculate distinct voters (spectators) and jurors who voted
+	const distinctVoterIds = new Set<string>()
+	const distinctJurorIds = new Set<string>()
+	for (const rating of allRatings) {
+		const authorRole = rating.expand?.author?.role
+		const authorId = rating.author
+		if (authorId) {
+			if (authorRole === 'spectator') {
+				distinctVoterIds.add(authorId)
+			} else if (authorRole === 'juror') {
+				distinctJurorIds.add(authorId)
+			}
+		}
+	}
+	const totalVoters = distinctVoterIds.size
+	const totalJurors = distinctJurorIds.size
+
 	// Process each participant sequentially (to avoid rate limits)
 	for (const ranking of rankings) {
 		const participant = allParticipants.find((p) => p.id === ranking.id)
@@ -452,7 +476,14 @@ export async function sendAllCertificateEmails(
 				allSongChoices
 			)
 
-			const result = await sendCertificateEmail(data, totalParticipants, appName, appUrl)
+			const result = await sendCertificateEmail(
+				data,
+				totalParticipants,
+				totalVoters,
+				totalJurors,
+				appName,
+				appUrl
+			)
 			results.push(result)
 
 			logger.info('Certificate email processed', {

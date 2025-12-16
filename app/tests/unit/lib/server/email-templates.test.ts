@@ -217,12 +217,14 @@ describe('Email Templates', () => {
 				placement: 1,
 				totalParticipants: 10,
 				totalScore: 8.75,
-				personalizedText: 'Herzlichen Glueckwunsch!'
+				personalizedText: 'Herzlichen Glueckwunsch!',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.subject).toContain('1. Platz')
 			expect(result.subject).toContain('Sieger')
-			expect(result.subject).toContain('Zertifikat')
+			expect(result.subject).toContain('Urkunde')
 		})
 
 		it('should use gold background for 1st place', async () => {
@@ -234,14 +236,16 @@ describe('Email Templates', () => {
 				placement: 1,
 				totalParticipants: 10,
 				totalScore: 9.0,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('#d4af37') // Gold background
 			expect(result.html).toContain('#ffd700') // Gold badge
 		})
 
-		it('should use silver background for 2nd place', async () => {
+		it('should use silver background for 2nd place with yellow text', async () => {
 			const { certificateTemplate } = await import('$lib/server/email-templates')
 
 			const result = certificateTemplate({
@@ -250,11 +254,31 @@ describe('Email Templates', () => {
 				placement: 2,
 				totalParticipants: 10,
 				totalScore: 8.5,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('#a8a8a8') // Silver background
-			expect(result.html).toContain('#c0c0c0') // Silver badge
+			expect(result.html).toContain('#ffcc00') // Yellow badge (same as others)
+		})
+
+		it('should use bronze background for 3rd place with yellow text', async () => {
+			const { certificateTemplate } = await import('$lib/server/email-templates')
+
+			const result = certificateTemplate({
+				name: 'Third Place',
+				artistName: '',
+				placement: 3,
+				totalParticipants: 10,
+				totalScore: 8.0,
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
+			})
+
+			expect(result.html).toContain('#A84300') // Bronze background
+			expect(result.html).toContain('#ffcc00') // Yellow badge (same as others)
 		})
 
 		it('should use red background for other placements', async () => {
@@ -266,7 +290,9 @@ describe('Email Templates', () => {
 				placement: 5,
 				totalParticipants: 10,
 				totalScore: 7.0,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('#b82015') // Standard red background
@@ -282,7 +308,9 @@ describe('Email Templates', () => {
 				placement: 3,
 				totalParticipants: 10,
 				totalScore: 8.0,
-				personalizedText
+				personalizedText,
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain(personalizedText)
@@ -297,7 +325,9 @@ describe('Email Templates', () => {
 				placement: 1,
 				totalParticipants: 10,
 				totalScore: 9.0,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('Max Mustermann a.k.a. DJ Maximus')
@@ -312,7 +342,9 @@ describe('Email Templates', () => {
 				placement: 1,
 				totalParticipants: 10,
 				totalScore: 9.0,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('Max Mustermann')
@@ -328,7 +360,9 @@ describe('Email Templates', () => {
 				placement: 3,
 				totalParticipants: 10,
 				totalScore: 8.0,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('#5e0e79') // Purple content box
@@ -345,7 +379,9 @@ describe('Email Templates', () => {
 				placement: 1,
 				totalParticipants: 10,
 				totalScore: 8.75,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('8.75')
@@ -360,7 +396,9 @@ describe('Email Templates', () => {
 				placement: 3,
 				totalParticipants: 10,
 				totalScore: 8.0,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
 			expect(result.html).toContain('3. Platz')
@@ -375,10 +413,12 @@ describe('Email Templates', () => {
 				placement: 5,
 				totalParticipants: 15,
 				totalScore: 7.0,
-				personalizedText: 'Test'
+				personalizedText: 'Test',
+				totalVoters: 25,
+				totalJurors: 3
 			})
 
-			expect(result.html).toContain('5 von 15 Teilnehmern')
+			expect(result.html).toContain('unter 15 Teilnehmern erreicht')
 		})
 	})
 

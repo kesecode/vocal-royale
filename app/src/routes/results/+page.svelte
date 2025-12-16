@@ -7,7 +7,7 @@
 			onSelect={handleRoundSelect}
 			activeRound={competitionStarted ? activeRound : 0}
 			currentRound={competitionStarted ? currentRound : 0}
-			total={totalRounds}
+			total={maxRound}
 			labels={roundLabels}
 			disabled={!competitionFinished}
 		/>
@@ -297,17 +297,23 @@
 	import { onMount, onDestroy } from 'svelte'
 	import type { RoundState } from '$lib/pocketbase-types'
 	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
-	import { getSongLabels, parseSettings, DEFAULT_SETTINGS } from '$lib/utils/competition-settings'
+	import {
+		getSongLabels,
+		parseSettings,
+		DEFAULT_SETTINGS,
+		getMaxRound
+	} from '$lib/utils/competition-settings'
 
 	export let data
 
 	// Competition settings
 	const settings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
 	const totalRounds = settings.totalRounds
+	const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
 	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
 
-	// Computed value for finale round
-	$: isFinaleRound = currentRound === totalRounds
+	// Computed value for finale round (any round >= totalRounds is finale)
+	$: isFinaleRound = currentRound >= totalRounds
 
 	let activeRound = 1
 	let currentRound = 1
@@ -377,7 +383,7 @@
 			if (!res.ok) return
 			const data = await res.json()
 			const r = Number(data?.round) || 1
-			activeRound = Math.min(Math.max(r, 1), totalRounds)
+			activeRound = Math.min(Math.max(r, 1), maxRound)
 			currentRound = activeRound
 			competitionStarted = Boolean(data?.competitionStarted ?? false)
 			competitionFinished = Boolean(data?.competitionFinished ?? false)
@@ -451,7 +457,7 @@
 				participantChanged
 			) {
 				if (roundChanged) {
-					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
+					activeRound = Math.min(Math.max(newRound, 1), maxRound)
 					currentRound = activeRound
 				}
 				if (stateChanged && newRoundState) {

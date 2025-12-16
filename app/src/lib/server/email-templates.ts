@@ -86,6 +86,8 @@ export interface CertificateEmailData {
 	totalParticipants: number
 	totalScore: number
 	personalizedText: string
+	totalVoters: number
+	totalJurors: number
 	appName?: string
 	appUrl?: string
 }
@@ -95,6 +97,7 @@ interface CertificateColors {
 	backgroundPattern: string
 	badgeColor: string
 	badgeShadow: string
+	copyrightColor: string
 }
 
 function getCertificateColors(placement: number): CertificateColors {
@@ -104,15 +107,26 @@ function getCertificateColors(placement: number): CertificateColors {
 			background: '#d4af37',
 			backgroundPattern: '#b8962e',
 			badgeColor: '#ffd700',
-			badgeShadow: '#8b7500'
+			badgeShadow: '#8b7500',
+			copyrightColor: '#5a4a1a' // Dark brown for readability on gold
 		}
 	} else if (placement === 2) {
-		// Silver for 2nd place
+		// Silver background for 2nd place, but keep yellow/white text like others
 		return {
 			background: '#a8a8a8',
 			backgroundPattern: '#8e8e8e',
-			badgeColor: '#c0c0c0',
-			badgeShadow: '#696969'
+			badgeColor: '#ffcc00',
+			badgeShadow: '#cc9900',
+			copyrightColor: '#3a3a3a' // Dark gray for readability on silver
+		}
+	} else if (placement === 3) {
+		// Bronze background for 3rd place, but keep yellow/white text like others
+		return {
+			background: '#A84300',
+			backgroundPattern: '#8a3700',
+			badgeColor: '#ffcc00',
+			badgeShadow: '#cc9900',
+			copyrightColor: '#b3b3b3' // Light gray (standard)
 		}
 	} else {
 		// Standard red for all others
@@ -120,7 +134,8 @@ function getCertificateColors(placement: number): CertificateColors {
 			background: '#b82015',
 			backgroundPattern: '#a11b11',
 			badgeColor: '#ffcc00',
-			badgeShadow: '#cc9900'
+			badgeShadow: '#cc9900',
+			copyrightColor: '#b3b3b3' // Light gray (standard)
 		}
 	}
 }
@@ -156,14 +171,16 @@ export function certificateTemplate(data: CertificateEmailData): { subject: stri
       ${placementText}
     </h2>
     <p style="font-size: 18px; line-height: 1.5; margin: 20px 0; text-align: center;">
-      Herzlichen Glueckwunsch, <strong>${displayName}</strong>!
+      Herzlichen Glückwunsch,<br/> 
+      <strong>${displayName}</strong>!
     </p>
     <table cellpadding="0" cellspacing="0" style="margin: 25px auto; width: 100%; max-width: 400px;">
       <tr>
         <td style="background-color: rgba(255, 255, 255, 0.1); border: 2px solid ${colors.badgeColor}; border-radius: 12px; padding: 20px; text-align: center;">
           <p style="margin: 0 0 8px 0; font-size: 14px; color: #cccccc;">Deine Gesamtwertung</p>
-          <p style="margin: 0; font-size: 36px; font-weight: 600; color: ${colors.badgeColor}; font-family: 'Bangers', Arial, sans-serif;">${data.totalScore.toFixed(2)}</p>
-          <p style="margin: 8px 0 0 0; font-size: 12px; color: #999999;">${data.placement} von ${data.totalParticipants} Teilnehmern</p>
+          <p style="margin: 0; font-size: 36px; font-weight: 600; color: ${colors.badgeColor}; font-family: 'Bangers', Arial, sans-serif;">${data.totalScore.toFixed(2)}/5</p>
+          <p style="margin: 8px 0 0 0; font-size: 12px; color: #999999;">Du hast den ${data.placement}. Platz unter ${data.totalParticipants} Teilnehmer*innen erreicht!</p>
+          <p style="margin: 12px 0 0 0; font-size: 11px; color: #888888;">${data.totalVoters} Zuschauer*innen und ${data.totalJurors} Jurymitglieder haben abgestimmt</p>
         </td>
       </tr>
     </table>
@@ -173,8 +190,9 @@ export function certificateTemplate(data: CertificateEmailData): { subject: stri
       </p>
     </div>
     <p style="font-size: 16px; line-height: 1.5; margin: 25px 0 0 0; text-align: center;">
-      Danke fuer deine Teilnahme bei ${appName}!<br/>
-      Wir hoffen, dich bald wieder auf der Buehne zu sehen.
+      Mega geil, dass du dabei warst!<br/>
+      Danke Danke Danke!<br/>
+      David 🫶<br/>
     </p>
   `
 
@@ -197,7 +215,7 @@ export function certificateTemplate(data: CertificateEmailData): { subject: stri
           <tr>
             <td align="center" style="padding-bottom: 30px;">
               <h1 style="font-family: 'Bangers', Arial, sans-serif; font-size: 48px; color: ${colors.badgeColor}; margin: 0; text-shadow: 3px 3px 0 #000;">${appName}</h1>
-              <p style="font-family: 'Fredoka', Arial, sans-serif; font-size: 18px; color: #ffffff; margin: 10px 0 0 0;">Teilnahme-Zertifikat</p>
+              <p style="font-family: 'Fredoka', Arial, sans-serif; font-size: 18px; color: #ffffff; margin: 10px 0 0 0;">Urkunde</p>
             </td>
           </tr>
           <tr>
@@ -206,7 +224,7 @@ export function certificateTemplate(data: CertificateEmailData): { subject: stri
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding-top: 30px; color: #b3b3b3; font-size: 12px;">
+            <td align="center" style="padding-top: 30px; color: ${colors.copyrightColor}; font-size: 12px;">
               &copy; 2025 David Weppler
             </td>
           </tr>
@@ -218,7 +236,7 @@ export function certificateTemplate(data: CertificateEmailData): { subject: stri
 </html>`
 
 	return {
-		subject: `Dein ${appName} Zertifikat - ${placementText}`,
+		subject: `Deine ${appName} Urkunde - ${placementText}`,
 		html
 	}
 }

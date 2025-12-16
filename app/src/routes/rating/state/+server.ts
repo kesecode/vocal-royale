@@ -8,7 +8,7 @@ import type {
 	SongChoicesResponse,
 	SettingsResponse
 } from '$lib/pocketbase-types'
-import { parseSettings, DEFAULT_SETTINGS } from '$lib/utils/competition-settings'
+import { parseSettings, DEFAULT_SETTINGS, getMaxRound } from '$lib/utils/competition-settings'
 
 const COLLECTION = 'competition_state' as const
 const SETTINGS_COLLECTION = 'settings' as const
@@ -126,6 +126,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	try {
 		// Load settings to determine finale round
 		let totalRounds = DEFAULT_SETTINGS.totalRounds
+		let numberOfFinalSongs = DEFAULT_SETTINGS.numberOfFinalSongs
 		try {
 			const settingsList = (await locals.pb
 				.collection(SETTINGS_COLLECTION)
@@ -133,10 +134,12 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			if (settingsList.items[0]) {
 				const parsed = parseSettings(settingsList.items[0])
 				totalRounds = parsed?.totalRounds ?? DEFAULT_SETTINGS.totalRounds
+				numberOfFinalSongs = parsed?.numberOfFinalSongs ?? DEFAULT_SETTINGS.numberOfFinalSongs
 			}
 		} catch {
 			// Use defaults
 		}
+		const maxRound = getMaxRound(totalRounds, numberOfFinalSongs)
 
 		const list = (await locals.pb
 			.collection(COLLECTION)
@@ -162,7 +165,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 
 		// Use query round if provided and competition is finished, otherwise use current round
 		const round = queryRound && finished ? Number(queryRound) : currentRound
-		const isFinale = round === totalRounds
+		const isFinale = round >= totalRounds
 		const isHistoricalQuery = queryRound && finished && Number(queryRound) !== currentRound
 
 		type ResultRow = {
@@ -298,6 +301,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 			winner,
 			results,
 			totalRounds,
+			maxRound,
+			numberOfFinalSongs,
 			isFinale,
 			finalRankings
 		})

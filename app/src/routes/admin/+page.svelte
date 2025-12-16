@@ -19,7 +19,11 @@
 			<div class="text-sm text-white/80 space-y-1">
 				<div>
 					{#if isFinaleRound}
-						<span class="font-semibold">🏆 Finale</span>
+						<span class="font-semibold">
+							🏆 Finale {settings.numberOfFinalSongs > 1
+								? `(${finaleNumber}/${settings.numberOfFinalSongs})`
+								: ''}
+						</span>
 					{:else}
 						Runde: <span class="font-semibold">{competitionState?.round ?? '—'}</span>
 					{/if}
@@ -29,13 +33,13 @@
 				</div>
 				{#if competitionState?.roundState === 'singing_phase' || competitionState?.roundState === 'rating_phase'}
 					<div>
-						Aktiver Teilnehmer: <span class="font-semibold">
+						Aktiver Teilnehmer: <span class="text-white">
 							{active?.firstName && active?.lastName
-								? `${active.firstName} ${active.lastName}`
+								? `${active.firstName} a.k.a`
 								: (active?.name ?? competitionState?.activeParticipant ?? '—')}
 						</span>
 						{#if active?.artistName}
-							<span class="text-white/60">{active.artistName}</span>
+							<span class="text-white font-semibold">{active.artistName}</span>
 						{/if}
 					</div>
 					{#if activeSongChoice}
@@ -102,12 +106,12 @@
 						disabled={hasTie}
 						title={hasTie ? 'Erst Patt auflösen' : ''}
 					>
-						{isFinaleRound ? 'Sieger veröffentlichen' : 'Ergebnis veröffentlichen'}
+						{isLastFinaleRound ? 'Sieger veröffentlichen' : 'Ergebnis veröffentlichen'}
 					</button>
 				{/if}
 
-				{#if competitionState?.roundState === 'publish_result' && !isFinaleRound}
-					<button class="btn-brand" onclick={startNextRound}>Nächste Runde starten</button>
+				{#if competitionState?.roundState === 'publish_result' && !isLastFinaleRound}
+					<button class="btn-brand" onclick={startNextRound}>{nextRoundButtonText}</button>
 				{/if}
 
 				{#if competitionState?.competitionStarted && !competitionState?.competitionFinished}
@@ -148,6 +152,9 @@
 					>
 						{seedingTestData ? 'Wird angelegt…' : 'Testdaten erzeugen'}
 					</button>
+					{#if competitionState?.competitionFinished}
+						<button class="btn-brand" onclick={openCertificateModal}>Sende Urkunden</button>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -308,6 +315,67 @@
 			<button class="btn-danger" onclick={confirmEliminate}>Eliminieren</button>
 		{/snippet}
 	</Modal>
+
+	<Modal
+		bind:open={certificateModalOpen}
+		title="Urkunden versenden"
+		onclose={closeCertificateModal}
+	>
+		{#if certificateModalLoading}
+			<p class="text-sm text-white/80">Lade Teilnehmer...</p>
+		{:else if certificateParticipants.length === 0}
+			<p class="text-sm text-white/70">Keine Teilnehmer gefunden.</p>
+		{:else}
+			<p class="text-sm text-white/70 mb-3">
+				Wähle einen Teilnehmer aus oder sende alle Urkunden auf einmal:
+			</p>
+			<div class="overflow-auto max-h-[50vh]">
+				<table class="w-full text-sm">
+					<thead class="sticky top-0 bg-[#5e0e79]">
+						<tr class="text-left text-white/90">
+							<th class="p-2">Platz</th>
+							<th class="p-2">Teilnehmer</th>
+							<th class="p-2">Bewertung</th>
+							<th class="p-2"></th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each certificateParticipants as p (p.id)}
+							<tr class="border-t border-white/10">
+								<td class="p-2 font-semibold">{p.rank}</td>
+								<td class="p-2">
+									<div class="font-medium">{p.name}</div>
+									{#if p.artistName}
+										<div class="text-xs text-white/70">{p.artistName}</div>
+									{/if}
+								</td>
+								<td class="p-2">Ø {p.avg.toFixed(2)}</td>
+								<td class="p-2">
+									<button
+										class={`btn-brand text-xs ${sendingCertificateFor === p.id ? 'opacity-60 cursor-not-allowed' : ''}`}
+										disabled={sendingCertificateFor !== null}
+										onclick={() => sendCertificateToParticipant(p.id)}
+									>
+										{sendingCertificateFor === p.id ? 'Sende…' : 'Senden'}
+									</button>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			</div>
+		{/if}
+		{#snippet footer()}
+			<button class="btn-accent" onclick={closeCertificateModal}>Schließen</button>
+			<button
+				class={`btn-brand ${sendingCertificates ? 'opacity-60 cursor-not-allowed' : ''}`}
+				disabled={sendingCertificates || certificateParticipants.length === 0}
+				onclick={sendAllCertificates}
+			>
+				{sendingCertificates ? 'Sende alle…' : 'Alle senden'}
+			</button>
+		{/snippet}
+	</Modal>
 </section>
 
 <!-- styles removed; centralized in app.css -->
@@ -317,6 +385,7 @@
 	import {
 		parseSettings,
 		DEFAULT_SETTINGS,
+		getMaxRound,
 		type CompetitionSettings
 	} from '$lib/utils/competition-settings'
 	import { onMount } from 'svelte'
@@ -335,6 +404,20 @@
 	const isProduction: boolean = Boolean(data?.isProduction)
 	let seedingTestData: boolean = $state(false)
 	let remainingParticipantsCount: number = $state(0)
+	let sendingCertificates: boolean = $state(false)
+
+	// Certificate modal
+	type CertificateParticipant = {
+		id: string
+		name: string | null
+		artistName?: string
+		rank: number
+		avg: number
+	}
+	let certificateModalOpen: boolean = $state(false)
+	let certificateParticipants: CertificateParticipant[] = $state([])
+	let certificateModalLoading: boolean = $state(false)
+	let sendingCertificateFor: string | null = $state(null)
 
 	// Missing ratings modal
 	type MissingVoter = { id: string; name: string; role: string }
@@ -358,8 +441,37 @@
 
 	let settings: CompetitionSettings = $state(DEFAULT_SETTINGS)
 
-	// Computed value for finale round
-	const isFinaleRound = $derived(competitionState?.round === settings.totalRounds)
+	// Computed values for finale rounds
+	const maxRound = $derived(getMaxRound(settings.totalRounds, settings.numberOfFinalSongs))
+	const isFinaleRound = $derived((competitionState?.round ?? 0) >= settings.totalRounds)
+	const finaleNumber = $derived(
+		(competitionState?.round ?? settings.totalRounds) - settings.totalRounds + 1
+	)
+	const isLastFinaleRound = $derived((competitionState?.round ?? 0) === maxRound)
+
+	// Nächste Runde startet Finale?
+	const nextRoundStartsFinale = $derived(
+		(competitionState?.round ?? 0) === settings.totalRounds - 1
+	)
+
+	// Button-Text für "Nächste Runde starten"
+	const nextRoundButtonText = $derived.by(() => {
+		const n = settings.numberOfFinalSongs
+
+		// Vor dem Finale → Finale startet
+		if (nextRoundStartsFinale) {
+			return n === 1 ? 'Finale starten' : `Final Runde 1/${n} starten`
+		}
+
+		// Im Finale → nächste Finale-Runde
+		if (isFinaleRound && !isLastFinaleRound) {
+			return `Final Runde ${finaleNumber + 1}/${n} starten`
+		}
+
+		// Normale Runde
+		return 'Nächste Runde starten'
+	})
+
 	type ResultRow = {
 		id: string
 		name: string | null
@@ -693,8 +805,10 @@
 				return
 			}
 			const summary = body?.summary
-			if (summary) {
-				infoMsg = `Testdaten erstellt: ${summary.participants} Teilnehmer, ${summary.jurors} Juroren, ${summary.spectators} Zuschauer, ${summary.songsPerParticipant} Songs je Teilnehmer.`
+			if (summary?.created) {
+				const deleted = summary.deleted
+				const created = summary.created
+				infoMsg = `Gelöscht: ${deleted?.users ?? 0} User, ${deleted?.songChoices ?? 0} Songs, ${deleted?.ratings ?? 0} Ratings. Erstellt: ${created.participants} Teilnehmer, ${created.jurors} Juroren, ${created.spectators} Zuschauer, ${created.songsPerParticipant} Songs je Teilnehmer. Spiel zurückgesetzt.`
 			} else {
 				infoMsg = 'Testdaten erstellt.'
 			}
@@ -703,6 +817,107 @@
 			errorMsg = 'Testdaten konnten nicht erstellt werden.'
 		} finally {
 			seedingTestData = false
+		}
+	}
+
+	async function openCertificateModal() {
+		errorMsg = null
+		infoMsg = null
+		if (!competitionState?.competitionFinished) {
+			errorMsg = 'Wettbewerb muss abgeschlossen sein, um Urkunden zu versenden.'
+			return
+		}
+		certificateModalLoading = true
+		certificateModalOpen = true
+		try {
+			const res = await fetch('/admin/api?certificate_participants=1')
+			if (res.ok) {
+				const data = await res.json()
+				certificateParticipants = data?.participants ?? []
+			} else {
+				certificateParticipants = []
+			}
+		} catch {
+			certificateParticipants = []
+		} finally {
+			certificateModalLoading = false
+		}
+	}
+
+	function closeCertificateModal() {
+		certificateModalOpen = false
+		certificateParticipants = []
+		sendingCertificateFor = null
+	}
+
+	async function sendCertificateToParticipant(participantId: string) {
+		errorMsg = null
+		infoMsg = null
+		sendingCertificateFor = participantId
+		try {
+			const res = await fetch('/admin/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ action: 'send_certificates', participantId })
+			})
+			const body = await res.json().catch(() => ({}))
+			if (!res.ok) {
+				if (body?.error === 'certificate_service_not_configured') {
+					errorMsg =
+						'Urkunden-Service nicht konfiguriert (OPENAI_API_KEY, CERTIFICATE_PROMPT, SMTP).'
+				} else if (body?.error === 'participant_not_found') {
+					errorMsg = 'Teilnehmer nicht gefunden.'
+				} else {
+					errorMsg = 'Urkunde konnte nicht versendet werden.'
+				}
+				return
+			}
+			const participant = certificateParticipants.find((p) => p.id === participantId)
+			const name = participant?.artistName || participant?.name || 'Teilnehmer'
+			infoMsg = `Urkunde für ${name} erfolgreich versendet!`
+		} catch (error) {
+			console.error('Send certificate failed', error)
+			errorMsg = 'Urkunde konnte nicht versendet werden.'
+		} finally {
+			sendingCertificateFor = null
+		}
+	}
+
+	async function sendAllCertificates() {
+		errorMsg = null
+		infoMsg = null
+		sendingCertificates = true
+		try {
+			const res = await fetch('/admin/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ action: 'send_certificates' })
+			})
+			const body = await res.json().catch(() => ({}))
+			if (!res.ok) {
+				if (body?.error === 'certificate_service_not_configured') {
+					errorMsg =
+						'Urkunden-Service nicht konfiguriert (OPENAI_API_KEY, CERTIFICATE_PROMPT, SMTP).'
+				} else if (body?.error === 'competition_not_finished') {
+					errorMsg = 'Wettbewerb muss abgeschlossen sein.'
+				} else {
+					errorMsg = 'Urkunden konnten nicht versendet werden.'
+				}
+				return
+			}
+			const sent = body?.sent ?? 0
+			const failed = body?.failed ?? 0
+			if (failed > 0) {
+				infoMsg = `${sent} Urkunden versendet, ${failed} fehlgeschlagen.`
+			} else {
+				infoMsg = `${sent} Urkunden erfolgreich versendet!`
+			}
+			closeCertificateModal()
+		} catch (error) {
+			console.error('Send certificates failed', error)
+			errorMsg = 'Urkunden konnten nicht versendet werden.'
+		} finally {
+			sendingCertificates = false
 		}
 	}
 

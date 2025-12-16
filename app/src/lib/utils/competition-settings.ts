@@ -121,3 +121,27 @@ export function parseEliminationPattern(pattern: string): number[] {
 		.map((s) => Number(s.trim()) || 0)
 		.filter((n) => n >= 0)
 }
+
+/**
+ * Berechnet die maximale Runde (inklusive Finale-Songs)
+ * Beispiel: totalRounds=5, numberOfFinalSongs=2 → maxRound=6
+ */
+export function getMaxRound(totalRounds: number, numberOfFinalSongs: number): number {
+	return totalRounds + numberOfFinalSongs - 1
+}
+
+/**
+ * Prüft ob eine Runde im Finale ist (round >= totalRounds)
+ */
+export function isFinaleRound(round: number, totalRounds: number): boolean {
+	return round >= totalRounds
+}
+
+/**
+ * Gibt die Finale-Nummer zurück (1, 2, 3...)
+ * round=5 bei totalRounds=5 → 1 (Finale 1)
+ * round=6 bei totalRounds=5 → 2 (Finale 2)
+ */
+export function getFinaleNumber(round: number, totalRounds: number): number {
+	return Math.max(1, round - totalRounds + 1)
+}

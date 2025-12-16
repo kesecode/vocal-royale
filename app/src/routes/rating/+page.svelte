@@ -7,7 +7,7 @@
 			onSelect={setRound}
 			activeRound={competitionStarted ? activeRound : 0}
 			currentRound={competitionStarted ? currentRound : 0}
-			total={totalRounds}
+			total={maxRound}
 			labels={roundLabels}
 			disabled={!competitionFinished}
 		/>
@@ -585,6 +585,7 @@
 	// Competition settings
 	const settings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
 	const totalRounds = settings.totalRounds
+	const maxRound = totalRounds + settings.numberOfFinalSongs - 1
 	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
 
 	// activeRound controls progressbar state from global competition state
@@ -811,7 +812,7 @@
 				participantChanged
 			) {
 				if (roundChanged) {
-					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
+					activeRound = Math.min(Math.max(newRound, 1), maxRound)
 					currentRound = activeRound
 					// Reload participants when round changes
 					await fetchRound(currentRound)
@@ -845,6 +846,16 @@
 				activeSongChoice = data?.activeSongChoice ?? null
 				const ap = data?.activeParticipant
 				activeParticipantId = typeof ap === 'string' && ap ? ap : null
+
+				// Reload participants if active participant changed and is not in current list
+				// This ensures the rating UI can display the active participant
+				if (
+					participantChanged &&
+					newActiveParticipantId &&
+					!participants.find((p) => p.id === newActiveParticipantId)
+				) {
+					await fetchRound(currentRound)
+				}
 			}
 		} catch {
 			// Silently ignore polling errors
@@ -893,7 +904,7 @@
 	}
 
 	async function setRound(r: number) {
-		if (r < 1 || r > totalRounds || r === currentRound) return
+		if (r < 1 || r > maxRound || r === currentRound) return
 		if (!competitionFinished && r > activeRound) return // future rounds disabled during competition
 		currentRound = r
 		if (competitionFinished) {

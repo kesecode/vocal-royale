@@ -12,7 +12,8 @@ import { logger } from '$lib/server/logger'
 import {
 	parseSettings,
 	parseEliminationPattern,
-	calculateTotalSongs
+	calculateTotalSongs,
+	getMaxRound
 } from '$lib/utils/competition-settings'
 import { getLatestCompetitionState } from '$lib/server/competition-state'
 import {
@@ -249,6 +250,26 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		return json(result)
 	}
 
+	// Handle certificate participants query (for the certificate modal)
+	if (url.searchParams.get('certificate_participants') === '1') {
+		const state = await getLatestState(locals)
+		if (!state?.competitionFinished) {
+			return json({ participants: [], error: 'competition_not_finished' })
+		}
+		const settings = await getCompetitionSettings(locals)
+		const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
+		const finalRankings = await computeFinalRankings(locals, maxRound)
+		return json({
+			participants: finalRankings.map((r) => ({
+				id: r.id,
+				name: r.name,
+				artistName: r.artistName,
+				rank: r.rank,
+				avg: r.avg
+			}))
+		})
+	}
+
 	const state = await getLatestState(locals)
 	const active = await getActiveParticipant(locals)
 
@@ -305,7 +326,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		try {
 			const round = Number(state?.round ?? 1) || 1
 			const settings = await getCompetitionSettings(locals)
-			const isFinale = round === settings.totalRounds
+			const isFinale = round >= settings.totalRounds
 
 			// In finale, compute full rankings with all participants
 			if (isFinale) {
@@ -481,13 +502,14 @@ type AdminAction =
 	| 'reset_game'
 	| 'reroll_participant'
 	| 'toggle_break'
+	| 'send_certificates'
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
 		return json({ error: 'forbidden' }, { status: 403 })
 	}
 
-	type Payload = { action?: AdminAction; eliminateId?: string }
+	type Payload = { action?: AdminAction; eliminateId?: string; participantId?: string }
 	let payload: Payload
 	try {
 		payload = await request.json()
@@ -778,8 +800,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				const pattern = parseEliminationPattern(settings.roundEliminationPattern)
 				eliminateCount = Math.max(0, Number(pattern?.[round - 1] ?? 0))
 			}
-			// In finale round no elimination, show winner only
-			if (round === settings.totalRounds) eliminateCount = 0
+			// In finale rounds (>= totalRounds) no elimination, show winner only
+			if (round >= settings.totalRounds) eliminateCount = 0
 			// Ensure at least one participant remains
 			eliminateCount = Math.min(eliminateCount, Math.max(rows.length - 1, 0))
 
@@ -836,10 +858,9 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				}
 			}
 
-			// Set result_locked; finalize competition on finale round (only if no tie)
+			// Set result_locked (competitionFinished is set at publish_results)
 			const updated = await upsertState(locals, {
-				roundState: 'result_locked',
-				...(round === settings.totalRounds && !hasTie ? { competitionFinished: true } : {})
+				roundState: 'result_locked'
 			})
 
 			// Winner convenience
@@ -851,7 +872,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 					)[0] ?? null
 
 			// In finale, compute full rankings
-			const isFinale = round === settings.totalRounds
+			const isFinale = round >= settings.totalRounds
 			let finalRankings: FinalRanking[] | null = null
 			if (isFinale) {
 				finalRankings = await computeFinalRankings(locals, round)
@@ -863,7 +884,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				participants: rows.length,
 				hasTie,
 				tiedParticipantIds,
-				competitionFinished: round === settings.totalRounds && !hasTie
+				isFinale
 			})
 			return json({
 				ok: true,
@@ -879,15 +900,26 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		}
 
 		if (action === 'publish_results') {
-			const updated = await upsertState(locals, { roundState: 'publish_result' })
-			logger.info('Admin API: publish_results -> publish_result')
-
-			// Send certificate emails in finale round (fire-and-forget)
 			const state = await getLatestState(locals)
 			const round = Number(state?.round ?? 1) || 1
 			const settings = await getCompetitionSettings(locals)
+			const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
+			const isLastFinaleRound = round === maxRound
 
-			if (round === settings.totalRounds && isCertificateServiceConfigured()) {
+			// Set publish_result and competitionFinished only on last finale round
+			const updated = await upsertState(locals, {
+				roundState: 'publish_result',
+				...(isLastFinaleRound ? { competitionFinished: true } : {})
+			})
+			logger.info('Admin API: publish_results -> publish_result', {
+				round,
+				maxRound,
+				isLastFinaleRound,
+				competitionFinished: isLastFinaleRound
+			})
+
+			// Send certificate emails only on last finale round (fire-and-forget)
+			if (isLastFinaleRound && isCertificateServiceConfigured()) {
 				const finalRankings = await computeFinalRankings(locals, round)
 
 				// Fire-and-forget: send certificate emails in background
@@ -1068,7 +1100,8 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			const state = await getLatestState(locals)
 			const settings = await getCompetitionSettings(locals)
 			const currentRound = Number(state?.round ?? 1) || 1
-			if (currentRound >= settings.totalRounds) {
+			const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
+			if (currentRound >= maxRound) {
 				return json({ error: 'no_next_round' }, { status: 400 })
 			}
 			const nextRound = currentRound + 1
@@ -1146,6 +1179,57 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			const updated = await upsertState(locals, { break: !state?.break })
 			logger.info('Admin API: toggle_break', { break: updated.break })
 			return json({ ok: true, state: updated })
+		}
+
+		if (action === 'send_certificates') {
+			// Check if certificate service is configured
+			if (!isCertificateServiceConfigured()) {
+				return json({ error: 'certificate_service_not_configured' }, { status: 400 })
+			}
+
+			// Check if competition is finished
+			const state = await getLatestState(locals)
+			if (!state?.competitionFinished) {
+				return json({ error: 'competition_not_finished' }, { status: 400 })
+			}
+
+			const settings = await getCompetitionSettings(locals)
+			const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
+			const finalRankings = await computeFinalRankings(locals, maxRound)
+
+			// If participantId is provided, send only to that participant
+			const participantId = payload.participantId
+			let rankingsToSend = finalRankings
+
+			if (participantId) {
+				const singleRanking = finalRankings.find((r) => r.id === participantId)
+				if (!singleRanking) {
+					return json({ error: 'participant_not_found' }, { status: 404 })
+				}
+				rankingsToSend = [singleRanking]
+			}
+
+			logger.info('Admin API: send_certificates - starting', {
+				participantCount: rankingsToSend.length,
+				singleParticipant: participantId || null
+			})
+
+			// Send certificates (not fire-and-forget, wait for result)
+			const result = await sendAllCertificateEmails(
+				locals.pb,
+				rankingsToSend.map((r) => ({ id: r.id, avg: r.avg, rank: r.rank }))
+			)
+
+			logger.info('Admin API: send_certificates - completed', {
+				sent: result.sent,
+				failed: result.failed
+			})
+
+			return json({
+				ok: true,
+				sent: result.sent,
+				failed: result.failed
+			})
 		}
 
 		if (action === 'reset_game') {
