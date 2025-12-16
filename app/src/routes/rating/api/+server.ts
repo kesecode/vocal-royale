@@ -193,6 +193,11 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			return json({ error: 'rating_closed' }, { status: 400 })
 		}
 
+		// Block ratings during manual break
+		if (stateRec?.break) {
+			return json({ error: 'rating_paused' }, { status: 400 })
+		}
+
 		// In rating_refinement, allow ratings for any participant (no active participant check)
 		// In rating_phase, only allow ratings for the currently active participant
 		if (phase === 'rating_phase') {
