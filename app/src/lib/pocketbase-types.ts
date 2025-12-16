@@ -58,6 +58,7 @@ export type UsersRecord = {
 	eliminated?: boolean // eliminated from competition
 	sangThisRound?: boolean // performed in the current round
 	checkedIn?: boolean // checked in by admin
+	round?: number // current round of the participant (synced with competition state)
 }
 
 export type RatingsRecord = {
@@ -86,9 +87,10 @@ export type SettingsRecord = {
 export type RoundState =
 	| 'singing_phase'
 	| 'rating_phase'
-	| 'result_phase'
 	| 'result_locked'
+	| 'publish_result'
 	| 'break'
+	| 'rating_refinement'
 export type CompetitionStateRecord = {
 	competitionStarted: boolean
 	roundState: RoundState
@@ -96,6 +98,8 @@ export type CompetitionStateRecord = {
 	activeParticipant?: string // relation to users.id (currently active performer)
 	// Indicates that the competition is fully finished (post finale)
 	competitionFinished?: boolean
+	// Manual pause for rating/results pages (does not affect admin workflow)
+	break?: boolean
 }
 
 // Email Templates

@@ -187,10 +187,7 @@ export class E2ETestSetup {
 					response = { state: e2eMock.nextParticipant() }
 					break
 				case 'finalize_ratings':
-					response = { state: e2eMock.finalizeRatings() }
-					break
-				case 'show_results':
-					response = e2eMock.showResults()
+					response = e2eMock.finalizeRatings()
 					break
 				case 'start_next_round':
 					response = { state: e2eMock.startNextRound() }

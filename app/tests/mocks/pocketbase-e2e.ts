@@ -270,22 +270,26 @@ export class E2EPocketBaseMock {
 		})
 	}
 
-	finalizeRatings(): CompetitionStateResponse {
-		return this.updateCompetitionState({
-			roundState: 'result_locked'
-		})
-	}
-
-	showResults(): {
+	finalizeRatings(): {
+		ok: boolean
 		state: CompetitionStateResponse
 		results: Array<{
-			participant: UsersResponse
-			averageRating: number
-			totalVotes: number
+			id: string
+			name: string | undefined
+			artistName: string | undefined
+			avg: number
+			sum: number
+			count: number
+			eliminated: boolean | undefined
 		}>
+		winner: { id: string; name: string | undefined; avg: number; count: number } | null
+		hasTie: boolean
+		tiedParticipantIds: string[]
+		eliminateCount: number
+		neededSurvivorsFromTie: number
 	} {
 		const state = this.updateCompetitionState({
-			roundState: 'result_phase'
+			roundState: 'result_locked'
 		})
 
 		// Calculate results
@@ -309,12 +313,22 @@ export class E2EPocketBaseMock {
 			}
 		})
 
-		const formattedResults = results.map((r) => ({
-			participant: this.getUserById(r.id)!,
-			averageRating: r.avg,
-			totalVotes: r.count
-		}))
-		return { state, results: formattedResults }
+		// Sort by avg descending
+		results.sort((a, b) => b.avg - a.avg)
+		const winner = results[0] ?? null
+
+		return {
+			ok: true,
+			state,
+			results,
+			winner: winner
+				? { id: winner.id, name: winner.name, avg: winner.avg, count: winner.count }
+				: null,
+			hasTie: false,
+			tiedParticipantIds: [],
+			eliminateCount: 0,
+			neededSurvivorsFromTie: 0
+		}
 	}
 
 	startNextRound(): CompetitionStateResponse {

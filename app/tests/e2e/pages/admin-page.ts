@@ -154,8 +154,7 @@ export class AdminPage extends BasePage {
 		if (phase.includes('singing') || phase === 'singing_phase') return 'singing_phase'
 		if (phase.includes('rating') || phase === 'rating_phase') return 'rating_phase'
 		if (phase.includes('break') || phase === 'break') return 'break'
-		if (phase.includes('result') || phase === 'result_locked' || phase === 'result_phase')
-			return 'result_locked'
+		if (phase.includes('result') || phase === 'result_locked') return 'result_locked'
 
 		return phase || 'unknown'
 	}

@@ -32,17 +32,23 @@ describe('Validation Utils', () => {
 
 	describe('Round State Validation', () => {
 		const isValidRoundState = (state: string): state is RoundState => {
-			return ['singing_phase', 'rating_phase', 'result_phase', 'result_locked', 'break'].includes(
-				state as RoundState
-			)
+			return [
+				'singing_phase',
+				'rating_phase',
+				'result_locked',
+				'publish_result',
+				'break',
+				'rating_refinement'
+			].includes(state as RoundState)
 		}
 
 		it('should validate correct round states', () => {
 			expect(isValidRoundState('singing_phase')).toBe(true)
 			expect(isValidRoundState('rating_phase')).toBe(true)
-			expect(isValidRoundState('result_phase')).toBe(true)
 			expect(isValidRoundState('result_locked')).toBe(true)
+			expect(isValidRoundState('publish_result')).toBe(true)
 			expect(isValidRoundState('break')).toBe(true)
+			expect(isValidRoundState('rating_refinement')).toBe(true)
 		})
 
 		it('should reject invalid round states', () => {

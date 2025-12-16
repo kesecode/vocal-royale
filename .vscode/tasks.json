@@ -28,7 +28,8 @@
     {
       "label": "Start PocketBase",
       "type": "shell",
-      "command": "pkill pocketbase || true; rm -rf pb_data; ./pocketbase superuser upsert admin_db@vocal.royale vocal_royale_2025 && nohup ./pocketbase serve > pocketbase.log 2>&1 &",
+      "dependsOn": ["Kill PocketBase"],
+      "command": "./pocketbase superuser upsert admin_db@vocal.royale vocal_royale_2025 && nohup ./pocketbase serve",
       "options": {
         "cwd": "${env:HOME}/Dev/pocketbase"
       },

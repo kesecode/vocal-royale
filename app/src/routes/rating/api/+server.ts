@@ -108,6 +108,16 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ error: 'forbidden' }, { status: 403 })
 	}
 
+	// Check if user is checked in
+	try {
+		const user = (await locals.pb.collection('users').getOne(locals.user.id)) as UsersResponse
+		if (!user.checkedIn) {
+			return json({ error: 'not_checked_in' }, { status: 403 })
+		}
+	} catch {
+		return json({ error: 'user_check_failed' }, { status: 500 })
+	}
+
 	type Payload = {
 		round?: number
 		ratedUser?: string
@@ -170,20 +180,39 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		}
 	}
 
-	// Guard: block saving outside of rating_phase
+	// Guard: block saving outside of rating_phase/rating_refinement AND only allow ratings for active participant (except in rating_refinement)
 	try {
 		const stateList = (await locals.pb.collection('competition_state').getList(1, 1, {
 			sort: '-updated'
 		})) as ListResult<CompetitionStateResponse>
 		const stateRec = stateList.items[0]
 		const phase = stateRec?.roundState ?? 'result_locked'
-		if (
-			phase === 'singing_phase' ||
-			phase === 'result_locked' ||
-			phase === 'result_phase' ||
-			phase === 'break'
-		) {
+
+		// Only allow ratings in rating_phase or rating_refinement
+		if (phase !== 'rating_phase' && phase !== 'rating_refinement') {
 			return json({ error: 'rating_closed' }, { status: 400 })
+		}
+
+		// Block ratings during manual break
+		if (stateRec?.break) {
+			return json({ error: 'rating_paused' }, { status: 400 })
+		}
+
+		// In rating_refinement, allow ratings for any participant (no active participant check)
+		// In rating_phase, only allow ratings for the currently active participant
+		if (phase === 'rating_phase') {
+			const activeParticipant = stateRec?.activeParticipant
+			if (!activeParticipant) {
+				return json({ error: 'no_active_participant' }, { status: 400 })
+			}
+			if (ratedUser !== activeParticipant) {
+				logger.warn('Ratings POST rejected: wrong participant', {
+					ratedUser,
+					activeParticipant,
+					userId: locals.user.id
+				})
+				return json({ error: 'wrong_participant' }, { status: 400 })
+			}
 		}
 	} catch (e: unknown) {
 		const err = e as Error & { status?: number; url?: string; data?: unknown }

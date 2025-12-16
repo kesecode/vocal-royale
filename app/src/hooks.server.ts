@@ -123,7 +123,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		const allowAuthActions =
 			(isAuthRoute && isPostRequest) || isVerificationRoute || isPasswordResetRoute
 
-		const allowParticipant = pathname.startsWith('/song-choice')
+		const allowParticipant = pathname.startsWith('/song-choice') || pathname.startsWith('/results')
 		const allowSpectatorJuror = pathname.startsWith('/rating')
 		const allowAdmin = pathname.startsWith('/admin')
 

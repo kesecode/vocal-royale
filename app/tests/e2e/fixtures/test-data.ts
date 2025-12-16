@@ -112,7 +112,8 @@ export const TOURNAMENT_PHASES = [
 	'singing_phase',
 	'rating_phase',
 	'break',
-	'result_phase'
+	'publish_result',
+	'rating_refinement'
 ] as const
 
 // Common error messages for validation

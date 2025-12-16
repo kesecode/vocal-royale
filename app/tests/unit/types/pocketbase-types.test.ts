@@ -32,9 +32,10 @@ describe('PocketBase Types', () => {
 			const validStates: RoundState[] = [
 				'singing_phase',
 				'rating_phase',
-				'result_phase',
 				'result_locked',
-				'break'
+				'publish_result',
+				'break',
+				'rating_refinement'
 			]
 
 			validStates.forEach((state) => {
@@ -43,15 +44,16 @@ describe('PocketBase Types', () => {
 			})
 		})
 
-		it('should have exactly 5 possible states', () => {
+		it('should have exactly 6 possible states', () => {
 			const states: RoundState[] = [
 				'singing_phase',
 				'rating_phase',
-				'result_phase',
 				'result_locked',
-				'break'
+				'publish_result',
+				'break',
+				'rating_refinement'
 			]
-			expect(states).toHaveLength(5)
+			expect(states).toHaveLength(6)
 		})
 	})
 

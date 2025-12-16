@@ -2,11 +2,11 @@
 	{#each items as r (r)}
 		<button
 			type="button"
-			class={`progress-btn ${r < activeRound ? 'is-past' : r === activeRound ? 'is-current' : 'is-future'} ${currentRound === r ? 'is-selected' : ''}`}
+			class={`progress-btn ${r < activeRound ? 'is-past' : r === activeRound ? 'is-current' : 'is-future'} ${currentRound === r ? 'is-selected' : ''} ${disabled ? 'cursor-default' : ''}`}
 			onclick={() => selectRound(r)}
-			disabled={r > activeRound}
+			disabled={disabled || r > activeRound}
 			aria-current={r === activeRound}
-			aria-disabled={r > activeRound}
+			aria-disabled={disabled || r > activeRound}
 			aria-label={labels[r - 1] || `Runde ${r}`}
 			title={labels[r - 1] || `Runde ${r}`}
 		>
@@ -24,13 +24,15 @@
 		activeRound = 1,
 		currentRound: initialRound = 1,
 		total = 5,
-		labels = []
+		labels = [],
+		disabled = false
 	} = $props<{
 		onSelect?: (round: number) => void
 		activeRound?: number
 		currentRound?: number
 		total?: number
 		labels?: string[]
+		disabled?: boolean
 	}>()
 
 	let currentRound = $state(initialRound)

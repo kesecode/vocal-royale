@@ -3,6 +3,11 @@ import { logger } from '$lib/server/logger'
 import type { Actions, PageServerLoad } from './$types'
 import type { SettingsResponse, UsersResponse, UserRole } from '$lib/pocketbase-types'
 import { isDeadlinePassed } from '$lib/utils/competition-settings'
+import {
+	getLatestCompetitionState,
+	isCompetitionStarted,
+	isCompetitionFinished
+} from '$lib/server/competition-state'
 
 const APP_COOKIE_KEY = 'pb_auth_aja30'
 
@@ -35,13 +40,21 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const currentParticipants = users.filter((u) => u.role === 'participant').length
 		const currentJurors = users.filter((u) => u.role === 'juror').length
 
+		let competitionState = null
+		try {
+			competitionState = await getLatestCompetitionState(locals.pb)
+		} catch (error) {
+			logger.warn('Could not load competition state for profile', { error })
+		}
+
 		return {
 			user: locals.user,
 			maxParticipants,
 			maxJurors,
 			currentParticipants,
 			currentJurors,
-			competitionSettings
+			competitionSettings,
+			competitionState
 		}
 	} catch (error) {
 		logger.warn('Error loading profile data', { userId: locals.user.id, error })
@@ -85,6 +98,33 @@ export const actions: Actions = {
 		if (!locals.user) {
 			throw redirect(303, '/auth')
 		}
+
+		// Check if competition has started or finished - block artist name changes
+		const userRole = locals.user.role
+		if (userRole === 'participant' || userRole === 'juror') {
+			try {
+				const competitionState = await getLatestCompetitionState(locals.pb)
+				if (isCompetitionFinished(competitionState)) {
+					return fail(403, {
+						message: 'Künstlername kann nach Wettbewerbsende nicht mehr geändert werden.',
+						variant: 'error'
+					})
+				}
+				if (isCompetitionStarted(competitionState)) {
+					return fail(403, {
+						message: 'Künstlername kann während des laufenden Wettbewerbs nicht geändert werden.',
+						variant: 'error'
+					})
+				}
+			} catch (error) {
+				logger.warn('Artist name change: failed to read competition state', { error })
+				return fail(500, {
+					message: 'Status konnte nicht geladen werden. Bitte erneut versuchen.',
+					variant: 'error'
+				})
+			}
+		}
+
 		const form = await request.formData()
 		const artistName = String(form.get('artistName') || '').trim()
 		if (!artistName) {
@@ -112,6 +152,25 @@ export const actions: Actions = {
 			throw redirect(303, '/auth')
 		}
 		const userId = locals.user.id
+
+		try {
+			const competitionState = await getLatestCompetitionState(locals.pb)
+			if (isCompetitionFinished(competitionState)) {
+				return fail(403, {
+					message: 'Konto kann nach Wettbewerbsende nicht gelöscht werden.',
+					variant: 'error'
+				})
+			}
+			if (isCompetitionStarted(competitionState)) {
+				return fail(403, {
+					message: 'Konto kann während des laufenden Wettbewerbs nicht gelöscht werden.',
+					variant: 'error'
+				})
+			}
+		} catch (error) {
+			logger.warn('Account deletion blocked: could not read competition state', { userId, error })
+			return fail(500, { message: 'Status konnte nicht geladen werden.', variant: 'error' })
+		}
 
 		try {
 			// First delete all song_choices for this user (cascade)
@@ -153,6 +212,30 @@ export const actions: Actions = {
 		if (role === 'admin') {
 			return fail(403, {
 				message: 'Admin Rolle kann nicht über das Profil vergeben werden.',
+				variant: 'error'
+			})
+		}
+
+		try {
+			const competitionState = await getLatestCompetitionState(locals.pb)
+			// Komplett sperren wenn Wettbewerb beendet
+			if (isCompetitionFinished(competitionState)) {
+				return fail(403, {
+					message: 'Rollenwechsel nach Wettbewerbsende nicht mehr möglich.',
+					variant: 'error'
+				})
+			}
+			// Teilnehmer und Juror sperren während laufendem Wettbewerb
+			if (isCompetitionStarted(competitionState) && (role === 'participant' || role === 'juror')) {
+				return fail(403, {
+					message: 'Teilnehmer- und Juror-Rollen sind nach Wettbewerbsstart gesperrt.',
+					variant: 'error'
+				})
+			}
+		} catch (error) {
+			logger.warn('Role change: failed to read competition state', { error })
+			return fail(500, {
+				message: 'Status konnte nicht geladen werden. Bitte erneut versuchen.',
 				variant: 'error'
 			})
 		}

@@ -59,14 +59,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 		logger.warn('Could not load settings, using default role limits')
 	}
 
-	// Check if competition finished and compute winner
+	// Check if competition finished and compute winner (only in publish_result)
 	let competitionFinished = false as boolean
+	let roundState = '' as string
 	let winner: {
 		id: string
 		name: string | null
 		artistName?: string
 		avg: number
 		sum: number
+		count: number
+	} | null = null
+	let userPlacement: {
+		rank: number
+		avg: number
 		count: number
 	} | null = null
 	try {
@@ -76,36 +82,76 @@ export const load: PageServerLoad = async ({ locals }) => {
 		const rec = list.items[0]
 		if (rec) {
 			competitionFinished = Boolean(rec.competitionFinished ?? false)
-			if (competitionFinished) {
-				const round = Number(rec.round) || 1
-				const activeParticipants = users.filter(
-					(u) => u.role === 'participant' && !(u.eliminated ?? false)
-				)
-				const ids = new Set(activeParticipants.map((p) => p.id))
-				const ratings = (await locals.pb
-					.collection('ratings')
-					.getFullList({ filter: `round = ${round}` })) as RatingsResponse[]
-				const grouped = new Map<string, { sum: number; count: number }>()
-				for (const r of ratings) {
-					if (!ids.has(r.ratedUser)) continue
-					const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
-					g.sum += Number(r.rating) || 0
-					g.count += 1
-					grouped.set(r.ratedUser, g)
+			roundState = rec.roundState || ''
+			// Only compute winner if roundState is publish_result
+			if (competitionFinished && roundState === 'publish_result') {
+				// Get all participants (including eliminated - we need finalist with best avg)
+				const allParticipants = users.filter((u) => u.role === 'participant')
+				// Load ALL ratings across ALL rounds with author expanded for juror weighting
+				const allRatings = (await locals.pb.collection('ratings').getFullList({
+					expand: 'author'
+				})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+				// Sum ALL ratings per user (across all rounds) for total score
+				const totalRatingsByUser = new Map<string, { sum: number; count: number }>()
+				const lastRoundByUser = new Map<string, number>()
+				for (const r of allRatings) {
+					const rating = Number(r.rating) || 0
+					const authorRole = r.expand?.author?.role
+					const weight = authorRole === 'juror' ? 2 : 1
+					const g = totalRatingsByUser.get(r.ratedUser) || { sum: 0, count: 0 }
+					g.sum += rating * weight
+					g.count += weight
+					totalRatingsByUser.set(r.ratedUser, g)
+					// Track highest round with ratings for each user
+					const currentLast = lastRoundByUser.get(r.ratedUser) || 0
+					if (r.round > currentLast) {
+						lastRoundByUser.set(r.ratedUser, r.round)
+					}
 				}
-				const rows = activeParticipants.map((p) => {
-					const g = grouped.get(p.id) || { sum: 0, count: 0 }
+
+				const finalRound = Number(rec.round) || 1
+				const rows = allParticipants.map((p) => {
+					const g = totalRatingsByUser.get(p.id) || { sum: 0, count: 0 }
 					const avg = g.count > 0 ? g.sum / g.count : 0
 					const name = p.firstName || p.name || p.username || p.email || p.id
-					return { id: p.id, name, artistName: p.artistName, avg, sum: g.sum, count: g.count }
+					const lastRoundWithRatings = lastRoundByUser.get(p.id) || finalRound
+					const eliminatedInRound = p.eliminated ? (p.round ?? lastRoundWithRatings) : null
+					return {
+						id: p.id,
+						name,
+						artistName: p.artistName,
+						avg,
+						sum: g.sum,
+						count: g.count,
+						eliminatedInRound
+					}
 				})
-				winner =
-					rows
-						.slice()
-						.sort(
-							(a, b) =>
-								b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
-						)[0] ?? null
+
+				// Sort: Primary by reached round (finalists first), Secondary by avg
+				const sortedRows = rows.slice().sort((a, b) => {
+					const roundA = a.eliminatedInRound ?? finalRound + 1
+					const roundB = b.eliminatedInRound ?? finalRound + 1
+					if (roundB !== roundA) return roundB - roundA
+					if (b.avg !== a.avg) return b.avg - a.avg
+					if (b.count !== a.count) return b.count - a.count
+					return a.name?.localeCompare(b.name || '') || 0
+				})
+
+				winner = sortedRows[0] ?? null
+
+				// Find current user's placement if they're a participant
+				if (locals.user?.role === 'participant') {
+					const userIndex = sortedRows.findIndex((r) => r.id === locals.user?.id)
+					if (userIndex !== -1) {
+						const userRow = sortedRows[userIndex]
+						userPlacement = {
+							rank: userIndex + 1,
+							avg: userRow.avg,
+							count: userRow.count
+						}
+					}
+				}
 			}
 		}
 	} catch {
@@ -135,6 +181,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 	}
 
+	const isTestEnv = process.env.NODE_ENV === 'test'
+
 	return {
 		user: locals.user,
 		pb_healthy: healthy,
@@ -143,16 +191,18 @@ export const load: PageServerLoad = async ({ locals }) => {
 		spectators,
 		jurors,
 		competitionFinished,
+		roundState,
 		winner,
+		userPlacement,
 		// Role selection data
 		maxParticipants,
 		maxJurors,
 		currentParticipants: participants.length,
 		currentJurors: jurors.length,
-		// Email verification check - must verify email first before selecting role (except for admins)
-		needsEmailVerification: !locals.user?.verified && locals.user?.role !== 'admin',
+		// Email verification check - must verify email first before selecting role (except for admins); skip in test env
+		needsEmailVerification: !isTestEnv && !locals.user?.verified && locals.user?.role !== 'admin',
 		userEmail: locals.user?.email || '',
 		// User needs to select role if they have default role AND verified email
-		needsRoleSelection: locals.user?.role === 'default' && locals.user?.verified
+		needsRoleSelection: locals.user?.role === 'default' && (isTestEnv || locals.user?.verified)
 	}
 }

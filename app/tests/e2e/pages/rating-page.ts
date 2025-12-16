@@ -291,7 +291,7 @@ export class RatingPage extends BasePage {
 
 		// Check if results are being shown
 		const resultsText = this.page.locator('text=Ergebnisse')
-		if (await resultsText.isVisible()) return 'result_phase'
+		if (await resultsText.isVisible()) return 'result_locked'
 
 		// Fallback: Check for any indication of the phase
 		const pageText = await this.page.textContent('body')

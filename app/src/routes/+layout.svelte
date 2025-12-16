@@ -167,6 +167,7 @@
 	const navLinks = $derived(
 		[
 			role === 'participant' && { href: '/song-choice', label: 'Songauswahl' },
+			role === 'participant' && { href: '/results', label: 'Ergebnisse' },
 			(role === 'spectator' || role === 'juror') && { href: '/rating', label: 'Bewertung' },
 			role === 'admin' && { href: '/admin', label: 'Admin' },
 			{ href: '/profile', label: 'Profil' }

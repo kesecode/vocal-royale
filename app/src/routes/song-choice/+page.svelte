@@ -16,6 +16,12 @@
 		zuklappen.
 	</p>
 
+	{#if competitionStarted && !competitionFinished}
+		<p class="text-sm text-amber-300">
+			Wettbewerb läuft – Songänderungen sind währenddessen gesperrt.
+		</p>
+	{/if}
+
 	<div class="space-y-4">
 		{#each songs as song, i (i)}
 			<section class={`panel ${i % 2 === 0 ? 'panel-accent' : 'panel-brand'} overflow-hidden p-0`}>
@@ -26,7 +32,7 @@
 						class="btn arrow-btn"
 						aria-expanded={openStates[i]}
 						aria-controls={`panel-${i}`}
-						on:click={() => toggle(i)}
+						onclick={() => toggle(i)}
 						title={openStates[i] ? 'Zuklappen' : 'Öffnen'}
 					>
 						{openStates[i] ? '▼' : '▶'}
@@ -47,8 +53,8 @@
 										type="text"
 										bind:value={song.artist}
 										placeholder="z. B. Queen"
-										disabled={song.confirmed || deadlinePassed}
-										readonly={song.confirmed || deadlinePassed}
+										disabled={song.confirmed || songEditingLocked}
+										readonly={song.confirmed || songEditingLocked}
 									/>
 								</div>
 								<div>
@@ -61,8 +67,8 @@
 										type="text"
 										bind:value={song.songTitle}
 										placeholder="z. B. Bohemian Rhapsody"
-										disabled={song.confirmed || deadlinePassed}
-										readonly={song.confirmed || deadlinePassed}
+										disabled={song.confirmed || songEditingLocked}
+										readonly={song.confirmed || songEditingLocked}
 									/>
 								</div>
 							</div>
@@ -70,19 +76,19 @@
 							<div class="flex items-center gap-3">
 								{#if song.confirmed}
 									<span class="text-sm text-emerald-200">✓ Bestätigt</span>
+								{:else if competitionStarted && !competitionFinished}
+									<span class="text-sm text-amber-300">Wettbewerb läuft – Änderungen gesperrt</span>
 								{:else if deadlinePassed}
 									<span class="text-sm text-rose-300">Deadline abgelaufen</span>
 								{:else}
-									<button type="button" class="btn-brand" on:click={() => save(i)}>
-										Speichern
-									</button>
+									<button type="button" class="btn-brand" onclick={() => save(i)}>Speichern</button>
 								{/if}
 								{#if song?.appleMusicSongId && song.appleMusicSongId !== 'null'}
 									<button
 										type="button"
 										class="btn-apple"
 										data-tooltip="Schaue nach ob du den richtigen Song verlinkt hast."
-										on:click={() => openApple(i)}
+										onclick={() => openApple(i)}
 										aria-label="Bei Apple Music öffnen"
 									>
 										<span class="apple-mark" aria-hidden="true"></span>
@@ -118,37 +124,30 @@
 		formatDeadline,
 		type CompetitionSettings
 	} from '$lib/utils/competition-settings'
+	import type { PageData } from './$types'
 
-	export let data
+	const props = $props()
+	let { data } = props as { data: PageData }
 
 	type Song = { artist: string; songTitle: string; appleMusicSongId?: string; confirmed?: boolean }
 
-	let settings: CompetitionSettings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
-	let totalSongs = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
-	let songLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
-	let deadlinePassed = isDeadlinePassed(settings.songChoiceDeadline)
-	let deadlineText = formatDeadline(settings.songChoiceDeadline)
+	const settings: CompetitionSettings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
+	const totalSongs = calculateTotalSongs(settings.totalRounds, settings.numberOfFinalSongs)
+	const songLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
+	const deadlinePassed = isDeadlinePassed(settings.songChoiceDeadline)
+	const deadlineText = formatDeadline(settings.songChoiceDeadline)
+	const competitionStarted = Boolean(data.competitionState?.competitionStarted)
+	const competitionFinished = Boolean(data.competitionState?.competitionFinished)
+	const songEditingLocked = competitionStarted || deadlinePassed
 
-	let songs: Song[] = []
-	let openStates: boolean[] = []
-	let savedStates: boolean[] = []
-	let errors: (string | null)[] = []
+	let songs: Song[] = $state(
+		Array.from({ length: totalSongs }, () => ({ artist: '', songTitle: '' }))
+	)
+	let openStates: boolean[] = $state(Array.from({ length: totalSongs }, () => false))
+	let savedStates: boolean[] = $state(Array.from({ length: totalSongs }, () => false))
+	let errors: (string | null)[] = $state(Array.from({ length: totalSongs }, () => null))
 
 	const STORAGE_KEY = 'song-choice.songs.v1'
-
-	// Initialize arrays when totalSongs changes
-	$: if (totalSongs > 0) {
-		// Only resize if array length doesn't match
-		if (songs.length !== totalSongs) {
-			songs = Array.from(
-				{ length: totalSongs },
-				(_, i) => songs[i] || { artist: '', songTitle: '' }
-			)
-			openStates = Array.from({ length: totalSongs }, (_, i) => openStates[i] || false)
-			savedStates = Array.from({ length: totalSongs }, (_, i) => savedStates[i] || false)
-			errors = Array.from({ length: totalSongs }, (_, i) => errors[i] || null)
-		}
-	}
 
 	onMount(async () => {
 		// Load existing choices from server (guard ensures auth)
@@ -191,6 +190,10 @@
 
 	async function save(i: number) {
 		errors[i] = null
+		if (competitionStarted) {
+			errors[i] = 'Wettbewerb läuft, Songs können nicht geändert werden.'
+			return
+		}
 		// Client-side required validation
 		if (!songs[i].artist.trim() || !songs[i].songTitle.trim()) {
 			errors[i] = 'Bitte Interpret und Titel ausfüllen.'
@@ -226,6 +229,9 @@
 					return
 				} else if (err === 'deadline_exceeded') {
 					errors[i] = 'Die Deadline ist abgelaufen.'
+					return
+				} else if (err === 'competition_started') {
+					errors[i] = 'Wettbewerb läuft, Änderungen sind gesperrt.'
 					return
 				} else if (err === 'song_not_available') {
 					errors[i] = 'Song nicht verfügbar.'

@@ -8,6 +8,24 @@ import type {
 	AppAssetsResponse
 } from '$lib/pocketbase-types'
 import type PocketBase from 'pocketbase'
+import { getLatestCompetitionState, isCompetitionStarted } from '$lib/server/competition-state'
+import type { ActionFailure } from '@sveltejs/kit'
+
+type FailResult = ActionFailure<{ message: string }>
+
+async function checkCompetitionLock(pb: PocketBase): Promise<FailResult | null> {
+	try {
+		const state = await getLatestCompetitionState(pb)
+		if (isCompetitionStarted(state)) {
+			return fail(400, {
+				message: 'Anpassungen können während des laufenden Wettbewerbs nicht vorgenommen werden.'
+			})
+		}
+		return null
+	} catch {
+		return fail(500, { message: 'Fehler beim Prüfen des Wettbewerbsstatus' })
+	}
+}
 
 const PB_URL = env.PB_URL || 'http://127.0.0.1:8090'
 
@@ -323,6 +341,9 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
+
 		const formData = await request.formData()
 
 		const id = formData.get('id') as string
@@ -362,6 +383,9 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
+
 		const formData = await request.formData()
 
 		const id = formData.get('id') as string
@@ -397,6 +421,9 @@ export const actions: Actions = {
 			return fail(403, { message: 'Unauthorized' })
 		}
 
+		const lock = await checkCompetitionLock(locals.pb)
+		if (lock) return lock
+
 		// Template sync happens at container startup
 		return {
 			success: true,
@@ -410,6 +437,9 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
+
 		const formData = await request.formData()
 
 		const id = formData.get('id') as string
@@ -449,6 +479,9 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
+
 		const formData = await request.formData()
 
 		const file = formData.get('file') as File
@@ -496,6 +529,8 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
 
 		try {
 			// Get all existing app_settings
@@ -529,6 +564,8 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
 
 		try {
 			// Delete all custom favicons
@@ -556,6 +593,8 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
 
 		try {
 			// Get all existing email templates
@@ -594,6 +633,8 @@ export const actions: Actions = {
 		}
 
 		const pb = locals.pb
+		const lock = await checkCompetitionLock(pb)
+		if (lock) return lock
 
 		try {
 			// Get all existing UI content
