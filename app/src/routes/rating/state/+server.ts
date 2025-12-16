@@ -149,6 +149,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 				roundState: 'result_locked',
 				round: 1,
 				competitionFinished: false,
+				break: false,
 				activeParticipant: null,
 				totalRounds
 			})
@@ -283,6 +284,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 			roundState: rec.roundState,
 			round,
 			competitionFinished: finished,
+			break: rec.break ?? false,
 			activeParticipant: rec.activeParticipant,
 			activeParticipantInfo,
 			activeSongChoice,
@@ -302,6 +304,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 				roundState: 'result_locked',
 				round: 1,
 				competitionFinished: false,
+				break: false,
 				activeParticipant: null
 			})
 		}

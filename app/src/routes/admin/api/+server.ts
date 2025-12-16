@@ -269,6 +269,15 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		}
 	}
 
+	// Calculate remaining participants count for rating phase
+	let remainingParticipantsCount = 0
+	if (state?.competitionStarted && state?.roundState === 'rating_phase') {
+		const remaining = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+			filter: 'role = "participant" && eliminated != true && sangThisRound != true'
+		})) as UsersResponse[]
+		remainingParticipantsCount = remaining.length
+	}
+
 	// Load results if in result_locked or publish_result
 	type ResultRow = {
 		id: string
@@ -451,7 +460,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		remainingToEliminate,
 		tiedParticipantIds,
 		finalRankings,
-		isProduction: process.env.NODE_ENV === 'production'
+		isProduction: process.env.NODE_ENV === 'production',
+		remainingParticipantsCount
 	})
 }
 
@@ -466,6 +476,7 @@ type AdminAction =
 	| 'start_next_round'
 	| 'reset_game'
 	| 'reroll_participant'
+	| 'toggle_break'
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	if (!locals.user || locals.user.role !== 'admin') {
@@ -884,15 +895,29 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			try {
 				await locals.pb.collection(USERS_COLLECTION).update(eliminateId, { eliminated: true })
 			} catch (err) {
-				logger.error('Failed to eliminate participant from tie', { eliminateId, error: err })
-				return json({ error: 'elimination_failed' }, { status: 500 })
+				const pbErr = err as { status?: number; message?: string; data?: unknown }
+				logger.error('Failed to eliminate participant from tie', {
+					eliminateId,
+					status: pbErr.status,
+					message: pbErr.message,
+					data: pbErr.data
+				})
+				return json(
+					{ error: 'elimination_failed', details: pbErr.message || String(err) },
+					{ status: 500 }
+				)
 			}
 
-			// Re-fetch participants (now with updated eliminated status)
-			const participants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
-				filter: 'role = "participant" && eliminated != true'
+			// Re-fetch ALL participants (including those eliminated this round)
+			const allParticipants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+				filter: 'role = "participant"'
 			})) as UsersResponse[]
-			const participantIds = new Set(participants.map((p) => p.id))
+
+			// Filter: not eliminated OR eliminated in this specific round
+			const roundParticipants = allParticipants.filter(
+				(p) => !p.eliminated || (p.eliminated && p.round === round)
+			)
+			const participantIds = new Set(roundParticipants.map((p) => p.id))
 
 			// Fetch all ratings this round with author relation expanded
 			const allRatings = (await locals.pb.collection(RATINGS_COLLECTION).getFullList({
@@ -900,7 +925,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				expand: 'author'
 			})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
 
-			// Calculate averages for remaining participants
+			// Calculate averages for all round participants
 			const grouped = new Map<string, { sum: number; count: number }>()
 			for (const r of allRatings) {
 				if (!participantIds.has(r.ratedUser)) continue
@@ -923,7 +948,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				eliminated: boolean
 				isTied?: boolean
 			}
-			const rows: Row[] = participants.map((p) => {
+			const rows: Row[] = roundParticipants.map((p) => {
 				const g = grouped.get(p.id) || { sum: 0, count: 0 }
 				const avg = g.count > 0 ? g.sum / g.count : 0
 				return {
@@ -933,12 +958,15 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 					avg,
 					sum: g.sum,
 					count: g.count,
-					eliminated: false
+					// Mark as eliminated if they were eliminated in THIS round
+					eliminated: Boolean(p.eliminated) && p.round === round
 				}
 			})
 
-			// Sort ascending by average (lowest = worst)
-			rows.sort((a, b) => a.avg - b.avg || a.name?.localeCompare(b.name || '') || 0)
+			// Sort descending by average (highest = best) for display
+			rows.sort(
+				(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
+			)
 
 			// Get original elimination count for this round
 			let eliminateCount = 0
@@ -948,10 +976,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			}
 
 			// Count how many have already been eliminated this round
-			const allEliminatedUsers = (await locals.pb.collection(USERS_COLLECTION).getFullList({
-				filter: 'role = "participant" && eliminated = true'
-			})) as UsersResponse[]
-			const alreadyEliminated = allEliminatedUsers.filter((p) => p.round === round).length
+			const alreadyEliminated = rows.filter((r) => r.eliminated).length
 
 			// How many more need to be eliminated?
 			const remainingToEliminate = Math.max(0, eliminateCount - alreadyEliminated)
@@ -959,37 +984,35 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			// Round avg helper
 			const roundAvg = (avg: number) => Math.round(avg * 100) / 100
 
+			// For tie check, only consider NON-eliminated participants
+			const activeRows = rows.filter((r) => !r.eliminated)
+			// Sort ascending for tie check (lowest = worst)
+			const sortedAsc = activeRows.slice().sort((a, b) => a.avg - b.avg)
+
 			// Check if there's still a tie (only if more eliminations needed)
 			let hasTie = false
 			let tiedParticipantIds: string[] = []
-			if (remainingToEliminate > 0 && rows.length > remainingToEliminate) {
-				// Check if there's a tie at the new elimination boundary
-				const lastToEliminate = rows[remainingToEliminate - 1]
-				const firstToSurvive = rows[remainingToEliminate]
-				if (
-					lastToEliminate &&
-					firstToSurvive &&
-					roundAvg(lastToEliminate.avg) === roundAvg(firstToSurvive.avg)
-				) {
+			if (remainingToEliminate > 0 && remainingToEliminate < sortedAsc.length) {
+				// Check if there's a tie at the elimination boundary
+				const lastToEliminate = sortedAsc[remainingToEliminate - 1]
+				const firstToSurvive = sortedAsc[remainingToEliminate]
+				if (roundAvg(lastToEliminate.avg) === roundAvg(firstToSurvive.avg)) {
 					hasTie = true
 					const tiedAvg = roundAvg(lastToEliminate.avg)
-					tiedParticipantIds = rows.filter((r) => roundAvg(r.avg) === tiedAvg).map((r) => r.id)
-					// Mark tied rows
+					// Mark only non-eliminated participants as tied
+					tiedParticipantIds = activeRows
+						.filter((r) => roundAvg(r.avg) === tiedAvg)
+						.map((r) => r.id)
 					for (const row of rows) {
-						if (tiedParticipantIds.includes(row.id)) {
+						if (!row.eliminated && roundAvg(row.avg) === tiedAvg) {
 							row.isTied = true
 						}
 					}
 				}
 			}
 
-			// Winner convenience
-			const winner =
-				rows
-					.slice()
-					.sort(
-						(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
-					)[0] ?? null
+			// Winner convenience (best non-eliminated)
+			const winner = activeRows.sort((a, b) => b.avg - a.avg)[0] ?? null
 
 			logger.info('Admin API: eliminate_from_tie', {
 				round,
@@ -1085,6 +1108,13 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 					artistName: picked.artistName
 				}
 			})
+		}
+
+		if (action === 'toggle_break') {
+			const state = await getLatestState(locals)
+			const updated = await upsertState(locals, { break: !state?.break })
+			logger.info('Admin API: toggle_break', { break: updated.break })
+			return json({ ok: true, state: updated })
 		}
 
 		if (action === 'reset_game') {

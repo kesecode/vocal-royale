@@ -78,7 +78,7 @@
 
 				{#if competitionState?.competitionStarted && competitionState?.roundState === 'rating_phase'}
 					<button class="btn-brand" onclick={() => doAction('next_participant')}>
-						Nächster Teilnehmer
+						{remainingParticipantsCount === 0 ? 'Runde beenden' : 'Nächster Teilnehmer'}
 					</button>
 					<button class="btn-accent" onclick={openMissingRatingsModal}>Fehlende Bewertungen</button>
 				{/if}
@@ -108,6 +108,12 @@
 
 				{#if competitionState?.roundState === 'publish_result' && !isFinaleRound}
 					<button class="btn-brand" onclick={startNextRound}>Nächste Runde starten</button>
+				{/if}
+
+				{#if competitionState?.competitionStarted && !competitionState?.competitionFinished}
+					<button class="btn-accent" onclick={() => doAction('toggle_break')}>
+						{competitionState?.break ? 'Pause beenden' : 'Pause'}
+					</button>
 				{/if}
 
 				{#if !isProduction}
@@ -328,6 +334,7 @@
 	const isTestEnv: boolean = Boolean(data?.isTestEnv)
 	const isProduction: boolean = Boolean(data?.isProduction)
 	let seedingTestData: boolean = $state(false)
+	let remainingParticipantsCount: number = $state(0)
 
 	// Missing ratings modal
 	type MissingVoter = { id: string; name: string; role: string }
@@ -398,6 +405,7 @@
 			| 'finalize_ratings'
 			| 'publish_results'
 			| 'reset_game'
+			| 'toggle_break'
 	) {
 		errorMsg = null
 		infoMsg = null
@@ -461,7 +469,10 @@
 				infoMsg = 'Wettbewerb gestartet.'
 				await reloadState()
 			}
-			if (action === 'activate_rating_phase') infoMsg = 'Bewertungsphase aktiviert.'
+			if (action === 'activate_rating_phase') {
+				infoMsg = 'Bewertungsphase aktiviert.'
+				await reloadState()
+			}
 			if (action === 'next_participant') {
 				infoMsg = 'Nächster Teilnehmer gesetzt.'
 				await reloadState()
@@ -506,6 +517,7 @@
 
 	async function confirmEliminate() {
 		if (!pendingEliminateId) return
+		const eliminateId = pendingEliminateId // Save before closing modal
 		errorMsg = null
 		infoMsg = null
 		closeEliminateModal()
@@ -515,11 +527,13 @@
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
 					action: 'eliminate_from_tie',
-					eliminateId: pendingEliminateId
+					eliminateId
 				})
 			})
 			if (!res.ok) {
-				errorMsg = 'Eliminieren fehlgeschlagen.'
+				const errData = await res.json().catch(() => ({}))
+				console.error('eliminate_from_tie failed:', res.status, errData)
+				errorMsg = `Eliminieren fehlgeschlagen: ${errData?.details || errData?.error || res.status}`
 				return
 			}
 			const data = await res.json()
@@ -615,6 +629,9 @@
 				}
 				if (data?.activeParticipant) {
 					active = data.activeParticipant
+				}
+				if (data?.remainingParticipantsCount !== undefined) {
+					remainingParticipantsCount = data.remainingParticipantsCount
 				}
 			}
 		} catch {

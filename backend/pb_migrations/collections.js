@@ -953,6 +953,15 @@ migrate((app) => {
         },
         {
           "hidden": false,
+          "id": "bool2847563912",
+          "name": "break",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        },
+        {
+          "hidden": false,
           "id": "autodate2990389176",
           "name": "created",
           "onCreate": true,

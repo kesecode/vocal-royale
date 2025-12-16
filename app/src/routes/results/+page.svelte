@@ -98,7 +98,12 @@
 			</div>
 
 			<div class="p-2 sm:p-4">
-				{#if roundState === 'break'}
+				{#if isBreak}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-lg font-semibold">Kurze Pause!</p>
+						<p class="text-sm text-white/80">Zeit zum Durchatmen - gleich geht's weiter!</p>
+					</div>
+				{:else if roundState === 'break'}
 					<div class="px-2 py-3 space-y-2">
 						<p class="text-lg font-semibold">Kurze Pause!</p>
 						<p class="text-sm text-white/80">Zeit zum Durchatmen - gleich geht's weiter!</p>
@@ -263,6 +268,7 @@
 	let roundState: RoundState = 'result_locked'
 	let competitionStarted = false
 	let competitionFinished = false
+	let isBreak = false
 
 	let activeParticipantInfo: {
 		id: string
@@ -328,6 +334,7 @@
 			currentRound = activeRound
 			competitionStarted = Boolean(data?.competitionStarted ?? false)
 			competitionFinished = Boolean(data?.competitionFinished ?? false)
+			isBreak = Boolean(data?.break ?? false)
 			const rs = data?.roundState as RoundState | undefined
 			if (
 				rs === 'singing_phase' ||
@@ -366,6 +373,7 @@
 			const newRoundState = data?.roundState as RoundState | undefined
 			const newCompetitionStarted = Boolean(data?.competitionStarted ?? false)
 			const newCompetitionFinished = Boolean(data?.competitionFinished ?? false)
+			const newIsBreak = Boolean(data?.break ?? false)
 
 			const roundChanged = newRound !== activeRound
 			const stateChanged =
@@ -382,8 +390,9 @@
 				].includes(newRoundState)
 			const startedChanged = newCompetitionStarted !== competitionStarted
 			const finishedChanged = newCompetitionFinished !== competitionFinished
+			const breakChanged = newIsBreak !== isBreak
 
-			if (roundChanged || stateChanged || startedChanged || finishedChanged) {
+			if (roundChanged || stateChanged || startedChanged || finishedChanged || breakChanged) {
 				if (roundChanged) {
 					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
 					currentRound = activeRound
@@ -396,6 +405,9 @@
 				}
 				if (finishedChanged) {
 					competitionFinished = newCompetitionFinished
+				}
+				if (breakChanged) {
+					isBreak = newIsBreak
 				}
 				// Ergebnisse NUR bei publish_result setzen
 				if (newRoundState === 'publish_result') {

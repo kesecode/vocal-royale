@@ -76,7 +76,12 @@
 			</div>
 
 			<div class="p-2 sm:p-4">
-				{#if roundState === 'singing_phase'}
+				{#if isBreak}
+					<div class="px-2 py-3 space-y-2">
+						<p class="text-lg font-semibold">Kurze Pause!</p>
+						<p class="text-sm text-white/80">Zeit zum Durchatmen - gleich geht's weiter!</p>
+					</div>
+				{:else if roundState === 'singing_phase'}
 					<div class="px-2 py-3 space-y-2">
 						{#if activeParticipantInfo}
 							<p class="text-sm text-white/60 mb-2">Jetzt auf der Bühne:</p>
@@ -499,6 +504,7 @@
 	let canRate = false
 	let competitionStarted = false
 	let competitionFinished = false
+	let isBreak = false
 	type Winner = {
 		id: string
 		name: string | null
@@ -627,6 +633,7 @@
 			currentRound = activeRound
 			competitionStarted = Boolean(data?.competitionStarted ?? false)
 			competitionFinished = Boolean(data?.competitionFinished ?? false)
+			isBreak = Boolean(data?.break ?? false)
 			isFinaleRound = Boolean(data?.isFinale ?? false)
 			winner = data?.winner ?? null
 			// Load results for publish_result state
@@ -668,6 +675,7 @@
 			const newRoundState = data?.roundState as RoundState | undefined
 			const newCompetitionStarted = Boolean(data?.competitionStarted ?? false)
 			const newCompetitionFinished = Boolean(data?.competitionFinished ?? false)
+			const newIsBreak = Boolean(data?.break ?? false)
 
 			const roundChanged = newRound !== activeRound
 			const stateChanged =
@@ -684,8 +692,9 @@
 				].includes(newRoundState)
 			const startedChanged = newCompetitionStarted !== competitionStarted
 			const finishedChanged = newCompetitionFinished !== competitionFinished
+			const breakChanged = newIsBreak !== isBreak
 
-			if (roundChanged || stateChanged || startedChanged || finishedChanged) {
+			if (roundChanged || stateChanged || startedChanged || finishedChanged || breakChanged) {
 				if (roundChanged) {
 					activeRound = Math.min(Math.max(newRound, 1), totalRounds)
 					currentRound = activeRound
@@ -700,6 +709,9 @@
 				}
 				if (finishedChanged) {
 					competitionFinished = newCompetitionFinished
+				}
+				if (breakChanged) {
+					isBreak = newIsBreak
 				}
 				// Update finale round flag
 				isFinaleRound = Boolean(data?.isFinale ?? false)

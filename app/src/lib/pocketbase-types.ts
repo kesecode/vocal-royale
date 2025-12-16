@@ -98,6 +98,8 @@ export type CompetitionStateRecord = {
 	activeParticipant?: string // relation to users.id (currently active performer)
 	// Indicates that the competition is fully finished (post finale)
 	competitionFinished?: boolean
+	// Manual pause for rating/results pages (does not affect admin workflow)
+	break?: boolean
 }
 
 // Email Templates
