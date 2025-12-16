@@ -15,6 +15,10 @@ import {
 	calculateTotalSongs
 } from '$lib/utils/competition-settings'
 import { getLatestCompetitionState } from '$lib/server/competition-state'
+import {
+	sendAllCertificateEmails,
+	isCertificateServiceConfigured
+} from '$lib/server/certificate-service'
 
 const STATE_COLLECTION = 'competition_state' as const
 const USERS_COLLECTION = 'users' as const
@@ -877,6 +881,33 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 		if (action === 'publish_results') {
 			const updated = await upsertState(locals, { roundState: 'publish_result' })
 			logger.info('Admin API: publish_results -> publish_result')
+
+			// Send certificate emails in finale round (fire-and-forget)
+			const state = await getLatestState(locals)
+			const round = Number(state?.round ?? 1) || 1
+			const settings = await getCompetitionSettings(locals)
+
+			if (round === settings.totalRounds && isCertificateServiceConfigured()) {
+				const finalRankings = await computeFinalRankings(locals, round)
+
+				// Fire-and-forget: send certificate emails in background
+				sendAllCertificateEmails(
+					locals.pb,
+					finalRankings.map((r) => ({ id: r.id, avg: r.avg, rank: r.rank }))
+				)
+					.then((result) => {
+						logger.info('Certificate emails completed', {
+							sent: result.sent,
+							failed: result.failed
+						})
+					})
+					.catch((error) => {
+						logger.error('Certificate emails failed', {
+							error: String((error as Error)?.message || error)
+						})
+					})
+			}
+
 			return json({ ok: true, state: updated })
 		}
 
