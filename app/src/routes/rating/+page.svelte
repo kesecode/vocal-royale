@@ -28,11 +28,106 @@
 	{:else if competitionFinished}
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
-				<div class="font-semibold">Wettbewerb beendet</div>
+				<div class="font-semibold">
+					{isFinaleRound ? 'Wettbewerb beendet' : `Ergebnisse Runde ${currentRound}`}
+				</div>
 			</div>
 			<div class="p-3 sm:p-4">
-				{#if winner}
-					<div class="text-lg font-semibold">Sieger: {winner.name}</div>
+				{#if isFinaleRound && finalRankings.length > 0}
+					{#if winner}
+						<div class="p-3 border border-amber-500/40 rounded bg-amber-500/10 mb-4">
+							<div class="text-lg font-semibold">
+								🏆 Sieger: {winner.artistName || winner.name}
+							</div>
+							{#if winner.artistName && winner.name}
+								<div class="text-sm text-white/70">{winner.name}</div>
+							{/if}
+							{#if winner.avg !== undefined}
+								<div class="text-sm text-white/80 mt-1">
+									Gesamtdurchschnitt: Ø {winner.avg.toFixed(2)} ({winner.count} Stimmen)
+								</div>
+							{/if}
+						</div>
+					{/if}
+					<div class="overflow-auto max-h-[50vh]">
+						<table class="w-full text-sm">
+							<thead class="sticky top-0">
+								<tr class="text-left text-white/90">
+									<th class="p-2 sm:p-3">#</th>
+									<th class="p-2 sm:p-3">Teilnehmer</th>
+									<th class="p-2 sm:p-3">Runde</th>
+									<th class="p-2 sm:p-3">Bewertung</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each finalRankings as r (r.id)}
+									<tr class="border-t border-[#333]/40 align-middle">
+										<td class="p-2 sm:p-3 font-bold">
+											{#if r.rank === 1}
+												<span title="1. Platz">&#x1F947;</span>
+											{:else if r.rank === 2}
+												<span title="2. Platz">&#x1F948;</span>
+											{:else if r.rank === 3}
+												<span title="3. Platz">&#x1F949;</span>
+											{:else}
+												{r.rank}
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3">
+											{#if r.artistName}
+												<div class="font-medium">{r.artistName}</div>
+												<div class="text-xs text-white/70">{r.name}</div>
+											{:else}
+												<div class="font-medium">{r.name}</div>
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3 text-white/80">
+											{#if r.eliminatedInRound === null}
+												<span class="text-amber-400 font-medium">Finale</span>
+											{:else}
+												Runde {r.eliminatedInRound}
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3 font-semibold">
+											{r.avg !== undefined ? `Ø ${r.avg.toFixed(2)}` : '-'}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else if results.length > 0}
+					<div class="overflow-auto max-h-[50vh]">
+						<table class="w-full text-sm">
+							<thead class="sticky top-0">
+								<tr class="text-left text-white/90">
+									<th class="p-2 sm:p-3">Teilnehmer</th>
+									<th class="p-2 sm:p-3">Bewertung</th>
+									<th class="p-2 sm:p-3">Stimmen</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each results as r (r.id)}
+									<tr
+										class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''}`}
+									>
+										<td class="p-2 sm:p-3">
+											<div class="font-medium">{r.artistName || r.name}</div>
+											{#if r.artistName && r.name}
+												<div class="text-xs text-white/70">{r.name}</div>
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
+										<td class="p-2 sm:p-3">{r.count}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else if loading}
+					<div class="text-sm text-white/80">Ergebnisse werden geladen...</div>
+				{:else if winner}
+					<div class="text-lg font-semibold">Sieger: {winner.artistName || winner.name}</div>
 					{#if winner.avg !== undefined}
 						<div class="text-sm text-white/80">
 							Ø Bewertung: {winner.avg.toFixed(2)}{#if winner.count}
@@ -644,8 +739,8 @@
 			isBreak = Boolean(data?.break ?? false)
 			isFinaleRound = Boolean(data?.isFinale ?? false)
 			winner = data?.winner ?? null
-			// Load results for publish_result state
-			if (data?.roundState === 'publish_result') {
+			// Load results for publish_result state or when competition is finished
+			if (data?.roundState === 'publish_result' || Boolean(data?.competitionFinished)) {
 				results = Array.isArray(data?.results) ? data.results : []
 				finalRankings = Array.isArray(data?.finalRankings) ? data.finalRankings : []
 			} else {
@@ -780,11 +875,32 @@
 		stopPolling()
 	})
 
-	function setRound(r: number) {
-		if (r < 1 || r > 5 || r === currentRound) return
-		if (r > activeRound) return // future rounds disabled
+	async function fetchHistoricalResults(round: number) {
+		loading = true
+		try {
+			const res = await fetch(`/rating/state?round=${round}`)
+			if (!res.ok) return
+			const data = await res.json()
+			results = Array.isArray(data?.results) ? data.results : []
+			finalRankings = Array.isArray(data?.finalRankings) ? data.finalRankings : []
+			isFinaleRound = Boolean(data?.isFinale ?? false)
+			winner = data?.winner ?? null
+		} catch {
+			// ignore
+		} finally {
+			loading = false
+		}
+	}
+
+	async function setRound(r: number) {
+		if (r < 1 || r > totalRounds || r === currentRound) return
+		if (!competitionFinished && r > activeRound) return // future rounds disabled during competition
 		currentRound = r
-		fetchRound(currentRound)
+		if (competitionFinished) {
+			await fetchHistoricalResults(r)
+		} else {
+			await fetchRound(currentRound)
+		}
 	}
 
 	function setRating(userId: string, value: number) {

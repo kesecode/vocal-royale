@@ -28,11 +28,28 @@
 	{:else if competitionFinished}
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
-				<div class="font-semibold">Wettbewerb beendet</div>
+				<div class="font-semibold">
+					{isFinaleRound ? 'Wettbewerb beendet' : `Ergebnisse Runde ${currentRound}`}
+				</div>
 			</div>
 			<div class="p-3 sm:p-4">
-				{#if roundState === 'publish_result' && finalRankings.length > 0}
-					<div class="text-lg font-semibold mb-4">Das war's - hier ist die Gesamtplatzierung!</div>
+				{#if isFinaleRound && finalRankings.length > 0}
+					{#if finalRankings[0]}
+						{@const winner = finalRankings[0]}
+						<div class="p-3 border border-amber-500/40 rounded bg-amber-500/10 mb-4">
+							<div class="text-lg font-semibold">
+								🏆 Sieger: {winner.artistName || winner.name}
+							</div>
+							{#if winner.artistName && winner.name}
+								<div class="text-sm text-white/70">{winner.name}</div>
+							{/if}
+							{#if winner.avg !== undefined}
+								<div class="text-sm text-white/80 mt-1">
+									Gesamtdurchschnitt: Ø {winner.avg.toFixed(2)} ({winner.count} Stimmen)
+								</div>
+							{/if}
+						</div>
+					{/if}
 					<div class="overflow-auto max-h-[50vh]">
 						<table class="w-full text-sm">
 							<thead class="sticky top-0">
@@ -80,6 +97,36 @@
 							</tbody>
 						</table>
 					</div>
+				{:else if results.length > 0}
+					<div class="overflow-auto max-h-[50vh]">
+						<table class="w-full text-sm">
+							<thead class="sticky top-0">
+								<tr class="text-left text-white/90">
+									<th class="p-2 sm:p-3">Teilnehmer</th>
+									<th class="p-2 sm:p-3">Bewertung</th>
+									<th class="p-2 sm:p-3">Stimmen</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each results as r (r.id)}
+									<tr
+										class={`border-t border-[#333]/40 align-middle ${r.eliminated ? 'line-through opacity-70' : ''}`}
+									>
+										<td class="p-2 sm:p-3">
+											<div class="font-medium">{r.artistName || r.name}</div>
+											{#if r.artistName && r.name}
+												<div class="text-xs text-white/70">{r.name}</div>
+											{/if}
+										</td>
+										<td class="p-2 sm:p-3">Ø {r.avg?.toFixed(2) ?? '-'}</td>
+										<td class="p-2 sm:p-3">{r.count ?? 0}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else if loading}
+					<p class="text-sm text-white/80">Ergebnisse werden geladen...</p>
 				{:else}
 					<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
 					<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
@@ -346,8 +393,8 @@
 			) {
 				roundState = rs
 			}
-			// Ergebnisse NUR bei publish_result setzen
-			if (rs === 'publish_result') {
+			// Ergebnisse bei publish_result oder wenn Wettbewerb beendet setzen
+			if (rs === 'publish_result' || Boolean(data?.competitionFinished)) {
 				results = Array.isArray(data?.results) ? data.results : []
 				finalRankings = Array.isArray(data?.finalRankings) ? data.finalRankings : []
 			} else {

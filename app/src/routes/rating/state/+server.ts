@@ -118,7 +118,7 @@ async function computeFinalRankings(
 	return rankings
 }
 
-export const GET: RequestHandler = async ({ locals }) => {
+export const GET: RequestHandler = async ({ locals, url }) => {
 	if (!locals.user) {
 		return json({ error: 'not_authenticated' }, { status: 401 })
 	}
@@ -154,9 +154,16 @@ export const GET: RequestHandler = async ({ locals }) => {
 				totalRounds
 			})
 		}
-		const round = Number(rec.round) || 1
+
+		// Support historical round query parameter for post-competition viewing
+		const queryRound = url.searchParams.get('round')
+		const currentRound = Number(rec.round) || 1
 		const finished = Boolean(rec.competitionFinished ?? false)
+
+		// Use query round if provided and competition is finished, otherwise use current round
+		const round = queryRound && finished ? Number(queryRound) : currentRound
 		const isFinale = round === totalRounds
+		const isHistoricalQuery = queryRound && finished && Number(queryRound) !== currentRound
 
 		type ResultRow = {
 			id: string
@@ -171,8 +178,8 @@ export const GET: RequestHandler = async ({ locals }) => {
 		let results: ResultRow[] = []
 		let finalRankings: FinalRanking[] | null = null
 
-		// Show results ONLY in publish_result (result_locked is admin-only)
-		const showResults = rec.roundState === 'publish_result'
+		// Show results in publish_result, when querying historical rounds, or when competition is finished
+		const showResults = rec.roundState === 'publish_result' || isHistoricalQuery || finished
 		if (showResults) {
 			try {
 				// In finale, compute full rankings for all participants

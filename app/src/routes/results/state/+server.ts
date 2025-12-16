@@ -172,8 +172,8 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		let results: ResultRow[] = []
 		let finalRankings: FinalRanking[] | null = null
 
-		// Show results in publish_result OR when querying historical rounds after competition ends
-		const showResults = rec.roundState === 'publish_result' || isHistoricalQuery
+		// Show results in publish_result, when querying historical rounds, or when competition is finished
+		const showResults = rec.roundState === 'publish_result' || isHistoricalQuery || finished
 		if (showResults) {
 			try {
 				if (isFinale) {
