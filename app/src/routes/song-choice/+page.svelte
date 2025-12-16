@@ -16,7 +16,7 @@
 		zuklappen.
 	</p>
 
-	{#if competitionStarted}
+	{#if competitionStarted && !competitionFinished}
 		<p class="text-sm text-amber-300">
 			Wettbewerb läuft – Songänderungen sind währenddessen gesperrt.
 		</p>
@@ -76,7 +76,7 @@
 							<div class="flex items-center gap-3">
 								{#if song.confirmed}
 									<span class="text-sm text-emerald-200">✓ Bestätigt</span>
-								{:else if competitionStarted}
+								{:else if competitionStarted && !competitionFinished}
 									<span class="text-sm text-amber-300">Wettbewerb läuft – Änderungen gesperrt</span>
 								{:else if deadlinePassed}
 									<span class="text-sm text-rose-300">Deadline abgelaufen</span>
@@ -137,6 +137,7 @@
 	const deadlinePassed = isDeadlinePassed(settings.songChoiceDeadline)
 	const deadlineText = formatDeadline(settings.songChoiceDeadline)
 	const competitionStarted = Boolean(data.competitionState?.competitionStarted)
+	const competitionFinished = Boolean(data.competitionState?.competitionFinished)
 	const songEditingLocked = competitionStarted || deadlinePassed
 
 	let songs: Song[] = $state(

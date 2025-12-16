@@ -70,6 +70,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		sum: number
 		count: number
 	} | null = null
+	let userPlacement: {
+		rank: number
+		avg: number
+		count: number
+	} | null = null
 	try {
 		const list = (await locals.pb.collection('competition_state').getList(1, 1, {
 			sort: '-updated'
@@ -124,15 +129,29 @@ export const load: PageServerLoad = async ({ locals }) => {
 				})
 
 				// Sort: Primary by reached round (finalists first), Secondary by avg
-				winner =
-					rows.slice().sort((a, b) => {
-						const roundA = a.eliminatedInRound ?? finalRound + 1
-						const roundB = b.eliminatedInRound ?? finalRound + 1
-						if (roundB !== roundA) return roundB - roundA
-						if (b.avg !== a.avg) return b.avg - a.avg
-						if (b.count !== a.count) return b.count - a.count
-						return a.name?.localeCompare(b.name || '') || 0
-					})[0] ?? null
+				const sortedRows = rows.slice().sort((a, b) => {
+					const roundA = a.eliminatedInRound ?? finalRound + 1
+					const roundB = b.eliminatedInRound ?? finalRound + 1
+					if (roundB !== roundA) return roundB - roundA
+					if (b.avg !== a.avg) return b.avg - a.avg
+					if (b.count !== a.count) return b.count - a.count
+					return a.name?.localeCompare(b.name || '') || 0
+				})
+
+				winner = sortedRows[0] ?? null
+
+				// Find current user's placement if they're a participant
+				if (locals.user?.role === 'participant') {
+					const userIndex = sortedRows.findIndex((r) => r.id === locals.user?.id)
+					if (userIndex !== -1) {
+						const userRow = sortedRows[userIndex]
+						userPlacement = {
+							rank: userIndex + 1,
+							avg: userRow.avg,
+							count: userRow.count
+						}
+					}
+				}
 			}
 		}
 	} catch {
@@ -174,6 +193,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		competitionFinished,
 		roundState,
 		winner,
+		userPlacement,
 		// Role selection data
 		maxParticipants,
 		maxJurors,

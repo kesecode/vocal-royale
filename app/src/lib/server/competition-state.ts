@@ -21,6 +21,10 @@ export function isCompetitionStarted(state: CompetitionStateResponse | null | un
 	return Boolean(state?.competitionStarted)
 }
 
+export function isCompetitionFinished(state: CompetitionStateResponse | null | undefined): boolean {
+	return Boolean(state?.competitionFinished)
+}
+
 export function isBetweenRounds(state: CompetitionStateResponse | null | undefined): boolean {
 	if (!state?.competitionStarted) return true
 	return state.roundState === 'break' || state.roundState === 'result_locked'

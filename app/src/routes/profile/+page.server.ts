@@ -3,7 +3,11 @@ import { logger } from '$lib/server/logger'
 import type { Actions, PageServerLoad } from './$types'
 import type { SettingsResponse, UsersResponse, UserRole } from '$lib/pocketbase-types'
 import { isDeadlinePassed } from '$lib/utils/competition-settings'
-import { getLatestCompetitionState, isCompetitionStarted } from '$lib/server/competition-state'
+import {
+	getLatestCompetitionState,
+	isCompetitionStarted,
+	isCompetitionFinished
+} from '$lib/server/competition-state'
 
 const APP_COOKIE_KEY = 'pb_auth_aja30'
 
@@ -95,11 +99,17 @@ export const actions: Actions = {
 			throw redirect(303, '/auth')
 		}
 
-		// Check if competition has started - block artist name changes for participants/jurors
+		// Check if competition has started or finished - block artist name changes
 		const userRole = locals.user.role
 		if (userRole === 'participant' || userRole === 'juror') {
 			try {
 				const competitionState = await getLatestCompetitionState(locals.pb)
+				if (isCompetitionFinished(competitionState)) {
+					return fail(403, {
+						message: 'Künstlername kann nach Wettbewerbsende nicht mehr geändert werden.',
+						variant: 'error'
+					})
+				}
 				if (isCompetitionStarted(competitionState)) {
 					return fail(403, {
 						message: 'Künstlername kann während des laufenden Wettbewerbs nicht geändert werden.',
@@ -145,6 +155,12 @@ export const actions: Actions = {
 
 		try {
 			const competitionState = await getLatestCompetitionState(locals.pb)
+			if (isCompetitionFinished(competitionState)) {
+				return fail(403, {
+					message: 'Konto kann nach Wettbewerbsende nicht gelöscht werden.',
+					variant: 'error'
+				})
+			}
 			if (isCompetitionStarted(competitionState)) {
 				return fail(403, {
 					message: 'Konto kann während des laufenden Wettbewerbs nicht gelöscht werden.',
@@ -202,6 +218,14 @@ export const actions: Actions = {
 
 		try {
 			const competitionState = await getLatestCompetitionState(locals.pb)
+			// Komplett sperren wenn Wettbewerb beendet
+			if (isCompetitionFinished(competitionState)) {
+				return fail(403, {
+					message: 'Rollenwechsel nach Wettbewerbsende nicht mehr möglich.',
+					variant: 'error'
+				})
+			}
+			// Teilnehmer und Juror sperren während laufendem Wettbewerb
 			if (isCompetitionStarted(competitionState) && (role === 'participant' || role === 'juror')) {
 				return fail(403, {
 					message: 'Teilnehmer- und Juror-Rollen sind nach Wettbewerbsstart gesperrt.',

@@ -32,50 +32,52 @@
 					Passwort ändern
 				</button>
 				{#if user?.role !== 'admin'}
-					<button
-						type="button"
-						class="btn-accent"
-						disabled={competitionStarted &&
-							(user?.role === 'participant' || user?.role === 'juror')}
-						onclick={() => {
-							showArtist = true
-							showPwd = false
-							showRole = false
-							if (formData) {
-								formData.message = undefined
-								formData.variant = undefined
-							}
-						}}
-					>
-						Künstlername ändern
-					</button>
-					<button
-						type="button"
-						class="btn-accent"
-						disabled={deadlinePassed ||
-							(competitionStarted && (user?.role === 'participant' || user?.role === 'juror'))}
-						onclick={() => {
-							showRole = true
-							showPwd = false
-							showArtist = false
-							if (formData) {
-								formData.message = undefined
-								formData.variant = undefined
-							}
-						}}
-					>
-						Rolle ändern
-					</button>
-					{#if competitionStarted}
-						<p class="text-xs text-amber-300 w-full">
-							Teilnehmer- und Juror-Rollen sowie Künstlername sind während des laufenden Wettbewerbs
-							gesperrt.
-						</p>
-					{/if}
-					{#if deadlinePassed}
-						<p class="text-xs text-rose-300 w-full">
-							Rollenwechsel nach Deadline nicht mehr möglich
-						</p>
+					{#if !competitionFinished}
+						<button
+							type="button"
+							class="btn-accent"
+							disabled={competitionStarted &&
+								(user?.role === 'participant' || user?.role === 'juror')}
+							onclick={() => {
+								showArtist = true
+								showPwd = false
+								showRole = false
+								if (formData) {
+									formData.message = undefined
+									formData.variant = undefined
+								}
+							}}
+						>
+							Künstlername ändern
+						</button>
+						<button
+							type="button"
+							class="btn-accent"
+							disabled={deadlinePassed ||
+								(competitionStarted && (user?.role === 'participant' || user?.role === 'juror'))}
+							onclick={() => {
+								showRole = true
+								showPwd = false
+								showArtist = false
+								if (formData) {
+									formData.message = undefined
+									formData.variant = undefined
+								}
+							}}
+						>
+							Rolle ändern
+						</button>
+						{#if competitionStarted}
+							<p class="text-xs text-amber-300 w-full">
+								Teilnehmer- und Juror-Rollen sowie Künstlername sind während des laufenden
+								Wettbewerbs gesperrt.
+							</p>
+						{/if}
+						{#if deadlinePassed}
+							<p class="text-xs text-rose-300 w-full">
+								Rollenwechsel nach Deadline nicht mehr möglich
+							</p>
+						{/if}
 					{/if}
 				{/if}
 			</div>
@@ -94,7 +96,7 @@
 						}
 					}}
 				>
-					{#if user?.role !== 'admin'}
+					{#if user?.role !== 'admin' && !competitionFinished}
 						<button type="submit" class="btn-danger" disabled={competitionStarted}>
 							Konto löschen
 						</button>
@@ -408,6 +410,7 @@
 			: false
 	)
 	const competitionStarted = $derived(Boolean(data.competitionState?.competitionStarted))
+	const competitionFinished = $derived(Boolean(data.competitionState?.competitionFinished))
 
 	// Local reactive counters that won't be overwritten by server updates
 	let localCurrentParticipants = $state(data.currentParticipants || 0)

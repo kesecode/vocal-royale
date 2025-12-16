@@ -9,13 +9,33 @@
 			<div class="table-header-border padding-responsive py-3">
 				<div class="font-semibold">Wettbewerb beendet</div>
 			</div>
-			<div class="p-3 sm:p-4">
+			<div class="p-3 sm:p-4 space-y-4">
 				{#if data?.winner}
-					<div class="text-lg font-semibold">Sieger: {data.winner.name}</div>
-					{#if data.winner.avg !== undefined}
-						<div class="text-sm text-white/80">
-							Bewertung: Ø {data.winner.avg.toFixed(2)}{#if data.winner.count}
-								({data.winner.count} Stimmen){/if}
+					<div>
+						<div class="text-lg font-semibold">
+							🏆 Sieger: {data.winner.artistName || data.winner.name}
+						</div>
+						{#if data.winner.artistName && data.winner.name}
+							<div class="text-sm text-white/70">{data.winner.name}</div>
+						{/if}
+						{#if data.winner.avg !== undefined}
+							<div class="text-sm text-white/80 mt-1">
+								Gesamtdurchschnitt: Ø {data.winner.avg.toFixed(2)} ({data.winner.count} Stimmen)
+							</div>
+						{/if}
+					</div>
+
+					{#if data.user?.role === 'participant' && data.userPlacement}
+						<div class="border-t border-[#333]/40 pt-4">
+							<div class="text-lg font-semibold">
+								Deine Platzierung: {data.userPlacement.rank}. Platz
+							</div>
+							<div class="text-sm text-white/80">
+								Gesamtdurchschnitt: Ø {data.userPlacement.avg.toFixed(2)} ({data.userPlacement
+									.count}
+								Stimmen)
+							</div>
+							<div class="text-sm text-white/70 mt-2 italic">Geil, dass du dabei warst!</div>
 						</div>
 					{/if}
 				{:else}
