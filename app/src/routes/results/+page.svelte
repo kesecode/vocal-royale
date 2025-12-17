@@ -29,7 +29,7 @@
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="font-semibold">
-					{isFinaleRound ? 'Wettbewerb beendet' : `Ergebnisse Runde ${currentRound}`}
+					{isFinaleRound ? 'Wettbewerb beendet' : `Ergebnisse ${currentRoundLabel}`}
 				</div>
 			</div>
 			<div class="p-3 sm:p-4">
@@ -86,7 +86,7 @@
 											{#if r.eliminatedInRound === null}
 												<span class="text-amber-400 font-medium">Finale</span>
 											{:else}
-												Runde {r.eliminatedInRound}
+												{getRoundLabel(r.eliminatedInRound, totalRounds)}
 											{/if}
 										</td>
 										<td class="p-2 sm:p-3 font-semibold">
@@ -129,7 +129,7 @@
 					<p class="text-sm text-white/80">Ergebnisse werden geladen...</p>
 				{:else}
 					<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
-					<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
+					<p class="text-sm text-white/80">Du wirst es gleich hier sehen...</p>
 				{/if}
 			</div>
 		</div>
@@ -137,7 +137,7 @@
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="flex items-center gap-4">
-					<span class="font-semibold">{isFinaleRound ? 'Finale' : `Runde ${currentRound}`}</span>
+					<span class="font-semibold">{currentRoundLabel}</span>
 				</div>
 				{#if loading}
 					<div class="text-xs text-white/80">Laden...</div>
@@ -158,7 +158,7 @@
 				{:else if roundState === 'result_locked'}
 					<div class="px-2 py-3 space-y-2">
 						<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
-						<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
+						<p class="text-sm text-white/80">Du wirst es gleich hier sehen...</p>
 					</div>
 				{:else if roundState === 'singing_phase'}
 					<div class="px-2 py-3 space-y-2">
@@ -237,7 +237,7 @@
 													{#if r.eliminatedInRound === null}
 														<span class="text-amber-400 font-medium">Finale</span>
 													{:else}
-														Runde {r.eliminatedInRound}
+														{getRoundLabel(r.eliminatedInRound, totalRounds)}
 													{/if}
 												</td>
 												<td class="p-2 sm:p-3 font-semibold">
@@ -249,7 +249,7 @@
 								</table>
 							</div>
 						{:else if results.length > 0}
-							<div class="text-lg font-semibold">Ergebnisse Runde {currentRound}</div>
+							<div class="text-lg font-semibold">Ergebnisse {currentRoundLabel}</div>
 							<div class="overflow-auto max-h-[50vh]">
 								<table class="w-full text-sm">
 									<thead class="sticky top-0">
@@ -301,7 +301,8 @@
 		getSongLabels,
 		parseSettings,
 		DEFAULT_SETTINGS,
-		getMaxRound
+		getMaxRound,
+		getRoundLabel
 	} from '$lib/utils/competition-settings'
 
 	export let data
@@ -312,8 +313,9 @@
 	const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
 	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
 
-	// Computed value for finale round (any round >= totalRounds is finale)
+	// Computed values for round types
 	$: isFinaleRound = currentRound >= totalRounds
+	$: currentRoundLabel = getRoundLabel(currentRound, totalRounds)
 
 	let activeRound = 1
 	let currentRound = 1

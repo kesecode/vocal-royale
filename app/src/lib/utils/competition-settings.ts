@@ -60,7 +60,11 @@ export function getSongLabels(totalRounds: number, numberOfFinalSongs: number): 
 	// Normale Runden vor dem Finale
 	const normalRounds = totalRounds - 1 // Alle Runden außer der letzten
 	for (let i = 1; i <= normalRounds; i++) {
-		labels.push(`Runde ${i}`)
+		if (i === normalRounds) {
+			labels.push('Halbfinale')
+		} else {
+			labels.push(`Runde ${i}`)
+		}
 	}
 
 	// Finale songs
@@ -135,6 +139,22 @@ export function getMaxRound(totalRounds: number, numberOfFinalSongs: number): nu
  */
 export function isFinaleRound(round: number, totalRounds: number): boolean {
 	return round >= totalRounds
+}
+
+/**
+ * Prüft ob eine Runde das Halbfinale ist (round === totalRounds - 1)
+ */
+export function isHalbfinaleRound(round: number, totalRounds: number): boolean {
+	return round === totalRounds - 1
+}
+
+/**
+ * Gibt das Label für eine Runde zurück (z.B. "Runde 1", "Halbfinale", "Finale")
+ */
+export function getRoundLabel(round: number, totalRounds: number): string {
+	if (round >= totalRounds) return 'Finale'
+	if (round === totalRounds - 1) return 'Halbfinale'
+	return `Runde ${round}`
 }
 
 /**

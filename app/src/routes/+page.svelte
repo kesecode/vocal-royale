@@ -40,7 +40,7 @@
 					{/if}
 				{:else}
 					<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
-					<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
+					<p class="text-sm text-white/80">Du wirst es gleich hier sehen...</p>
 				{/if}
 			</div>
 		</div>

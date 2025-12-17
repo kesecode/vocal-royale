@@ -29,7 +29,9 @@
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="font-semibold">
-					{isFinaleRound ? 'Wettbewerb beendet' : `Ergebnisse Runde ${currentRound}`}
+					{isFinaleRound
+						? 'Wettbewerb beendet'
+						: `Ergebnisse ${getRoundLabel(currentRound, totalRounds)}`}
 				</div>
 			</div>
 			<div class="p-3 sm:p-4">
@@ -85,7 +87,7 @@
 											{#if r.eliminatedInRound === null}
 												<span class="text-amber-400 font-medium">Finale</span>
 											{:else}
-												Runde {r.eliminatedInRound}
+												{getRoundLabel(r.eliminatedInRound, totalRounds)}
 											{/if}
 										</td>
 										<td class="p-2 sm:p-3 font-semibold">
@@ -143,7 +145,7 @@
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="flex items-center gap-3">
-					<span class="font-semibold">Runde {currentRound}</span>
+					<span class="font-semibold">{getRoundLabel(currentRound, totalRounds)}</span>
 					{#if showRatingBadge}
 						{#if canRate}
 							<span
@@ -316,7 +318,7 @@
 				{:else if roundState === 'result_locked'}
 					<div class="px-2 py-3 space-y-2">
 						<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
-						<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
+						<p class="text-sm text-white/80">Du wirst es gleich hier sehen...</p>
 					</div>
 				{:else if roundState === 'publish_result'}
 					<div class="px-2 py-3 space-y-4">
@@ -359,7 +361,7 @@
 													{#if r.eliminatedInRound === null}
 														<span class="text-amber-400 font-medium">Finale</span>
 													{:else}
-														Runde {r.eliminatedInRound}
+														{getRoundLabel(r.eliminatedInRound, totalRounds)}
 													{/if}
 												</td>
 												<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
@@ -370,7 +372,9 @@
 								</table>
 							</div>
 						{:else if results.length > 0}
-							<div class="text-lg font-semibold">Ergebnisse Runde {currentRound}</div>
+							<div class="text-lg font-semibold">
+								Ergebnisse {getRoundLabel(currentRound, totalRounds)}
+							</div>
 							<div class="overflow-auto max-h-[50vh]">
 								<table class="w-full text-sm">
 									<thead class="sticky top-0">
@@ -481,7 +485,7 @@
 		{#if selected}
 			<div class="space-y-3">
 				<div>
-					<div class="text-sm text-white/60">Runde {currentRound}</div>
+					<div class="text-sm text-white/60">{getRoundLabel(currentRound, totalRounds)}</div>
 					<div class="text-lg font-semibold">{selected.firstName || selected.name}</div>
 					{#if selected.artistName}
 						<div class="text-xs text-white/70">{selected.artistName}</div>
@@ -570,7 +574,12 @@
 	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
 	import StarRating from '$lib/components/StarRating.svelte'
 	import Modal from '$lib/components/Modal.svelte'
-	import { getSongLabels, parseSettings, DEFAULT_SETTINGS } from '$lib/utils/competition-settings'
+	import {
+		getSongLabels,
+		parseSettings,
+		DEFAULT_SETTINGS,
+		getRoundLabel
+	} from '$lib/utils/competition-settings'
 
 	export let data
 

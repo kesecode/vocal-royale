@@ -70,10 +70,17 @@ async function upsertState(
 	return updated
 }
 
-async function pickRandomEligibleParticipant(locals: App.Locals): Promise<UsersResponse | null> {
+async function pickRandomEligibleParticipant(
+	locals: App.Locals,
+	excludeId?: string
+): Promise<UsersResponse | null> {
 	// Eligible: role=participant AND eliminated != true AND sangThisRound != true
+	let filter = 'role = "participant" && eliminated != true && sangThisRound != true'
+	if (excludeId) {
+		filter += ` && id != "${excludeId}"`
+	}
 	const list = (await locals.pb.collection(USERS_COLLECTION).getFullList({
-		filter: 'role = "participant" && eliminated != true && sangThisRound != true'
+		filter
 	})) as UsersResponse[]
 	if (!list.length) return null
 	const idx = Math.floor(Math.random() * list.length)
@@ -308,13 +315,16 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		})) as UsersResponse[]
 		totalParticipantsInRound = allInRound.length
 
-		// Count those who have already sung
+		// Count those who have already sung (sangThisRound = true)
 		const alreadySang = allInRound.filter((p) => p.sangThisRound === true).length
-		// Current participant index (1-based): those who sang + current one
-		currentParticipantIndex = alreadySang + 1
+		// Current participant index: in rating_phase the current participant already has sangThisRound=true
+		// In singing_phase they don't have it yet, so we add 1
+		currentParticipantIndex = state.roundState === 'rating_phase' ? alreadySang : alreadySang + 1
 
-		// Remaining (those who haven't sung yet, excluding current)
-		const remaining = allInRound.filter((p) => p.sangThisRound !== true)
+		// Remaining (those who haven't sung yet, excluding current active participant)
+		const remaining = allInRound.filter(
+			(p) => p.sangThisRound !== true && p.id !== state?.activeParticipant
+		)
 		remainingParticipantsCount = remaining.length
 	}
 
@@ -515,6 +525,7 @@ type AdminAction =
 	| 'finalize_ratings'
 	| 'publish_results'
 	| 'eliminate_from_tie'
+	| 'withdraw_participant'
 	| 'start_next_round'
 	| 'reset_game'
 	| 'reroll_participant'
@@ -1113,6 +1124,195 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			})
 		}
 
+		if (action === 'withdraw_participant') {
+			const withdrawId = payload.eliminateId // reuse eliminateId field
+
+			if (!withdrawId) {
+				return json({ error: 'missing_withdraw_id' }, { status: 400 })
+			}
+
+			const state = await getLatestState(locals)
+			const round = Number(state?.round ?? 1) || 1
+			const settings = await getCompetitionSettings(locals)
+
+			// Verify the participant exists and is not already eliminated
+			const withdrawParticipant = (await locals.pb
+				.collection(USERS_COLLECTION)
+				.getOne(withdrawId)) as UsersResponse
+			if (!withdrawParticipant || withdrawParticipant.eliminated) {
+				return json({ error: 'participant_already_eliminated' }, { status: 400 })
+			}
+
+			// Get all ratings for this round with author expansion for juror weighting
+			const allRatings = (await locals.pb.collection(RATINGS_COLLECTION).getFullList({
+				filter: `round = ${round}`,
+				expand: 'author'
+			})) as (RatingsResponse & { expand?: { author?: UsersResponse } })[]
+
+			// Find the best eliminated participant to bring back
+			const eliminatedParticipants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+				filter: `role = "participant" && eliminated = true && round = ${round}`
+			})) as UsersResponse[]
+
+			if (eliminatedParticipants.length === 0) {
+				return json({ error: 'no_eliminated_participants' }, { status: 400 })
+			}
+
+			// Calculate averages for eliminated participants
+			const eliminatedWithAvg = eliminatedParticipants.map((p) => {
+				let sum = 0
+				let count = 0
+				for (const r of allRatings) {
+					if (r.ratedUser !== p.id) continue
+					const rating = Number(r.rating) || 0
+					const authorRole = r.expand?.author?.role
+					const weight = authorRole === 'juror' ? 2 : 1
+					sum += rating * weight
+					count += weight
+				}
+				return { participant: p, avg: count > 0 ? sum / count : 0, count }
+			})
+
+			// Find the best one (highest average)
+			eliminatedWithAvg.sort((a, b) => b.avg - a.avg || b.count - a.count)
+			const bestEliminated = eliminatedWithAvg[0]
+
+			// Perform the swap: eliminate withdrawing participant, reinstate best eliminated
+			try {
+				await Promise.all([
+					locals.pb
+						.collection(USERS_COLLECTION)
+						.update(withdrawId, { eliminated: true, round: round }),
+					locals.pb
+						.collection(USERS_COLLECTION)
+						.update(bestEliminated.participant.id, { eliminated: false, round: round })
+				])
+			} catch (err) {
+				const pbErr = err as { status?: number; message?: string; data?: unknown }
+				logger.error('Failed to withdraw participant', {
+					withdrawId,
+					reinstateId: bestEliminated.participant.id,
+					status: pbErr.status,
+					message: pbErr.message,
+					data: pbErr.data
+				})
+				return json(
+					{ error: 'withdraw_failed', details: pbErr.message || String(err) },
+					{ status: 500 }
+				)
+			}
+
+			// Re-fetch ALL participants for updated results display
+			const allParticipants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+				filter: 'role = "participant"'
+			})) as UsersResponse[]
+
+			// Filter: not eliminated OR eliminated in this specific round
+			const roundParticipants = allParticipants.filter(
+				(p) => !p.eliminated || (p.eliminated && p.round === round)
+			)
+			const participantIds = new Set(roundParticipants.map((p) => p.id))
+
+			// Recalculate averages
+			const grouped = new Map<string, { sum: number; count: number }>()
+			for (const r of allRatings) {
+				if (!participantIds.has(r.ratedUser)) continue
+				const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
+				const rating = Number(r.rating) || 0
+				const authorRole = r.expand?.author?.role
+				const weight = authorRole === 'juror' ? 2 : 1
+				g.sum += rating * weight
+				g.count += weight
+				grouped.set(r.ratedUser, g)
+			}
+
+			type Row = {
+				id: string
+				name: string | null
+				artistName?: string
+				avg: number
+				sum: number
+				count: number
+				eliminated: boolean
+				isTied?: boolean
+			}
+			const rows: Row[] = roundParticipants.map((p) => {
+				const g = grouped.get(p.id) || { sum: 0, count: 0 }
+				const avg = g.count > 0 ? g.sum / g.count : 0
+				return {
+					id: p.id,
+					name: toName(p),
+					artistName: p.artistName,
+					avg,
+					sum: g.sum,
+					count: g.count,
+					eliminated: Boolean(p.eliminated) && p.round === round
+				}
+			})
+
+			// Sort descending by average
+			rows.sort(
+				(a, b) => b.avg - a.avg || b.count - a.count || a.name?.localeCompare(b.name || '') || 0
+			)
+
+			// Get elimination count for tie detection
+			let eliminateCount = 0
+			if (round >= 1 && round < settings.totalRounds) {
+				const pattern = parseEliminationPattern(settings.roundEliminationPattern)
+				eliminateCount = Math.max(0, Number(pattern?.[round - 1] ?? 0))
+			}
+
+			const alreadyEliminated = rows.filter((r) => r.eliminated).length
+			const remainingToEliminate = Math.max(0, eliminateCount - alreadyEliminated)
+
+			const roundAvg = (avg: number) => Math.round(avg * 100) / 100
+			const activeRows = rows.filter((r) => !r.eliminated)
+			const sortedAsc = activeRows.slice().sort((a, b) => a.avg - b.avg)
+
+			let hasTie = false
+			let tiedParticipantIds: string[] = []
+			if (remainingToEliminate > 0 && remainingToEliminate < sortedAsc.length) {
+				const lastToEliminate = sortedAsc[remainingToEliminate - 1]
+				const firstToSurvive = sortedAsc[remainingToEliminate]
+				if (roundAvg(lastToEliminate.avg) === roundAvg(firstToSurvive.avg)) {
+					hasTie = true
+					const tiedAvg = roundAvg(lastToEliminate.avg)
+					tiedParticipantIds = activeRows
+						.filter((r) => roundAvg(r.avg) === tiedAvg)
+						.map((r) => r.id)
+					for (const row of rows) {
+						if (!row.eliminated && roundAvg(row.avg) === tiedAvg) {
+							row.isTied = true
+						}
+					}
+				}
+			}
+
+			const winner = activeRows.sort((a, b) => b.avg - a.avg)[0] ?? null
+
+			logger.info('Admin API: withdraw_participant', {
+				round,
+				withdrawId,
+				reinstatedId: bestEliminated.participant.id,
+				reinstatedName: toName(bestEliminated.participant)
+			})
+
+			return json({
+				ok: true,
+				results: rows,
+				winner,
+				hasTie,
+				tiedParticipantIds,
+				eliminateCount,
+				remainingToEliminate,
+				reinstated: {
+					id: bestEliminated.participant.id,
+					name: toName(bestEliminated.participant),
+					artistName: bestEliminated.participant.artistName
+				}
+			})
+		}
+
 		if (action === 'start_next_round') {
 			const state = await getLatestState(locals)
 			const settings = await getCompetitionSettings(locals)
@@ -1172,12 +1372,17 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			if (!state?.competitionStarted || state?.roundState !== 'singing_phase') {
 				return json({ error: 'reroll_not_allowed' }, { status: 400 })
 			}
-			const picked = await pickRandomEligibleParticipant(locals)
+			// Exclude current active participant from reroll
+			const currentActiveId = state.activeParticipant
+			const picked = await pickRandomEligibleParticipant(locals, currentActiveId)
 			if (!picked) {
 				return json({ error: 'no_participants_available' }, { status: 400 })
 			}
 			const updated = await upsertState(locals, { activeParticipant: picked.id })
-			logger.info('Admin API: reroll_participant', { activeParticipant: picked.id })
+			logger.info('Admin API: reroll_participant', {
+				activeParticipant: picked.id,
+				excludedPrevious: currentActiveId
+			})
 			return json({
 				ok: true,
 				state: updated,

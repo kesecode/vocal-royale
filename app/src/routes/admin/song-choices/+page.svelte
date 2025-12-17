@@ -68,7 +68,7 @@
 										<span class="text-muted">Nicht ausgefüllt</span>
 									{/if}
 								</td>
-								<td class="table-cell">{choice.round}</td>
+								<td class="table-cell">{getRoundLabel(choice.round, settings.totalRounds)}</td>
 								<td class="table-cell">
 									{#if choice.confirmed}
 										<span class="text-emerald-200">✓ Bestätigt</span>
@@ -141,7 +141,9 @@
 				<div class="font-medium text-white">
 					{confirmChoice.artist} - {confirmChoice.songTitle}
 				</div>
-				<div class="mt-1 text-sm text-white/70">Runde {confirmChoice.round}</div>
+				<div class="mt-1 text-sm text-white/70">
+					{getRoundLabel(confirmChoice.round, settings.totalRounds)}
+				</div>
 			</div>
 
 			<div class="rounded border border-emerald-600/40 bg-emerald-600/20 p-3">
@@ -179,7 +181,9 @@
 				<div class="font-medium text-white">
 					{releaseChoice.artist} - {releaseChoice.songTitle}
 				</div>
-				<div class="mt-1 text-sm text-white/70">Runde {releaseChoice.round}</div>
+				<div class="mt-1 text-sm text-white/70">
+					{getRoundLabel(releaseChoice.round, settings.totalRounds)}
+				</div>
 			</div>
 
 			<div class="rounded border border-amber-600/40 bg-amber-600/20 p-3">
@@ -218,7 +222,9 @@
 				<div class="font-medium text-white">
 					{selectedChoice.artist} - {selectedChoice.songTitle}
 				</div>
-				<div class="mt-1 text-sm text-white/70">Runde {selectedChoice.round}</div>
+				<div class="mt-1 text-sm text-white/70">
+					{getRoundLabel(selectedChoice.round, settings.totalRounds)}
+				</div>
 			</div>
 
 			<div>
@@ -260,6 +266,12 @@
 	import Pagination from '$lib/components/Pagination.svelte'
 	import Modal from '$lib/components/Modal.svelte'
 	import type { SongChoicesResponse, UsersResponse } from '$lib/pocketbase-types'
+	import {
+		parseSettings,
+		DEFAULT_SETTINGS,
+		getRoundLabel,
+		type CompetitionSettings
+	} from '$lib/utils/competition-settings'
 
 	type SongChoiceWithUser = SongChoicesResponse & {
 		expand?: {
@@ -276,6 +288,7 @@
 	let competitionStarted = $state(false)
 	let stateLoading = $state(false)
 	const actionsDisabled = $derived(competitionStarted)
+	let settings: CompetitionSettings = $state(DEFAULT_SETTINGS)
 
 	// Confirm Modal State
 	let showConfirmModal = $state(false)
@@ -293,10 +306,25 @@
 	let rejectComment = $state('')
 	let rejecting = $state(false)
 
-	onMount(() => {
+	onMount(async () => {
+		await loadSettings()
 		loadSongChoices()
 		loadCompetitionState()
 	})
+
+	async function loadSettings() {
+		try {
+			const res = await fetch('/admin/settings/api')
+			if (res.ok) {
+				const data = await res.json()
+				if (data.settings) {
+					settings = parseSettings(data.settings)
+				}
+			}
+		} catch {
+			// Use defaults
+		}
+	}
 
 	async function loadSongChoices() {
 		loading = true
