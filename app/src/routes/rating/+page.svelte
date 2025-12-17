@@ -4,10 +4,10 @@
 	<!-- Progress with dynamic rounds: past = yellow, current = green, future = black (disabled) -->
 	<div class="panel panel-accent p-3 sm:p-4">
 		<ProgressRounds
-			onSelect={setRound}
-			activeRound={competitionStarted ? activeRound : 0}
-			currentRound={competitionStarted ? currentRound : 0}
-			total={maxRound}
+			onSelect={handleRoundSelect}
+			activeRound={competitionStarted ? getDisplayRound(activeRound, totalRounds) : 0}
+			currentRound={competitionStarted ? getDisplayRound(currentRound, totalRounds) : 0}
+			total={progressBarTotal}
 			labels={roundLabels}
 			disabled={!competitionFinished}
 		/>
@@ -575,9 +575,11 @@
 	import StarRating from '$lib/components/StarRating.svelte'
 	import Modal from '$lib/components/Modal.svelte'
 	import {
-		getSongLabels,
+		getProgressBarLabels,
+		getDisplayRound,
 		parseSettings,
 		DEFAULT_SETTINGS,
+		getMaxRound,
 		getRoundLabel
 	} from '$lib/utils/competition-settings'
 
@@ -605,8 +607,11 @@
 	// Competition settings
 	const settings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
 	const totalRounds = settings.totalRounds
-	const maxRound = totalRounds + settings.numberOfFinalSongs - 1
-	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
+	// Interne maximale Rundennummer (inkl. alle Finale-Songs)
+	const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
+	// Progress bar zeigt nur totalRounds Schritte (Finale als eine Runde)
+	const progressBarTotal = totalRounds
+	const roundLabels = getProgressBarLabels(totalRounds)
 
 	// activeRound controls progressbar state from global competition state
 	let activeRound = 1
@@ -921,6 +926,12 @@
 		} finally {
 			loading = false
 		}
+	}
+
+	async function handleRoundSelect(displayRound: number) {
+		// Bei Finale-Auswahl (displayRound === totalRounds) die höchste Finale-Runde verwenden
+		const targetRound = displayRound >= totalRounds ? maxRound : displayRound
+		await setRound(targetRound)
 	}
 
 	async function setRound(r: number) {

@@ -114,8 +114,8 @@ async function generateCertificateText(userData: string): Promise<ChatGPTRespons
 						content: userData
 					}
 				],
-				max_completion_tokens: 3000,
-				temperature: 0.8
+				max_completion_tokens: 5000,
+				temperature: 0.9
 			})
 		})
 

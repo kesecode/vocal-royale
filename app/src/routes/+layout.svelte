@@ -114,7 +114,7 @@
 							<li>
 								<a
 									href={link.href}
-									class="block rounded-md px-2 py-2 text-base hover:underline"
+									class="block rounded-md px-2 py-2 font-display text-xl tracking-tight drop-shadow hover:underline"
 									onclick={closeMenu}
 								>
 									{link.label}

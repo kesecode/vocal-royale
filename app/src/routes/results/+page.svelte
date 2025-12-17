@@ -5,9 +5,9 @@
 	<div class="panel panel-accent p-3 sm:p-4">
 		<ProgressRounds
 			onSelect={handleRoundSelect}
-			activeRound={competitionStarted ? activeRound : 0}
-			currentRound={competitionStarted ? currentRound : 0}
-			total={maxRound}
+			activeRound={competitionStarted ? getDisplayRound(activeRound, totalRounds) : 0}
+			currentRound={competitionStarted ? getDisplayRound(currentRound, totalRounds) : 0}
+			total={progressBarTotal}
 			labels={roundLabels}
 			disabled={!competitionFinished}
 		/>
@@ -298,7 +298,8 @@
 	import type { RoundState } from '$lib/pocketbase-types'
 	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
 	import {
-		getSongLabels,
+		getProgressBarLabels,
+		getDisplayRound,
 		parseSettings,
 		DEFAULT_SETTINGS,
 		getMaxRound,
@@ -310,8 +311,11 @@
 	// Competition settings
 	const settings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
 	const totalRounds = settings.totalRounds
+	// Interne maximale Rundennummer (inkl. alle Finale-Songs)
 	const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
-	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
+	// Progress bar zeigt nur totalRounds Schritte (Finale als eine Runde)
+	const progressBarTotal = totalRounds
+	const roundLabels = getProgressBarLabels(totalRounds)
 
 	// Computed values for round types
 	$: isFinaleRound = currentRound >= totalRounds
@@ -357,10 +361,13 @@
 	let pollingInterval: ReturnType<typeof setInterval> | null = null
 	const POLLING_INTERVAL_MS = 2000
 
-	async function handleRoundSelect(round: number) {
+	async function handleRoundSelect(displayRound: number) {
 		if (!competitionFinished) return
-		currentRound = round
-		await fetchHistoricalResults(round)
+		// Bei Finale-Auswahl (displayRound === totalRounds) die höchste Finale-Runde laden
+		// sonst die normale Rundennummer verwenden
+		const targetRound = displayRound >= totalRounds ? maxRound : displayRound
+		currentRound = targetRound
+		await fetchHistoricalResults(targetRound)
 	}
 
 	async function fetchHistoricalResults(round: number) {

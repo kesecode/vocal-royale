@@ -13,7 +13,8 @@ import {
 	parseSettings,
 	parseEliminationPattern,
 	calculateTotalSongs,
-	getMaxRound
+	getMaxRound,
+	isFinaleRound
 } from '$lib/utils/competition-settings'
 import { getLatestCompetitionState } from '$lib/server/competition-state'
 import {
@@ -379,6 +380,31 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 						eliminated: false
 					}
 				}
+
+				// Check for tie among top finalists
+				if (finalRankings.length >= 2) {
+					const roundAvg = (avg: number) => Math.round(avg * 100) / 100
+					const topAvg = roundAvg(finalRankings[0].avg)
+
+					// Find all finalists with same avg as potential winner
+					const tiedFinalists = finalRankings.filter(
+						(r) => r.eliminatedInRound === null && roundAvg(r.avg) === topAvg
+					)
+
+					if (tiedFinalists.length > 1) {
+						hasTie = true
+						tiedParticipantIds = tiedFinalists.map((r) => r.id)
+						// All but one need to be eliminated to determine winner
+						remainingToEliminate = tiedFinalists.length - 1
+
+						// Mark tied participants in results
+						for (const row of results) {
+							if (tiedParticipantIds.includes(row.id)) {
+								row.isTied = true
+							}
+						}
+					}
+				}
 			} else {
 				// Normal round: load ALL participants (including those eliminated this round)
 				const allParticipants = (await locals.pb.collection(USERS_COLLECTION).getFullList({
@@ -719,6 +745,60 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			// Pick next eligible participant
 			const picked = await pickRandomEligibleParticipant(locals)
 			if (!picked) {
+				// No more participants in this round
+				const settings = await getCompetitionSettings(locals)
+				const isFinale = isFinaleRound(round, settings.totalRounds)
+				const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
+				const isLastFinaleRound = round === maxRound
+
+				// In finale: automatically start next finale round if not the last one
+				if (isFinale && !isLastFinaleRound) {
+					const nextRound = round + 1
+					// Reset sangThisRound for all finalists
+					try {
+						const finalists = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+							filter: 'role = "participant" && eliminated != true'
+						})) as UsersResponse[]
+						await Promise.all(
+							finalists.map((p) =>
+								locals.pb
+									.collection(USERS_COLLECTION)
+									.update(p.id, { sangThisRound: false, round: nextRound })
+							)
+						)
+					} catch {
+						logger.warn('Admin API: reset sangThisRound for next finale round failed (continuing)')
+					}
+
+					// Pick first finalist for next finale round
+					const nextPicked = await pickRandomEligibleParticipant(locals)
+					const updated = await upsertState(locals, {
+						competitionStarted: true,
+						round: nextRound,
+						roundState: 'singing_phase',
+						activeParticipant: nextPicked?.id ?? undefined
+					})
+					logger.info('Admin API: next_participant -> auto start next finale round', {
+						nextRound,
+						activeParticipant: nextPicked?.id ?? null
+					})
+					return json({
+						ok: true,
+						state: updated,
+						activeParticipant: nextPicked
+							? {
+									id: nextPicked.id,
+									name: toName(nextPicked),
+									firstName: nextPicked.firstName,
+									lastName: nextPicked.lastName,
+									artistName: nextPicked.artistName
+								}
+							: null,
+						autoAdvancedToNextFinaleRound: true
+					})
+				}
+
+				// Normal round or last finale round: go to break phase
 				const updated = await upsertState(locals, {
 					roundState: 'break',
 					activeParticipant: undefined
@@ -904,6 +984,31 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 			let finalRankings: FinalRanking[] | null = null
 			if (isFinale) {
 				finalRankings = await computeFinalRankings(locals, round)
+
+				// Check for tie among top finalists (those not eliminated)
+				if (finalRankings.length >= 2) {
+					const topAvg = roundAvg(finalRankings[0].avg)
+
+					// Find all finalists with same avg as potential winner
+					const tiedFinalists = finalRankings.filter(
+						(r) => r.eliminatedInRound === null && roundAvg(r.avg) === topAvg
+					)
+
+					if (tiedFinalists.length > 1) {
+						hasTie = true
+						tiedParticipantIds = tiedFinalists.map((r) => r.id)
+						tiedAvg = topAvg
+						// All but one need to be eliminated to determine winner
+						remainingToEliminate = tiedFinalists.length - 1
+
+						// Mark tied participants in results
+						for (const row of rows) {
+							if (tiedParticipantIds.includes(row.id)) {
+								row.isTied = true
+							}
+						}
+					}
+				}
 			}
 
 			logger.info('Admin API: finalize_ratings -> result_locked', {

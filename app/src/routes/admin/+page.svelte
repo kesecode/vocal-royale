@@ -93,7 +93,11 @@
 
 				{#if competitionState?.competitionStarted && competitionState?.roundState === 'rating_phase'}
 					<button class="btn-brand" onclick={() => doAction('next_participant')}>
-						{remainingParticipantsCount === 0 ? 'Runde beenden' : 'Nächster Teilnehmer'}
+						{#if remainingParticipantsCount === 0}
+							{isFinaleRound && !isLastFinaleRound ? 'Nächster Finale-Song' : 'Runde beenden'}
+						{:else}
+							Nächster Teilnehmer
+						{/if}
 					</button>
 					<button class="btn-accent" onclick={openMissingRatingsModal}>Fehlende Bewertungen</button>
 				{/if}
@@ -633,7 +637,11 @@
 				await reloadState()
 			}
 			if (action === 'next_participant') {
-				infoMsg = 'Nächster Teilnehmer gesetzt.'
+				if (data?.autoAdvancedToNextFinaleRound) {
+					infoMsg = 'Automatisch zum nächsten Finale-Song gewechselt.'
+				} else {
+					infoMsg = 'Nächster Teilnehmer gesetzt.'
+				}
 				await reloadState()
 			}
 			if (action === 'finalize_ratings') {
