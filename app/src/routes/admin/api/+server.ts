@@ -294,12 +294,27 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		}
 	}
 
-	// Calculate remaining participants count for rating phase
+	// Calculate participant counts for singing/rating phase
 	let remainingParticipantsCount = 0
-	if (state?.competitionStarted && state?.roundState === 'rating_phase') {
-		const remaining = (await locals.pb.collection(USERS_COLLECTION).getFullList({
-			filter: 'role = "participant" && eliminated != true && sangThisRound != true'
+	let totalParticipantsInRound = 0
+	let currentParticipantIndex = 0
+	if (
+		state?.competitionStarted &&
+		(state?.roundState === 'singing_phase' || state?.roundState === 'rating_phase')
+	) {
+		// Get all non-eliminated participants in this round
+		const allInRound = (await locals.pb.collection(USERS_COLLECTION).getFullList({
+			filter: 'role = "participant" && eliminated != true'
 		})) as UsersResponse[]
+		totalParticipantsInRound = allInRound.length
+
+		// Count those who have already sung
+		const alreadySang = allInRound.filter((p) => p.sangThisRound === true).length
+		// Current participant index (1-based): those who sang + current one
+		currentParticipantIndex = alreadySang + 1
+
+		// Remaining (those who haven't sung yet, excluding current)
+		const remaining = allInRound.filter((p) => p.sangThisRound !== true)
 		remainingParticipantsCount = remaining.length
 	}
 
@@ -486,7 +501,9 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 		tiedParticipantIds,
 		finalRankings,
 		isProduction: process.env.NODE_ENV === 'production',
-		remainingParticipantsCount
+		remainingParticipantsCount,
+		totalParticipantsInRound,
+		currentParticipantIndex
 	})
 }
 

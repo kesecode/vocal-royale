@@ -32,6 +32,13 @@
 					Phase: <span class="font-semibold">{translatePhase(competitionState?.roundState)}</span>
 				</div>
 				{#if competitionState?.roundState === 'singing_phase' || competitionState?.roundState === 'rating_phase'}
+					{#if totalParticipantsInRound > 0}
+						<div>
+							Teilnehmer: <span class="font-semibold">
+								{currentParticipantIndex} von {totalParticipantsInRound}
+							</span>
+						</div>
+					{/if}
 					<div>
 						Aktiver Teilnehmer: <span class="text-white">
 							{active?.firstName && active?.lastName
@@ -404,6 +411,8 @@
 	const isProduction: boolean = Boolean(data?.isProduction)
 	let seedingTestData: boolean = $state(false)
 	let remainingParticipantsCount: number = $state(0)
+	let totalParticipantsInRound: number = $state(0)
+	let currentParticipantIndex: number = $state(0)
 	let sendingCertificates: boolean = $state(false)
 
 	// Certificate modal
@@ -744,6 +753,12 @@
 				}
 				if (data?.remainingParticipantsCount !== undefined) {
 					remainingParticipantsCount = data.remainingParticipantsCount
+				}
+				if (data?.totalParticipantsInRound !== undefined) {
+					totalParticipantsInRound = data.totalParticipantsInRound
+				}
+				if (data?.currentParticipantIndex !== undefined) {
+					currentParticipantIndex = data.currentParticipantIndex
 				}
 			}
 		} catch {

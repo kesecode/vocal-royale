@@ -184,9 +184,12 @@
 							<p class="text-sm text-white/60 mb-2">Jetzt auf der Bühne:</p>
 							<div>
 								{#if activeParticipantInfo.artistName}
-									<div class="text-lg font-semibold">{activeParticipantInfo.artistName}</div>
 									<div class="text-sm text-white/70">
 										{activeParticipantInfo.firstName || activeParticipantInfo.name}
+									</div>
+									<div>
+										<span class="text-white/70">a.k.a.</span>
+										<span class="text-lg font-semibold">{activeParticipantInfo.artistName}</span>
 									</div>
 								{:else}
 									<div class="text-lg font-semibold">
@@ -211,15 +214,23 @@
 					{#if activeParticipant}
 						<div class="space-y-3">
 							<div>
-								<div class="text-sm text-white/60">Runde {currentRound}</div>
 								{#if activeParticipant.artistName}
-									<div class="text-lg font-semibold">{activeParticipant.artistName}</div>
-									<div class="text-xs text-white/70">
+									<div class="text-sm text-white/70">
 										{activeParticipant.firstName || activeParticipant.name}
+									</div>
+									<div>
+										<span class="text-white/70">a.k.a.</span>
+										<span class="text-lg font-semibold">{activeParticipant.artistName}</span>
 									</div>
 								{:else}
 									<div class="text-lg font-semibold">
 										{activeParticipant.firstName || activeParticipant.name}
+									</div>
+								{/if}
+								{#if activeSongChoice}
+									<div class="text-sm text-white/70 mt-1">
+										<span class="font-medium">{activeSongChoice.songTitle}</span>
+										<span>{activeSongChoice.artist}</span>
 									</div>
 								{/if}
 							</div>
