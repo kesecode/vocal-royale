@@ -25,13 +25,24 @@
 								: ''}
 						</span>
 					{:else}
-						Runde: <span class="font-semibold">{competitionState?.round ?? '—'}</span>
+						<span class="font-semibold">
+							{competitionState?.round
+								? getRoundLabel(competitionState.round, settings.totalRounds)
+								: '—'}
+						</span>
 					{/if}
 				</div>
 				<div>
 					Phase: <span class="font-semibold">{translatePhase(competitionState?.roundState)}</span>
 				</div>
 				{#if competitionState?.roundState === 'singing_phase' || competitionState?.roundState === 'rating_phase'}
+					{#if totalParticipantsInRound > 0}
+						<div>
+							Teilnehmer: <span class="font-semibold">
+								{currentParticipantIndex} von {totalParticipantsInRound}
+							</span>
+						</div>
+					{/if}
 					<div>
 						Aktiver Teilnehmer: <span class="text-white">
 							{active?.firstName && active?.lastName
@@ -82,7 +93,11 @@
 
 				{#if competitionState?.competitionStarted && competitionState?.roundState === 'rating_phase'}
 					<button class="btn-brand" onclick={() => doAction('next_participant')}>
-						{remainingParticipantsCount === 0 ? 'Runde beenden' : 'Nächster Teilnehmer'}
+						{#if remainingParticipantsCount === 0}
+							{isFinaleRound && !isLastFinaleRound ? 'Nächster Finale-Song' : 'Runde beenden'}
+						{:else}
+							Nächster Teilnehmer
+						{/if}
 					</button>
 					<button class="btn-accent" onclick={openMissingRatingsModal}>Fehlende Bewertungen</button>
 				{/if}
@@ -167,7 +182,12 @@
 			</div>
 			<div class="p-3 sm:p-4">
 				{#if isFinaleRound}
-					{#if winner}
+					{#if hasTie}
+						<div class="mb-3 p-3 rounded border border-amber-500/40 bg-amber-500/10 text-sm">
+							<strong>Patt-Situation im Finale!</strong>
+							Mehrere Teilnehmer haben den gleichen Durchschnitt. Bitte wähle den Sieger manuell.
+						</div>
+					{:else if winner}
 						<div class="text-lg font-semibold mb-2">
 							🏆 Sieger: {winner.name}
 							{#if winner.artistName}
@@ -177,39 +197,55 @@
 						<div class="text-sm text-white/80 mb-4">
 							Gesamtdurchschnitt: Ø {winner.avg.toFixed(2)} ({winner.count} Stimmen)
 						</div>
-						{#if results && results.length > 1}
-							<div class="border-t border-white/10 pt-3">
+					{/if}
+					{#if results && results.length > 0}
+						<div class={hasTie ? '' : 'border-t border-white/10 pt-3'}>
+							{#if !hasTie}
 								<div class="text-sm font-semibold mb-2">Alle Platzierungen:</div>
-								<div class="overflow-auto max-h-[50vh]">
-									<table class="w-full text-sm">
-										<thead class="sticky top-0">
-											<tr class="text-left text-white/90">
-												<th class="p-2 sm:p-3">Platz</th>
-												<th class="p-2 sm:p-3">Teilnehmer</th>
-												<th class="p-2 sm:p-3">Bewertung</th>
-												<th class="p-2 sm:p-3">Stimmen</th>
-											</tr>
-										</thead>
-										<tbody>
-											{#each results.slice().sort((a, b) => b.avg - a.avg) as r, i (r.id)}
-												<tr class="border-t border-[#333]/40 align-middle">
-													<td class="p-2 sm:p-3 font-semibold">{i + 1}</td>
+							{/if}
+							<div class="overflow-auto max-h-[50vh]">
+								<table class="w-full text-sm">
+									<thead class="sticky top-0">
+										<tr class="text-left text-white/90">
+											<th class="p-2 sm:p-3">Platz</th>
+											<th class="p-2 sm:p-3">Teilnehmer</th>
+											<th class="p-2 sm:p-3">Bewertung</th>
+											<th class="p-2 sm:p-3">Stimmen</th>
+											{#if hasTie}
+												<th class="p-2 sm:p-3">Aktion</th>
+											{/if}
+										</tr>
+									</thead>
+									<tbody>
+										{#each (hasTie ? results.filter((r) => !r.eliminated) : results)
+											.slice()
+											.sort((a, b) => b.avg - a.avg) as r, i (r.id)}
+											<tr class="border-t border-[#333]/40 align-middle">
+												<td class="p-2 sm:p-3 font-semibold">{i + 1}</td>
+												<td class="p-2 sm:p-3">
+													<div class="font-medium">{r.name}</div>
+													{#if r.artistName}
+														<div class="text-xs text-white/70">{r.artistName}</div>
+													{/if}
+												</td>
+												<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
+												<td class="p-2 sm:p-3">{r.count}</td>
+												{#if hasTie}
 													<td class="p-2 sm:p-3">
-														<div class="font-medium">{r.name}</div>
-														{#if r.artistName}
-															<div class="text-xs text-white/70">{r.artistName}</div>
+														{#if r.isTied && !r.eliminated}
+															<button class="btn-brand text-xs" onclick={() => selectWinner(r.id)}>
+																Als Sieger wählen
+															</button>
 														{/if}
 													</td>
-													<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
-													<td class="p-2 sm:p-3">{r.count}</td>
-												</tr>
-											{/each}
-										</tbody>
-									</table>
-								</div>
+												{/if}
+											</tr>
+										{/each}
+									</tbody>
+								</table>
 							</div>
-						{/if}
-					{:else}
+						</div>
+					{:else if !winner}
 						<div class="text-sm text-white/80">Ergebnis wird geladen...</div>
 					{/if}
 				{:else if results}
@@ -226,8 +262,8 @@
 									<th class="p-2 sm:p-3">Teilnehmer</th>
 									<th class="p-2 sm:p-3">Bewertung</th>
 									<th class="p-2 sm:p-3">Stimmen</th>
-									{#if hasTie}
-										<th class="p-2 sm:p-3">Status</th>
+									{#if hasTie || hasEliminatedParticipants}
+										<th class="p-2 sm:p-3">Aktion</th>
 									{/if}
 								</tr>
 							</thead>
@@ -244,7 +280,7 @@
 										</td>
 										<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
 										<td class="p-2 sm:p-3">{r.count}</td>
-										{#if hasTie}
+										{#if hasTie || hasEliminatedParticipants}
 											<td class="p-2 sm:p-3">
 												{#if r.isTied && !r.eliminated}
 													<button
@@ -252,6 +288,13 @@
 														onclick={() => openEliminateModal(r.id)}
 													>
 														Eliminieren
+													</button>
+												{:else if !r.eliminated && hasEliminatedParticipants}
+													<button
+														class="btn-accent text-xs"
+														onclick={() => openWithdrawModal(r.id)}
+													>
+														Tritt aus
 													</button>
 												{/if}
 											</td>
@@ -313,6 +356,22 @@
 		{#snippet footer()}
 			<button class="btn-accent" onclick={closeEliminateModal}>Abbrechen</button>
 			<button class="btn-danger" onclick={confirmEliminate}>Eliminieren</button>
+		{/snippet}
+	</Modal>
+
+	<Modal bind:open={showWithdrawModal} title="Teilnehmer tritt aus" onclose={closeWithdrawModal}>
+		<div class="space-y-3">
+			<p class="text-white/90">
+				<strong class="text-white">{pendingWithdrawName}</strong>
+				tritt freiwillig aus dem Wettbewerb aus.
+			</p>
+			<p class="text-sm text-white/70">
+				Der beste eliminierte Teilnehmer wird automatisch nachrücken.
+			</p>
+		</div>
+		{#snippet footer()}
+			<button class="btn-accent" onclick={closeWithdrawModal}>Abbrechen</button>
+			<button class="btn-danger" onclick={confirmWithdraw}>Bestätigen</button>
 		{/snippet}
 	</Modal>
 
@@ -386,6 +445,7 @@
 		parseSettings,
 		DEFAULT_SETTINGS,
 		getMaxRound,
+		getRoundLabel,
 		type CompetitionSettings
 	} from '$lib/utils/competition-settings'
 	import { onMount } from 'svelte'
@@ -404,6 +464,8 @@
 	const isProduction: boolean = Boolean(data?.isProduction)
 	let seedingTestData: boolean = $state(false)
 	let remainingParticipantsCount: number = $state(0)
+	let totalParticipantsInRound: number = $state(0)
+	let currentParticipantIndex: number = $state(0)
 	let sendingCertificates: boolean = $state(false)
 
 	// Certificate modal
@@ -490,6 +552,16 @@
 	let showEliminateModal: boolean = $state(false)
 	let pendingEliminateId: string | null = $state(null)
 	let remainingToEliminate: number = $state(0)
+
+	// Withdraw participant state
+	let showWithdrawModal: boolean = $state(false)
+	let pendingWithdrawId: string | null = $state(null)
+
+	// Check if there are eliminated participants to swap with
+	const hasEliminatedParticipants = $derived.by(() => {
+		if (!results) return false
+		return results.some((r: ResultRow) => r.eliminated)
+	})
 
 	// Load settings and state on mount
 	onMount(async () => {
@@ -586,7 +658,11 @@
 				await reloadState()
 			}
 			if (action === 'next_participant') {
-				infoMsg = 'Nächster Teilnehmer gesetzt.'
+				if (data?.autoAdvancedToNextFinaleRound) {
+					infoMsg = 'Automatisch zum nächsten Finale-Song gewechselt.'
+				} else {
+					infoMsg = 'Nächster Teilnehmer gesetzt.'
+				}
 				await reloadState()
 			}
 			if (action === 'finalize_ratings') {
@@ -627,6 +703,68 @@
 		return found?.name ?? '—'
 	})
 
+	// Get name of pending withdraw participant for modal display
+	const pendingWithdrawName = $derived.by(() => {
+		if (!pendingWithdrawId || !results) return '—'
+		const found = results.find((r: ResultRow) => r.id === pendingWithdrawId)
+		return found?.name ?? '—'
+	})
+
+	function openWithdrawModal(withdrawId: string) {
+		pendingWithdrawId = withdrawId
+		showWithdrawModal = true
+	}
+
+	function closeWithdrawModal() {
+		showWithdrawModal = false
+		pendingWithdrawId = null
+	}
+
+	async function confirmWithdraw() {
+		if (!pendingWithdrawId) return
+		const withdrawId = pendingWithdrawId
+		errorMsg = null
+		infoMsg = null
+		closeWithdrawModal()
+		try {
+			const res = await fetch('/admin/api', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					action: 'withdraw_participant',
+					eliminateId: withdrawId
+				})
+			})
+			if (!res.ok) {
+				const errData = await res.json().catch(() => ({}))
+				console.error('withdraw_participant failed:', res.status, errData)
+				if (errData?.error === 'no_eliminated_participants') {
+					errorMsg = 'Keine eliminierten Teilnehmer zum Nachrücken vorhanden.'
+				} else if (errData?.error === 'participant_already_eliminated') {
+					errorMsg = 'Teilnehmer wurde bereits eliminiert.'
+				} else {
+					errorMsg = `Austritt fehlgeschlagen: ${errData?.details || errData?.error || res.status}`
+				}
+				return
+			}
+			const data = await res.json()
+			results = Array.isArray(data?.results) ? data.results : null
+			winner = data?.winner ?? null
+			hasTie = Boolean(data?.hasTie)
+			remainingToEliminate = Number(data?.remainingToEliminate ?? 0)
+
+			const reinstated = data?.reinstated
+			if (reinstated?.name || reinstated?.artistName) {
+				const name = reinstated.artistName || reinstated.name
+				infoMsg = `Teilnehmer ist ausgetreten. ${name} rückt nach!`
+			} else {
+				infoMsg = 'Teilnehmer ist ausgetreten. Nachrücker wurde aktiviert.'
+			}
+		} catch {
+			errorMsg = 'Netzwerkfehler.'
+		}
+	}
+
 	async function confirmEliminate() {
 		if (!pendingEliminateId) return
 		const eliminateId = pendingEliminateId // Save before closing modal
@@ -662,6 +800,47 @@
 		} catch {
 			errorMsg = 'Netzwerkfehler.'
 		}
+	}
+
+	async function selectWinner(winnerId: string) {
+		// In finale tie: eliminate all other tied participants to select this one as winner
+		if (!results) return
+		errorMsg = null
+		infoMsg = null
+
+		// Find all tied participants except the selected winner
+		const othersToEliminate = results.filter(
+			(r: ResultRow) => r.isTied && !r.eliminated && r.id !== winnerId
+		)
+
+		// Eliminate each one sequentially
+		for (const other of othersToEliminate) {
+			try {
+				const res = await fetch('/admin/api', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						action: 'eliminate_from_tie',
+						eliminateId: other.id
+					})
+				})
+				if (!res.ok) {
+					const errData = await res.json().catch(() => ({}))
+					errorMsg = `Sieger wählen fehlgeschlagen: ${errData?.details || errData?.error || res.status}`
+					return
+				}
+				const data = await res.json()
+				results = Array.isArray(data?.results) ? data.results : null
+				winner = data?.winner ?? null
+				hasTie = Boolean(data?.hasTie)
+				remainingToEliminate = Number(data?.remainingToEliminate ?? 0)
+			} catch {
+				errorMsg = 'Netzwerkfehler.'
+				return
+			}
+		}
+
+		infoMsg = 'Sieger wurde gewählt!'
 	}
 
 	async function startNextRound() {
@@ -744,6 +923,12 @@
 				}
 				if (data?.remainingParticipantsCount !== undefined) {
 					remainingParticipantsCount = data.remainingParticipantsCount
+				}
+				if (data?.totalParticipantsInRound !== undefined) {
+					totalParticipantsInRound = data.totalParticipantsInRound
+				}
+				if (data?.currentParticipantIndex !== undefined) {
+					currentParticipantIndex = data.currentParticipantIndex
 				}
 			}
 		} catch {

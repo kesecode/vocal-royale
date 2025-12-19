@@ -3,7 +3,7 @@
 	<div class="panel panel-accent space-y-4 p-4 sm:p-6">
 		<p class="text-sm text-white/80">Hallo {user?.firstName || user?.name || user?.username}!</p>
 		{#if user?.artistName}
-			<p class="text-sm text-white/70">{user.artistName}</p>
+			<p class="text-sm text-white/90">a.k.a. {user.artistName}</p>
 		{/if}
 
 		{#if formData?.message}

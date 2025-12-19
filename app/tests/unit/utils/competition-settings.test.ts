@@ -5,6 +5,8 @@ import {
 	parseSettings,
 	isDeadlinePassed,
 	formatDeadline,
+	getRoundLabel,
+	isHalbfinaleRound,
 	DEFAULT_SETTINGS
 } from '$lib/utils/competition-settings'
 
@@ -36,35 +38,35 @@ describe('competition-settings', () => {
 
 	describe('getSongLabels', () => {
 		it('should generate correct labels for default settings', () => {
-			// 5 rounds + 2 finale songs = 6 labels (4 regular + 2 finale)
+			// 5 rounds + 2 finale songs = 6 labels (3 regular + Halbfinale + 2 finale)
 			const labels = getSongLabels(5, 2)
 			expect(labels).toEqual([
 				'Runde 1',
 				'Runde 2',
 				'Runde 3',
-				'Runde 4',
+				'Halbfinale',
 				'Finale Song 1',
 				'Finale Song 2'
 			])
 		})
 
 		it('should generate correct labels for custom settings', () => {
-			// 3 rounds + 2 finale songs = 4 labels (2 regular + 2 finale)
+			// 3 rounds + 2 finale songs = 4 labels (1 regular + Halbfinale + 2 finale)
 			const labels = getSongLabels(3, 2)
-			expect(labels).toEqual(['Runde 1', 'Runde 2', 'Finale Song 1', 'Finale Song 2'])
+			expect(labels).toEqual(['Runde 1', 'Halbfinale', 'Finale Song 1', 'Finale Song 2'])
 		})
 
 		it('should handle single finale song', () => {
-			// 3 rounds + 1 finale song = 3 labels (2 regular + 1 finale)
+			// 3 rounds + 1 finale song = 3 labels (1 regular + Halbfinale + 1 finale)
 			const labels = getSongLabels(3, 1)
-			expect(labels).toEqual(['Runde 1', 'Runde 2', 'Finale'])
+			expect(labels).toEqual(['Runde 1', 'Halbfinale', 'Finale'])
 		})
 
 		it('should handle multiple finale songs', () => {
-			// 2 rounds + 4 finale songs = 5 labels (1 regular + 4 finale)
+			// 2 rounds + 4 finale songs = 5 labels (Halbfinale + 4 finale)
 			const labels = getSongLabels(2, 4)
 			expect(labels).toEqual([
-				'Runde 1',
+				'Halbfinale',
 				'Finale Song 1',
 				'Finale Song 2',
 				'Finale Song 3',
@@ -183,6 +185,41 @@ describe('competition-settings', () => {
 		})
 	})
 
+	describe('getRoundLabel', () => {
+		it('should return "Halbfinale" for the round before finale', () => {
+			// totalRounds=5, round=4 is Halbfinale
+			expect(getRoundLabel(4, 5)).toBe('Halbfinale')
+			// totalRounds=3, round=2 is Halbfinale
+			expect(getRoundLabel(2, 3)).toBe('Halbfinale')
+		})
+
+		it('should return "Finale" for finale rounds', () => {
+			// totalRounds=5, round=5 is Finale
+			expect(getRoundLabel(5, 5)).toBe('Finale')
+			// totalRounds=5, round=6 is also Finale (Finale Song 2)
+			expect(getRoundLabel(6, 5)).toBe('Finale')
+		})
+
+		it('should return "Runde X" for normal rounds', () => {
+			expect(getRoundLabel(1, 5)).toBe('Runde 1')
+			expect(getRoundLabel(2, 5)).toBe('Runde 2')
+			expect(getRoundLabel(3, 5)).toBe('Runde 3')
+		})
+	})
+
+	describe('isHalbfinaleRound', () => {
+		it('should return true for the round before finale', () => {
+			expect(isHalbfinaleRound(4, 5)).toBe(true)
+			expect(isHalbfinaleRound(2, 3)).toBe(true)
+		})
+
+		it('should return false for other rounds', () => {
+			expect(isHalbfinaleRound(1, 5)).toBe(false)
+			expect(isHalbfinaleRound(3, 5)).toBe(false)
+			expect(isHalbfinaleRound(5, 5)).toBe(false) // Finale, not Halbfinale
+		})
+	})
+
 	describe('integration tests', () => {
 		it('should calculate songs and labels consistently', () => {
 			const totalRounds = 4
@@ -197,7 +234,7 @@ describe('competition-settings', () => {
 			expect(labels).toEqual([
 				'Runde 1',
 				'Runde 2',
-				'Runde 3',
+				'Halbfinale',
 				'Finale Song 1',
 				'Finale Song 2',
 				'Finale Song 3'

@@ -52,7 +52,7 @@ export function parseSettings(settingsRecord?: SettingsRecord | null): Competiti
 }
 
 /**
- * Get song labels for the UI
+ * Get song labels for the UI (one label per actual song/round)
  */
 export function getSongLabels(totalRounds: number, numberOfFinalSongs: number): string[] {
 	const labels: string[] = []
@@ -60,7 +60,11 @@ export function getSongLabels(totalRounds: number, numberOfFinalSongs: number): 
 	// Normale Runden vor dem Finale
 	const normalRounds = totalRounds - 1 // Alle Runden außer der letzten
 	for (let i = 1; i <= normalRounds; i++) {
-		labels.push(`Runde ${i}`)
+		if (i === normalRounds) {
+			labels.push('Halbfinale')
+		} else {
+			labels.push(`Runde ${i}`)
+		}
 	}
 
 	// Finale songs
@@ -73,6 +77,37 @@ export function getSongLabels(totalRounds: number, numberOfFinalSongs: number): 
 	}
 
 	return labels
+}
+
+/**
+ * Get progress bar labels - alle Finalrunden werden zu einer "Finale" Runde zusammengefasst
+ * Beispiel: totalRounds=5 → ["Runde 1", "Runde 2", "Runde 3", "Halbfinale", "Finale"]
+ */
+export function getProgressBarLabels(totalRounds: number): string[] {
+	const labels: string[] = []
+
+	for (let i = 1; i <= totalRounds; i++) {
+		if (i === totalRounds) {
+			labels.push('Finale')
+		} else if (i === totalRounds - 1) {
+			labels.push('Halbfinale')
+		} else {
+			labels.push(`Runde ${i}`)
+		}
+	}
+
+	return labels
+}
+
+/**
+ * Konvertiert die interne Rundennummer zur Anzeige-Rundennummer für die Progress Bar
+ * Alle Finalrunden (>= totalRounds) werden auf totalRounds gemappt
+ */
+export function getDisplayRound(round: number, totalRounds: number): number {
+	if (round >= totalRounds) {
+		return totalRounds
+	}
+	return round
 }
 
 /**
@@ -109,14 +144,19 @@ export function formatDeadline(deadline: string | null | undefined): string {
 
 /**
  * Parse the roundEliminationPattern string into an array of numbers
- * @param pattern - Comma-separated pattern like "5,3,3,2"
+ * @param pattern - Comma-separated pattern like "5,3,3,2" or a single number
  * @returns Array of numbers, e.g. [5, 3, 3, 2]
  */
-export function parseEliminationPattern(pattern: string): number[] {
-	if (!pattern || !pattern.trim()) {
+export function parseEliminationPattern(pattern: string | number | null | undefined): number[] {
+	if (pattern === null || pattern === undefined) {
 		return []
 	}
-	return pattern
+	// Convert to string if it's a number
+	const patternStr = String(pattern)
+	if (!patternStr.trim()) {
+		return []
+	}
+	return patternStr
 		.split(',')
 		.map((s) => Number(s.trim()) || 0)
 		.filter((n) => n >= 0)
@@ -135,6 +175,22 @@ export function getMaxRound(totalRounds: number, numberOfFinalSongs: number): nu
  */
 export function isFinaleRound(round: number, totalRounds: number): boolean {
 	return round >= totalRounds
+}
+
+/**
+ * Prüft ob eine Runde das Halbfinale ist (round === totalRounds - 1)
+ */
+export function isHalbfinaleRound(round: number, totalRounds: number): boolean {
+	return round === totalRounds - 1
+}
+
+/**
+ * Gibt das Label für eine Runde zurück (z.B. "Runde 1", "Halbfinale", "Finale")
+ */
+export function getRoundLabel(round: number, totalRounds: number): string {
+	if (round >= totalRounds) return 'Finale'
+	if (round === totalRounds - 1) return 'Halbfinale'
+	return `Runde ${round}`
 }
 
 /**

@@ -4,10 +4,10 @@
 	<!-- Progress with dynamic rounds: past = yellow, current = green, future = black (disabled) -->
 	<div class="panel panel-accent p-3 sm:p-4">
 		<ProgressRounds
-			onSelect={setRound}
-			activeRound={competitionStarted ? activeRound : 0}
-			currentRound={competitionStarted ? currentRound : 0}
-			total={maxRound}
+			onSelect={handleRoundSelect}
+			activeRound={competitionStarted ? getDisplayRound(activeRound, totalRounds) : 0}
+			currentRound={competitionStarted ? getDisplayRound(currentRound, totalRounds) : 0}
+			total={progressBarTotal}
 			labels={roundLabels}
 			disabled={!competitionFinished}
 		/>
@@ -29,7 +29,9 @@
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="font-semibold">
-					{isFinaleRound ? 'Wettbewerb beendet' : `Ergebnisse Runde ${currentRound}`}
+					{isFinaleRound
+						? 'Wettbewerb beendet'
+						: `Ergebnisse ${getRoundLabel(currentRound, totalRounds)}`}
 				</div>
 			</div>
 			<div class="p-3 sm:p-4">
@@ -85,7 +87,7 @@
 											{#if r.eliminatedInRound === null}
 												<span class="text-amber-400 font-medium">Finale</span>
 											{:else}
-												Runde {r.eliminatedInRound}
+												{getRoundLabel(r.eliminatedInRound, totalRounds)}
 											{/if}
 										</td>
 										<td class="p-2 sm:p-3 font-semibold">
@@ -143,7 +145,7 @@
 		<div class="panel panel-brand overflow-hidden p-0">
 			<div class="flex items-center justify-between border-b border-[#333]/60 px-4 py-3 sm:px-6">
 				<div class="flex items-center gap-3">
-					<span class="font-semibold">Runde {currentRound}</span>
+					<span class="font-semibold">{getRoundLabel(currentRound, totalRounds)}</span>
 					{#if showRatingBadge}
 						{#if canRate}
 							<span
@@ -184,9 +186,12 @@
 							<p class="text-sm text-white/60 mb-2">Jetzt auf der Bühne:</p>
 							<div>
 								{#if activeParticipantInfo.artistName}
-									<div class="text-lg font-semibold">{activeParticipantInfo.artistName}</div>
 									<div class="text-sm text-white/70">
 										{activeParticipantInfo.firstName || activeParticipantInfo.name}
+									</div>
+									<div>
+										<span class="text-white/70">a.k.a.</span>
+										<span class="text-lg font-semibold">{activeParticipantInfo.artistName}</span>
 									</div>
 								{:else}
 									<div class="text-lg font-semibold">
@@ -211,15 +216,23 @@
 					{#if activeParticipant}
 						<div class="space-y-3">
 							<div>
-								<div class="text-sm text-white/60">Runde {currentRound}</div>
 								{#if activeParticipant.artistName}
-									<div class="text-lg font-semibold">{activeParticipant.artistName}</div>
-									<div class="text-xs text-white/70">
+									<div class="text-sm text-white/70">
 										{activeParticipant.firstName || activeParticipant.name}
+									</div>
+									<div>
+										<span class="text-white/70">a.k.a.</span>
+										<span class="text-lg font-semibold">{activeParticipant.artistName}</span>
 									</div>
 								{:else}
 									<div class="text-lg font-semibold">
 										{activeParticipant.firstName || activeParticipant.name}
+									</div>
+								{/if}
+								{#if activeSongChoice}
+									<div class="text-sm text-white/70 mt-1">
+										<span class="font-medium">{activeSongChoice.songTitle}</span>
+										<span>{activeSongChoice.artist}</span>
 									</div>
 								{/if}
 							</div>
@@ -305,7 +318,7 @@
 				{:else if roundState === 'result_locked'}
 					<div class="px-2 py-3 space-y-2">
 						<p class="text-lg font-semibold">Das Ergebnis steht fest!</p>
-						<p class="text-sm text-white/80">Du wirst es gleich hier sehen - stay tuned!</p>
+						<p class="text-sm text-white/80">Du wirst es gleich hier sehen...</p>
 					</div>
 				{:else if roundState === 'publish_result'}
 					<div class="px-2 py-3 space-y-4">
@@ -348,7 +361,7 @@
 													{#if r.eliminatedInRound === null}
 														<span class="text-amber-400 font-medium">Finale</span>
 													{:else}
-														Runde {r.eliminatedInRound}
+														{getRoundLabel(r.eliminatedInRound, totalRounds)}
 													{/if}
 												</td>
 												<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
@@ -359,7 +372,9 @@
 								</table>
 							</div>
 						{:else if results.length > 0}
-							<div class="text-lg font-semibold">Ergebnisse Runde {currentRound}</div>
+							<div class="text-lg font-semibold">
+								Ergebnisse {getRoundLabel(currentRound, totalRounds)}
+							</div>
 							<div class="overflow-auto max-h-[50vh]">
 								<table class="w-full text-sm">
 									<thead class="sticky top-0">
@@ -470,7 +485,7 @@
 		{#if selected}
 			<div class="space-y-3">
 				<div>
-					<div class="text-sm text-white/60">Runde {currentRound}</div>
+					<div class="text-sm text-white/60">{getRoundLabel(currentRound, totalRounds)}</div>
 					<div class="text-lg font-semibold">{selected.firstName || selected.name}</div>
 					{#if selected.artistName}
 						<div class="text-xs text-white/70">{selected.artistName}</div>
@@ -559,7 +574,14 @@
 	import ProgressRounds from '$lib/components/ProgressRounds.svelte'
 	import StarRating from '$lib/components/StarRating.svelte'
 	import Modal from '$lib/components/Modal.svelte'
-	import { getSongLabels, parseSettings, DEFAULT_SETTINGS } from '$lib/utils/competition-settings'
+	import {
+		getProgressBarLabels,
+		getDisplayRound,
+		parseSettings,
+		DEFAULT_SETTINGS,
+		getMaxRound,
+		getRoundLabel
+	} from '$lib/utils/competition-settings'
 
 	export let data
 
@@ -585,8 +607,11 @@
 	// Competition settings
 	const settings = parseSettings(data.competitionSettings) || DEFAULT_SETTINGS
 	const totalRounds = settings.totalRounds
-	const maxRound = totalRounds + settings.numberOfFinalSongs - 1
-	const roundLabels = getSongLabels(settings.totalRounds, settings.numberOfFinalSongs)
+	// Interne maximale Rundennummer (inkl. alle Finale-Songs)
+	const maxRound = getMaxRound(settings.totalRounds, settings.numberOfFinalSongs)
+	// Progress bar zeigt nur totalRounds Schritte (Finale als eine Runde)
+	const progressBarTotal = totalRounds
+	const roundLabels = getProgressBarLabels(totalRounds)
 
 	// activeRound controls progressbar state from global competition state
 	let activeRound = 1
@@ -901,6 +926,12 @@
 		} finally {
 			loading = false
 		}
+	}
+
+	async function handleRoundSelect(displayRound: number) {
+		// Bei Finale-Auswahl (displayRound === totalRounds) die höchste Finale-Runde verwenden
+		const targetRound = displayRound >= totalRounds ? maxRound : displayRound
+		await setRound(targetRound)
 	}
 
 	async function setRound(r: number) {
