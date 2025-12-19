@@ -182,7 +182,12 @@
 			</div>
 			<div class="p-3 sm:p-4">
 				{#if isFinaleRound}
-					{#if winner}
+					{#if hasTie}
+						<div class="mb-3 p-3 rounded border border-amber-500/40 bg-amber-500/10 text-sm">
+							<strong>Patt-Situation im Finale!</strong>
+							Mehrere Teilnehmer haben den gleichen Durchschnitt. Bitte wähle den Sieger manuell.
+						</div>
+					{:else if winner}
 						<div class="text-lg font-semibold mb-2">
 							🏆 Sieger: {winner.name}
 							{#if winner.artistName}
@@ -192,39 +197,55 @@
 						<div class="text-sm text-white/80 mb-4">
 							Gesamtdurchschnitt: Ø {winner.avg.toFixed(2)} ({winner.count} Stimmen)
 						</div>
-						{#if results && results.length > 1}
-							<div class="border-t border-white/10 pt-3">
+					{/if}
+					{#if results && results.length > 0}
+						<div class={hasTie ? '' : 'border-t border-white/10 pt-3'}>
+							{#if !hasTie}
 								<div class="text-sm font-semibold mb-2">Alle Platzierungen:</div>
-								<div class="overflow-auto max-h-[50vh]">
-									<table class="w-full text-sm">
-										<thead class="sticky top-0">
-											<tr class="text-left text-white/90">
-												<th class="p-2 sm:p-3">Platz</th>
-												<th class="p-2 sm:p-3">Teilnehmer</th>
-												<th class="p-2 sm:p-3">Bewertung</th>
-												<th class="p-2 sm:p-3">Stimmen</th>
-											</tr>
-										</thead>
-										<tbody>
-											{#each results.slice().sort((a, b) => b.avg - a.avg) as r, i (r.id)}
-												<tr class="border-t border-[#333]/40 align-middle">
-													<td class="p-2 sm:p-3 font-semibold">{i + 1}</td>
+							{/if}
+							<div class="overflow-auto max-h-[50vh]">
+								<table class="w-full text-sm">
+									<thead class="sticky top-0">
+										<tr class="text-left text-white/90">
+											<th class="p-2 sm:p-3">Platz</th>
+											<th class="p-2 sm:p-3">Teilnehmer</th>
+											<th class="p-2 sm:p-3">Bewertung</th>
+											<th class="p-2 sm:p-3">Stimmen</th>
+											{#if hasTie}
+												<th class="p-2 sm:p-3">Aktion</th>
+											{/if}
+										</tr>
+									</thead>
+									<tbody>
+										{#each (hasTie ? results.filter((r) => !r.eliminated) : results)
+											.slice()
+											.sort((a, b) => b.avg - a.avg) as r, i (r.id)}
+											<tr class="border-t border-[#333]/40 align-middle">
+												<td class="p-2 sm:p-3 font-semibold">{i + 1}</td>
+												<td class="p-2 sm:p-3">
+													<div class="font-medium">{r.name}</div>
+													{#if r.artistName}
+														<div class="text-xs text-white/70">{r.artistName}</div>
+													{/if}
+												</td>
+												<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
+												<td class="p-2 sm:p-3">{r.count}</td>
+												{#if hasTie}
 													<td class="p-2 sm:p-3">
-														<div class="font-medium">{r.name}</div>
-														{#if r.artistName}
-															<div class="text-xs text-white/70">{r.artistName}</div>
+														{#if r.isTied && !r.eliminated}
+															<button class="btn-brand text-xs" onclick={() => selectWinner(r.id)}>
+																Als Sieger wählen
+															</button>
 														{/if}
 													</td>
-													<td class="p-2 sm:p-3">Ø {r.avg.toFixed(2)}</td>
-													<td class="p-2 sm:p-3">{r.count}</td>
-												</tr>
-											{/each}
-										</tbody>
-									</table>
-								</div>
+												{/if}
+											</tr>
+										{/each}
+									</tbody>
+								</table>
 							</div>
-						{/if}
-					{:else}
+						</div>
+					{:else if !winner}
 						<div class="text-sm text-white/80">Ergebnis wird geladen...</div>
 					{/if}
 				{:else if results}
@@ -779,6 +800,47 @@
 		} catch {
 			errorMsg = 'Netzwerkfehler.'
 		}
+	}
+
+	async function selectWinner(winnerId: string) {
+		// In finale tie: eliminate all other tied participants to select this one as winner
+		if (!results) return
+		errorMsg = null
+		infoMsg = null
+
+		// Find all tied participants except the selected winner
+		const othersToEliminate = results.filter(
+			(r: ResultRow) => r.isTied && !r.eliminated && r.id !== winnerId
+		)
+
+		// Eliminate each one sequentially
+		for (const other of othersToEliminate) {
+			try {
+				const res = await fetch('/admin/api', {
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						action: 'eliminate_from_tie',
+						eliminateId: other.id
+					})
+				})
+				if (!res.ok) {
+					const errData = await res.json().catch(() => ({}))
+					errorMsg = `Sieger wählen fehlgeschlagen: ${errData?.details || errData?.error || res.status}`
+					return
+				}
+				const data = await res.json()
+				results = Array.isArray(data?.results) ? data.results : null
+				winner = data?.winner ?? null
+				hasTie = Boolean(data?.hasTie)
+				remainingToEliminate = Number(data?.remainingToEliminate ?? 0)
+			} catch {
+				errorMsg = 'Netzwerkfehler.'
+				return
+			}
+		}
+
+		infoMsg = 'Sieger wurde gewählt!'
 	}
 
 	async function startNextRound() {

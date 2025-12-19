@@ -179,7 +179,7 @@ async function computeFinalRankings(
 	for (const r of allRatings) {
 		const rating = Number(r.rating) || 0
 		const authorRole = r.expand?.author?.role
-		const weight = authorRole === 'juror' ? 2 : 1
+		const weight = authorRole === 'juror' ? 3 : 1
 		// Aggregate ALL ratings for each user
 		const g = totalRatingsByUser.get(r.ratedUser) || { sum: 0, count: 0 }
 		g.sum += rating * weight
@@ -428,7 +428,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 					const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
 					const rating = Number(r.rating) || 0
 					const authorRole = r.expand?.author?.role
-					const weight = authorRole === 'juror' ? 2 : 1
+					const weight = authorRole === 'juror' ? 3 : 1
 					g.sum += rating * weight
 					g.count += weight
 					grouped.set(r.ratedUser, g)
@@ -867,7 +867,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				const rating = Number(r.rating) || 0
 				const authorRole = r.expand?.author?.role
 				// Juror votes count double
-				const weight = authorRole === 'juror' ? 2 : 1
+				const weight = authorRole === 'juror' ? 3 : 1
 				g.sum += rating * weight
 				g.count += weight
 				grouped.set(r.ratedUser, g)
@@ -1128,7 +1128,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
 				const rating = Number(r.rating) || 0
 				const authorRole = r.expand?.author?.role
-				const weight = authorRole === 'juror' ? 2 : 1
+				const weight = authorRole === 'juror' ? 3 : 1
 				g.sum += rating * weight
 				g.count += weight
 				grouped.set(r.ratedUser, g)
@@ -1271,7 +1271,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 					if (r.ratedUser !== p.id) continue
 					const rating = Number(r.rating) || 0
 					const authorRole = r.expand?.author?.role
-					const weight = authorRole === 'juror' ? 2 : 1
+					const weight = authorRole === 'juror' ? 3 : 1
 					sum += rating * weight
 					count += weight
 				}
@@ -1325,7 +1325,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 				const g = grouped.get(r.ratedUser) || { sum: 0, count: 0 }
 				const rating = Number(r.rating) || 0
 				const authorRole = r.expand?.author?.role
-				const weight = authorRole === 'juror' ? 2 : 1
+				const weight = authorRole === 'juror' ? 3 : 1
 				g.sum += rating * weight
 				g.count += weight
 				grouped.set(r.ratedUser, g)
